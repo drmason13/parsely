@@ -1,9 +1,11 @@
-use crate::{ParseOutput, Parser};
+use std::fmt;
+
+use crate::{ParseResult, Parser};
 
 pub struct Char(pub char);
 
 impl Parser for Char {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseOutput<'a> {
+    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
         let mut chars = input.char_indices();
 
         match chars.next() {
@@ -13,20 +15,22 @@ impl Parser for Char {
                     None => input.len(),
                 };
 
-                let (processed, remaining) = input.split_at(boundary);
-                ParseOutput::new(Some(processed), remaining)
+                let (output, remaining) = input.split_at(boundary);
+                ParseResult::new(Some(output), remaining)
             }
-            _ => ParseOutput::new(None, input),
+            _ => ParseResult::new(None, input),
         }
-    }
-
-    fn name(&self) -> &'static str {
-        "char"
     }
 }
 
 pub fn char(char: char) -> Char {
     Char(char)
+}
+
+impl fmt::Display for Char {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "char('{}')", self.0)
+    }
 }
 
 #[cfg(test)]
@@ -35,7 +39,7 @@ mod tests {
     use crate::test_utils::*;
 
     #[test]
-    fn test_char_parser() {
+    fn parsing() {
         test_parser_batch(
             "simple input",
             char('a'),

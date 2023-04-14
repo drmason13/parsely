@@ -1,24 +1,74 @@
-use crate::{ParseOutput, Parser};
+use std::fmt;
 
+use crate::{ParseResult, Parser};
+
+// This `struct` is created by the function `[token]`. See its documentation for more.
 pub struct Token<'p>(pub &'p str);
 
 impl<'p> Parser for Token<'p> {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseOutput<'a> {
+    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
         if input.starts_with(self.0) {
             let (processed, remaining) = input.split_at(self.0.len());
-            ParseOutput::new(Some(processed), remaining)
+            ParseResult::new(Some(processed), remaining)
         } else {
-            ParseOutput::new(None, input)
+            ParseResult::new(None, input)
         }
-    }
-
-    fn name(&self) -> &'static str {
-        "token"
     }
 }
 
+/// A parser that matches a specific string slice.
+///
+/// This parser is useful for keywords or other specific sequences of characters in your input that should be matched.
+///
+/// Create this parser by providing the token to match.
+///
+/// When calling the [`Parser::parse`] method, this parser will return the matched token and the remaining input in a [`ParseResult`] struct.
+///
+/// You can map this parser's output (which will be the matched token if successful) to another type using [`ParseResult::map`],
+/// and you can chain other parsers to parse the remaining input with [`ParseResult::and`].
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use parsely::{token, Parser};
+///
+/// let input = "FOO 123";
+///
+/// let mut fooParser = token("FOO");
+///
+/// let result = fooParser.parse(input);
+///
+/// assert_eq!(result.output(), Some("FOO"));
+/// assert_eq!(result.remaining(), " 123");
+/// ```
+///
+/// Map the output to a custom struct:
+///
+/// ```
+/// use parsely::{token, Parser};
+///
+/// #[derive(Debug, PartialEq)]
+/// struct Foo;
+///
+/// let input = "FOO 123";
+///
+/// let mut fooParser = token("FOO");
+///
+/// let (output, result) = fooParser.parse(input).map(|_| Foo);
+///
+/// assert_eq!(output, Some(Foo));
+/// assert_eq!(result.remaining(), " 123");
+/// ```
 pub fn token(token: &str) -> Token {
     Token(token)
+}
+
+impl fmt::Display for Token<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "token(\"{}\")", self.0)
+    }
 }
 
 #[cfg(test)]
@@ -27,7 +77,7 @@ mod tests {
     use crate::test_utils::*;
 
     #[test]
-    fn test_token_parser() {
+    fn parsing() {
         test_parser_batch(
             "simple input",
             token("foo"),
@@ -80,7 +130,7 @@ mod tests {
     }
 
     #[test]
-    fn test_token_parser_matches_char_parser() {
+    fn token_parser_matches_char_parser() {
         test_parser_batch(
             "matches char: simple input",
             token("a"),

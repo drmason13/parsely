@@ -42,45 +42,58 @@ pub trait Parser: Sized {
     ///
     /// # Examples
     ///
-    /// Parse one of two tokens:
+    /// Basic usage:
     ///
     /// ```
-    /// use parsely::{token, Parser};
+    /// use parsely::{char, token, Parser};
     ///
     /// let mut for_or_bar = token("foo").or(token("bar"));
     ///
     /// let foo = for_or_bar.parse("foobarbaz");
+    ///
     /// assert_eq!(Some("foo"), foo.output());
     /// assert_eq!("barbaz", foo.remaining());
     ///
     /// let bar = for_or_bar.parse("barbaz");
+    ///
     /// assert_eq!(Some("bar"), bar.output());
     /// assert_eq!("baz", bar.remaining());
+    ///
+    /// // `or` can be chained multiple times:
+    ///
+    /// let mut whitespace = char(' ')
+    ///     .or(char('\t'))
+    ///     .or(char('\n'))
+    ///     .or(char('\r'));
     /// ```
     ///
-    /// Use `or` in a chain:
-    ///
-    /// ```
-    /// use parsely::{char, int, token, Parser};
-    ///
-    /// let mut parser = token("foo") //
-    ///     .or(int())
-    ///     .or(char('.'))
-    ///     .or(char(';'));
-    ///
-    /// let result = parser.parse("foo.123");
-    /// assert_eq!(Some("foo"), result.output());
-    /// assert_eq!(".123", result.remaining());
-    ///
-    /// let result = parser.parse("123;foo");
-    /// assert_eq!(Some("12"), result.output());
-    /// assert_eq!(";foo", result.remaining());
-    /// ```
+    /// Note that there is a whitespace parser available, see [`parsers::ws`]
     fn or<P: Parser>(self, parser: P) -> Or<Self, P> {
         or(self, parser)
     }
 
-    /// Parse with this parser to get some output, and then parse the remaining input with the provided parser.
+    /// Creates a new parser that applies two parsers in sequence.
+    ///
+    /// First this parser is run, and then if successful, the remaining input will be fed to the given parser.
+    ///
+    /// This parser short circuits such that if the first parser does not match, the second one is not attempted.
+    ///
+    /// Both parsers are required to match for any input to be consumed.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{char, hex, Parser};
+    ///
+    /// let mut hex_color = char('#').then(hex());
+    ///
+    /// let result = hex_color.parse("#C0FFEE");
+    ///
+    /// assert_eq!(result.output(), Some("#C0FFEE"));
+    /// assert_eq!(result.remaining(), "");
+    /// ```
     fn then<P: Parser>(self, parser: P) -> Then<Self, P> {
         then(self, parser)
     }

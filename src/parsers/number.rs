@@ -56,9 +56,13 @@ pub fn int() -> Digit {
 
 /// A parser that parses an hexadecimal character, i.e. one or more base 16 digits.
 ///
+/// No leading `0x` or other hex notation in the input is accepted.
+///
 /// To parse decimals consider using:
 /// * [`float()`] which will parse only decimals
 /// * [`number()`] which will parse integers or decimals
+///
+/// # Examples
 ///
 /// # Note
 ///

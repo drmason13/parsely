@@ -1,5 +1,5 @@
-pub mod or;
-pub mod then;
+mod or;
+mod then;
 
 pub use or::{or, Or};
 pub use then::{then, Then};

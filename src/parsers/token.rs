@@ -25,7 +25,7 @@ impl<'p> Parser for Token<'p> {
 /// When calling the [`Parser::parse`] method, this parser will return the matched token and the remaining input in a [`ParseResult`] struct.
 ///
 /// You can map this parser's output (which will be the matched token if successful) to another type using [`ParseResult::map`],
-/// and you can chain other parsers to parse the remaining input with [`ParseResult::and`].
+/// and you can chain other parsers to parse the remaining input with [`ParseResult::then`].
 ///
 /// # Examples
 ///

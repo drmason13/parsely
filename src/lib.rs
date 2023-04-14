@@ -34,9 +34,11 @@ pub(crate) mod test_utils;
 pub trait Parser: Sized {
     fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a>;
 
-    /// Creates a new parser that will attempt to parse with this parser, and if it fails try to parse with the provided parser.
+    /// Creates a new parser that will attempt to parse with this parser, and if it fails, attempt to parse with the given parser.
     ///
-    /// This can be used to build a chain of possible ways to parse a given input.
+    /// This can be used to build a chain of possible ways to parse the same input.
+    ///
+    /// At most, one of the parsers will consume input.
     ///
     /// # Examples
     ///
@@ -45,15 +47,34 @@ pub trait Parser: Sized {
     /// ```
     /// use parsely::{token, Parser};
     ///
-    /// let mut foo_or_bar = token("foo").or(token("bar"));
+    /// let mut for_or_bar = token("foo").or(token("bar"));
     ///
-    /// let foo = foo_or_bar.parse("foobarbaz");
+    /// let foo = for_or_bar.parse("foobarbaz");
     /// assert_eq!(Some("foo"), foo.output());
     /// assert_eq!("barbaz", foo.remaining());
     ///
-    /// let bar = foo_or_bar.parse("barbaz");
+    /// let bar = for_or_bar.parse("barbaz");
     /// assert_eq!(Some("bar"), bar.output());
     /// assert_eq!("baz", bar.remaining());
+    /// ```
+    ///
+    /// Use `or` in a chain:
+    ///
+    /// ```
+    /// use parsely::{char, int, token, Parser};
+    ///
+    /// let mut parser = token("foo") //
+    ///     .or(int())
+    ///     .or(char('.'))
+    ///     .or(char(';'));
+    ///
+    /// let result = parser.parse("foo.123");
+    /// assert_eq!(Some("foo"), result.output());
+    /// assert_eq!(".123", result.remaining());
+    ///
+    /// let result = parser.parse("123;foo");
+    /// assert_eq!(Some("12"), result.output());
+    /// assert_eq!(";foo", result.remaining());
     /// ```
     fn or<P: Parser>(self, parser: P) -> Or<Self, P> {
         or(self, parser)

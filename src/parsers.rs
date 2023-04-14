@@ -1,7 +1,7 @@
-pub mod char;
-pub mod number;
-pub mod token;
+mod char;
+mod number;
+mod token;
 
 pub use self::char::{char, Char};
-pub use self::number::{int, number, Digit};
+pub use self::number::{digit, float, hex, int, number, Digit};
 pub use self::token::{token, Token};

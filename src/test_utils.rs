@@ -13,9 +13,9 @@ pub(crate) fn test_parser(
     expected_remaining: &str,
 ) {
     assert_eq!(
-        parser.parse(input),
         ParseResult::new(expected_output, expected_remaining),
-        "{parser} parser - {test_name}:{test_index}",
+        parser.parse(input),
+        "{parser} parser - {test_name}:{test_index}. Expected left; Got right",
     );
 }
 

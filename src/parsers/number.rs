@@ -4,7 +4,6 @@ use crate::parsers::char;
 use crate::{ParseResult, Parser};
 
 pub struct Digit {
-    name: &'static str,
     radix: u32,
 }
 
@@ -28,10 +27,7 @@ impl Parser for Digit {
 }
 
 pub fn digit(radix: u32) -> Digit {
-    Digit {
-        name: "digit",
-        radix,
-    }
+    Digit { radix }
 }
 
 /// A parser that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
@@ -48,10 +44,7 @@ pub fn digit(radix: u32) -> Digit {
 ///
 /// This parser will transform its output into
 pub fn int() -> Digit {
-    Digit {
-        name: "int",
-        radix: 10,
-    }
+    Digit { radix: 10 }
 }
 
 /// A parser that parses an hexadecimal character, i.e. one or more base 16 digits.
@@ -68,10 +61,7 @@ pub fn int() -> Digit {
 ///
 /// This parser will not transform its output into another type, but this can be done using [`Parser::map`].
 pub fn hex() -> Digit {
-    Digit {
-        name: "hex",
-        radix: 16,
-    }
+    Digit { radix: 16 }
 }
 
 pub fn float() -> impl Parser + fmt::Display {
@@ -86,7 +76,7 @@ pub fn number() -> impl Parser + fmt::Display {
 
 impl fmt::Display for Digit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)
+        write!(f, "digit({})", self.radix)
     }
 }
 

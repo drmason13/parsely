@@ -9,25 +9,40 @@ pub struct Digit {
 
 impl Parser for Digit {
     fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
-        let mut chars = input.char_indices();
-
-        match chars.find(|(_, c)| !c.is_digit(self.radix)) {
-            Some((i, _)) => {
-                if i == 0 {
-                    // the first char was not a digit
-                    ParseResult::new(None, input)
-                } else {
-                    let (output, remaining) = input.split_at(i);
-                    ParseResult::new(Some(output), remaining)
-                }
+        if let Some(c) = input.chars().next() {
+            if c.is_digit(self.radix) {
+                let (output, remaining) = input.split_at(c.len_utf8());
+                ParseResult::new(Some(output), remaining)
+            } else {
+                ParseResult::new(None, input)
             }
-            None => ParseResult::new(Some(input), ""),
+        } else {
+            ParseResult::new(None, input)
         }
     }
 }
 
-pub fn digit(radix: u32) -> Digit {
-    Digit { radix }
+pub fn digit() -> Digit {
+    Digit { radix: 10 }
+}
+
+impl Digit {
+    /// Create a new Digit parser that matches digits with the base n.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::digit;
+    ///
+    /// let base_10 = digit();
+    ///
+    /// let base_32 = digit().base(32);
+    /// ```
+    pub fn base(&self, n: u32) -> Digit {
+        Digit { radix: n }
+    }
 }
 
 /// A parser that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
@@ -43,8 +58,8 @@ pub fn digit(radix: u32) -> Digit {
 /// # Note
 ///
 /// This parser will transform its output into
-pub fn int() -> Digit {
-    Digit { radix: 10 }
+pub fn int() -> impl Parser + fmt::Display {
+    char('-').many(0..=1).then(digit().many(1..))
 }
 
 /// A parser that parses an hexadecimal character, i.e. one or more base 16 digits.
@@ -59,15 +74,18 @@ pub fn int() -> Digit {
 ///
 /// # Note
 ///
-/// This parser will not transform its output into another type, but this can be done using [`Parser::map`].
+/// This parser will not transform its output into another type, but this can be done using [`ParseResult::map`].
 pub fn hex() -> Digit {
     Digit { radix: 16 }
 }
 
+// To return impl Parser or the specific parser?
+// `impl Parser` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
+// the specific parser is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
 pub fn float() -> impl Parser + fmt::Display {
     int() //
         .then(char('.'))
-        .then(int())
+        .then(digit().many(0..))
 }
 
 pub fn number() -> impl Parser + fmt::Display {
@@ -84,6 +102,28 @@ impl fmt::Display for Digit {
 mod tests {
     use super::*;
     use crate::test_utils::*;
+
+    #[test]
+    fn digit_char_find() {
+        let actual = "123a".chars().find(|c| !c.is_ascii_digit());
+        assert_eq!(actual, Some('a'), "can find a");
+
+        let actual = "".chars().find(|c| !c.is_ascii_digit());
+        assert_eq!(actual, None, "empty finds nothing");
+    }
+
+    #[test]
+    fn test_digit() {
+        test_parser_batch(
+            "digit works",
+            digit(),
+            &[
+                ("", None, ""), //
+                ("123", Some("1"), "23"),
+                ("abc", None, "abc"),
+            ],
+        );
+    }
 
     #[test]
     fn parsing() {
@@ -105,7 +145,7 @@ mod tests {
                 ("12.", Some("12."), ""),
                 ("123", None, "123"),
                 ("12.3A", Some("12.3"), "A"),
-                ("12.A3", None, "12.A3"),
+                ("12.A3", Some("12."), "A3"),
                 ("12.0.1", Some("12.0"), ".1"),
             ],
         );
@@ -118,7 +158,7 @@ mod tests {
                 ("12.", Some("12."), ""),
                 ("123", Some("123"), ""),
                 ("12.3A", Some("12.3"), "A"),
-                ("12.A3", Some("12"), ".A3"),
+                ("12.A3", Some("12."), "A3"),
             ],
         );
     }

@@ -13,7 +13,9 @@
 pub mod combinators;
 pub mod parsers;
 
-use combinators::{or, then, Or, Then};
+use std::ops::RangeBounds;
+
+pub use combinators::*;
 pub use parsers::*;
 
 #[doc(hidden)]
@@ -33,6 +35,16 @@ pub(crate) mod test_utils;
 /// Some built in parsers accept a generic argument of a type to map the output to for you. For example [`parsers::int`] and [`parsers::number`].
 pub trait Parser: Sized {
     fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a>;
+
+    /// Creates a new parser that will attempt to parse with this parser multiple times.
+    ///
+    /// See [`combinators::Many`] for more details.
+    fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
+    where
+        Self: Sized,
+    {
+        many(range, self)
+    }
 
     /// Creates a new parser that will attempt to parse with this parser, and if it fails, attempt to parse with the given parser.
     ///
@@ -68,7 +80,10 @@ pub trait Parser: Sized {
     /// ```
     ///
     /// Note that there is a whitespace parser available, see [`parsers::ws`]
-    fn or<P: Parser>(self, parser: P) -> Or<Self, P> {
+    fn or<P: Parser>(self, parser: P) -> Or<Self, P>
+    where
+        Self: Sized,
+    {
         or(self, parser)
     }
 
@@ -87,14 +102,17 @@ pub trait Parser: Sized {
     /// ```
     /// use parsely::{char, hex, Parser};
     ///
-    /// let mut hex_color = char('#').then(hex());
+    /// let mut hex_color = char('#').then(hex().many(1..));
     ///
     /// let result = hex_color.parse("#C0FFEE");
     ///
     /// assert_eq!(result.output(), Some("#C0FFEE"));
     /// assert_eq!(result.remaining(), "");
     /// ```
-    fn then<P: Parser>(self, parser: P) -> Then<Self, P> {
+    fn then<P: Parser>(self, parser: P) -> Then<Self, P>
+    where
+        Self: Sized,
+    {
         then(self, parser)
     }
 }

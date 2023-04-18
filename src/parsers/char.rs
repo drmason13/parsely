@@ -1,11 +1,11 @@
 use std::fmt;
 
-use crate::{ParseResult, Parser};
+use crate::{Parse, ParseError, ParseResult};
 
 pub struct Char(pub char);
 
-impl Parser for Char {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
+impl Parse for Char {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
         let mut chars = input.char_indices();
 
         match chars.next() {
@@ -15,10 +15,9 @@ impl Parser for Char {
                     None => input.len(),
                 };
 
-                let (output, remaining) = input.split_at(boundary);
-                ParseResult::new(Some(output), remaining)
+                Ok(input.split_at(boundary))
             }
-            _ => ParseResult::new(None, input),
+            _ => Err(ParseError::NoMatch),
         }
     }
 }
@@ -29,8 +28,8 @@ pub fn char(char: char) -> Char {
 
 pub struct WhiteSpace;
 
-impl Parser for WhiteSpace {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
+impl Parse for WhiteSpace {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
         let mut chars = input.char_indices();
 
         match chars.next() {
@@ -40,10 +39,9 @@ impl Parser for WhiteSpace {
                     None => input.len(),
                 };
 
-                let (output, remaining) = input.split_at(boundary);
-                ParseResult::new(Some(output), remaining)
+                Ok(input.split_at(boundary))
             }
-            _ => ParseResult::new(None, input),
+            _ => Err(ParseError::NoMatch),
         }
     }
 }

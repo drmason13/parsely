@@ -18,23 +18,33 @@ use std::ops::RangeBounds;
 pub use combinators::*;
 pub use parsers::*;
 
+#[non_exhaustive]
+#[derive(Debug, PartialEq)]
+pub enum ParseError {
+    NoMatch,
+}
+
+pub type ParseResult<'i> = Result<(&'i str, &'i str), ParseError>;
+
 #[doc(hidden)]
 #[cfg(test)]
 pub(crate) mod test_utils;
 
 /// This trait is implemented by all Parsely parsers.
 ///
-/// The [`Parser::parse`] method returns a [`ParseResult`] which contains the output of the parser and the remaining input.
+/// The [`Parser::parse`] method returns a tuple `(matched, remaining)` of `&str`.
+/// First the part of the input successfully matched and then the remaining part of the input that was not matched.
+/// The order reads left to right as the parser reads the input, and matches the return order of [`std::str::split_at`].
 ///
 /// # Map parser output to a new type
 ///
 /// The output of most parsers will be `&str`, the same type as the input.
 ///
-/// To map the output to a different type you can use the [`ParseResult::map`] or [`ParseResult::try_map`] methods which accept a closure to convert from &str to any type.
+/// To map the output to a different type you can use the [`Parse::map`] or [`Parse::try_map`] methods which accept a closure to do the conversion.
 ///
 /// Some built in parsers accept a generic argument of a type to map the output to for you. For example [`parsers::int`] and [`parsers::number`].
-pub trait Parser: Sized {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a>;
+pub trait Parse: Sized {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i>;
 
     /// Creates a new parser that will attempt to parse with this parser multiple times.
     ///
@@ -57,19 +67,19 @@ pub trait Parser: Sized {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, token, Parser};
+    /// use parsely::{char, token, Parse, ParseError};
     ///
     /// let mut for_or_bar = token("foo").or(token("bar"));
     ///
-    /// let foo = for_or_bar.parse("foobarbaz");
+    /// let (output, remaining) = for_or_bar.parse("foobarbaz")?;
     ///
-    /// assert_eq!(Some("foo"), foo.output());
-    /// assert_eq!("barbaz", foo.remaining());
+    /// assert_eq!(output, "foo");
+    /// assert_eq!(remaining, "barbaz");
     ///
-    /// let bar = for_or_bar.parse("barbaz");
+    /// let (output, remaining) = for_or_bar.parse("barbaz")?;
     ///
-    /// assert_eq!(Some("bar"), bar.output());
-    /// assert_eq!("baz", bar.remaining());
+    /// assert_eq!(output, "bar");
+    /// assert_eq!(remaining, "baz");
     ///
     /// // `or` can be chained multiple times:
     ///
@@ -77,10 +87,12 @@ pub trait Parser: Sized {
     ///     .or(char('\t'))
     ///     .or(char('\n'))
     ///     .or(char('\r'));
+    ///
+    /// # Ok::<(), ParseError>(())
     /// ```
     ///
     /// Note that there is a whitespace parser available, see [`parsers::ws`]
-    fn or<P: Parser>(self, parser: P) -> Or<Self, P>
+    fn or<P: Parse>(self, parser: P) -> Or<Self, P>
     where
         Self: Sized,
     {
@@ -100,71 +112,25 @@ pub trait Parser: Sized {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, hex, Parser};
+    /// use parsely::{char, hex, Parse, ParseError};
     ///
     /// let mut hex_color = char('#').then(hex().many(1..));
     ///
-    /// let result = hex_color.parse("#C0FFEE");
+    /// let (output, remaining) = hex_color.parse("#C0FFEE")?;
     ///
-    /// assert_eq!(result.output(), Some("#C0FFEE"));
-    /// assert_eq!(result.remaining(), "");
+    /// assert_eq!(output, "#C0FFEE");
+    /// assert_eq!(remaining, "");
+    ///
+    /// let result = hex_color.parse("#TEATEA");
+    ///
+    /// assert_eq!(result, Err(ParseError::NoMatch));
+    ///
+    /// # Ok::<(), ParseError>(())
     /// ```
-    fn then<P: Parser>(self, parser: P) -> Then<Self, P>
+    fn then<P: Parse>(self, parser: P) -> Then<Self, P>
     where
         Self: Sized,
     {
         then(self, parser)
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct ParseResult<'a> {
-    output: Option<&'a str>,
-    remaining: &'a str,
-}
-
-impl<'a> ParseResult<'a> {
-    pub fn new(output: Option<&'a str>, remaining: &'a str) -> Self {
-        ParseResult { output, remaining }
-    }
-
-    pub fn remaining(&self) -> &str {
-        self.remaining
-    }
-
-    pub fn output(&self) -> Option<&str> {
-        self.output
-    }
-
-    pub fn or(self, parser: &mut impl Parser) -> Self {
-        match self.output {
-            Some(_) => self,
-            None => parser.parse(self.remaining),
-        }
-    }
-
-    pub fn then(self, parser: &mut impl Parser) -> (Self, Option<Self>) {
-        match self.output {
-            Some(_) => {
-                let right = parser.parse(self.remaining);
-                (self, Some(right))
-            }
-            None => (self, None),
-        }
-    }
-
-    pub fn map<F, O>(self, f: F) -> (Option<O>, Self)
-    where
-        F: FnMut(&'a str) -> O,
-    {
-        let output = self.output.map(f);
-        (output, self)
-    }
-
-    pub fn try_map<F, O, E>(self, f: F) -> Option<Result<O, E>>
-    where
-        F: FnMut(&'a str) -> Result<O, E>,
-    {
-        self.output.map(f)
     }
 }

@@ -3,10 +3,10 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-use crate::{ParseResult, Parser};
+use crate::{Parse, ParseError, ParseResult};
 
 /// This parser is returned by [`many()`]. See it's documentation for more details.
-pub struct Many<P: Parser> {
+pub struct Many<P: Parse> {
     /// The parser to be repeated.
     parser: P,
 
@@ -23,28 +23,26 @@ pub struct Many<P: Parser> {
     max: usize,
 }
 
-impl<P: Parser> Parser for Many<P> {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
+impl<P: Parse> Parse for Many<P> {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;
 
         while count < self.max {
-            let result = self.parser.parse(working_input);
-
-            if let Some(output) = result.output() {
+            if let Ok((output, remaining)) = self.parser.parse(working_input) {
                 count += 1;
                 offset += output.len();
-                working_input = &input[offset..];
+                working_input = remaining;
             } else {
                 break;
             }
         }
 
         if count < self.min {
-            ParseResult::new(None, input)
+            Err(ParseError::NoMatch)
         } else {
-            ParseResult::new(Some(&input[..offset]), &input[offset..])
+            Ok((&input[..offset], &input[offset..]))
         }
     }
 }
@@ -62,65 +60,65 @@ impl<P: Parser> Parser for Many<P> {
 /// Basic usage:
 ///
 /// ```
-/// use parsely::{digit, many, Parser};
+/// use parsely::{digit, many, Parse, ParseError};
 ///
 /// // these are all equivalent
 /// let mut zero_or_more_digits = many(.., digit());
 /// let mut zero_or_more_digits = many(0.., digit());
 /// let mut zero_or_more_digits = many(0..usize::MAX, digit());
 ///
-/// let result = zero_or_more_digits.parse("123");
-/// assert_eq!(result.output(), Some("123"));
-/// assert_eq!(result.remaining(), "");
+/// let (output, remaining) = zero_or_more_digits.parse("123")?;
+/// assert_eq!(output, "123");
+/// assert_eq!(remaining, "");
 ///
-/// let result = zero_or_more_digits.parse("abc");
-/// assert_eq!(result.output(), Some(""));
-/// assert_eq!(result.remaining(), "abc");
+/// let (output, remaining) = zero_or_more_digits.parse("abc")?;
+/// assert_eq!(output, "");
+/// assert_eq!(remaining, "abc");
 ///
 /// let mut one_or_more_digits = many(1.., digit());
 ///
 /// let result = one_or_more_digits.parse("abc");
-/// assert_eq!(result.output(), None);
-/// assert_eq!(result.remaining(), "abc");
+/// assert_eq!(result, Err(ParseError::NoMatch));
+/// # Ok::<(), ParseError>(())
 /// ```
 ///
-/// Chain with [`Parser::many()`]:
+/// Chain with [`Parse::many()`]:
 ///
 /// ```
-/// use parsely::{digit, Parser};
+/// use parsely::{digit, Parse, ParseError};
 ///
 /// let mut zero_or_more_digits = digit().many(0..);
 ///
-/// # let result = zero_or_more_digits.parse("123");
-/// # assert_eq!(result.output(), Some("123"));
-/// # assert_eq!(result.remaining(), "");
+/// # let (output, remaining) = zero_or_more_digits.parse("123")?;
+/// # assert_eq!(output, "123");
+/// # assert_eq!(remaining, "");
 /// #
-/// # let result = zero_or_more_digits.parse("abc");
-/// # assert_eq!(result.output(), Some(""));
-/// # assert_eq!(result.remaining(), "abc");
+/// # let (output, remaining) = zero_or_more_digits.parse("abc")?;
+/// # assert_eq!(output, "");
+/// # assert_eq!(remaining, "abc");
+/// # Ok::<(), ParseError>(())
 /// ```
 ///
 /// Min and Max:
 ///
 /// ```
-/// use parsely::{digit, Parser};
+/// use parsely::{digit, Parse, ParseError};
 ///
 /// let mut three_or_four_digits = digit().many(3..=4);
 ///
-/// let result = three_or_four_digits.parse("123");
-/// assert_eq!(result.output(), Some("123"));
-/// assert_eq!(result.remaining(), "");
+/// let (output, remaining) = three_or_four_digits.parse("123")?;
+/// assert_eq!(output, "123");
+/// assert_eq!(remaining, "");
 ///
 /// let result = three_or_four_digits.parse("12");
-/// assert_eq!(result.output(), None);
-/// assert_eq!(result.remaining(), "12");
+/// assert_eq!(result, Err(ParseError::NoMatch));
 ///
-/// let result = three_or_four_digits.parse("12345");
-/// assert_eq!(result.output(), Some("1234"));
-/// assert_eq!(result.remaining(), "5");
-///
+/// let (output, remaining) = three_or_four_digits.parse("12345")?;
+/// assert_eq!(output, "1234");
+/// assert_eq!(remaining, "5");
+/// # Ok::<(), ParseError>(())
 /// ```
-pub fn many<P: Parser>(range: impl RangeBounds<usize>, parser: P) -> Many<P> {
+pub fn many<P: Parse>(range: impl RangeBounds<usize>, parser: P) -> Many<P> {
     let min = match range.start_bound() {
         Bound::Included(&n) => n,
         Bound::Unbounded => 0,
@@ -138,7 +136,7 @@ pub fn many<P: Parser>(range: impl RangeBounds<usize>, parser: P) -> Many<P> {
     Many { parser, min, max }
 }
 
-impl<P: Parser> fmt::Display for Many<P>
+impl<P: Parse> fmt::Display for Many<P>
 where
     P: fmt::Display,
 {

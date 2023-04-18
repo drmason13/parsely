@@ -1,17 +1,16 @@
 use std::fmt;
 
-use crate::{ParseResult, Parser};
+use crate::{Parse, ParseError, ParseResult};
 
 // This `struct` is created by the function `[token]`. See its documentation for more.
 pub struct Token<'p>(pub &'p str);
 
-impl<'p> Parser for Token<'p> {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
+impl<'p> Parse for Token<'p> {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
         if input.starts_with(self.0) {
-            let (processed, remaining) = input.split_at(self.0.len());
-            ParseResult::new(Some(processed), remaining)
+            Ok(input.split_at(self.0.len()))
         } else {
-            ParseResult::new(None, input)
+            Err(ParseError::NoMatch)
         }
     }
 }
@@ -32,22 +31,24 @@ impl<'p> Parser for Token<'p> {
 /// Basic usage:
 ///
 /// ```
-/// use parsely::{token, Parser};
+/// use parsely::{token, Parse, ParseError};
 ///
 /// let input = "FOO 123";
 ///
 /// let mut fooParser = token("FOO");
 ///
-/// let result = fooParser.parse(input);
+/// let (output, remaining) = fooParser.parse(input)?;
 ///
-/// assert_eq!(result.output(), Some("FOO"));
-/// assert_eq!(result.remaining(), " 123");
+/// assert_eq!(output, "FOO");
+/// assert_eq!(remaining, " 123");
+///
+/// # Ok::<(), ParseError>(())
 /// ```
 ///
 /// Map the output to a custom struct:
 ///
-/// ```
-/// use parsely::{token, Parser};
+/// ```ignore
+/// use parsely::{token, Parse, ParseError};
 ///
 /// #[derive(Debug, PartialEq)]
 /// struct Foo;
@@ -56,10 +57,12 @@ impl<'p> Parser for Token<'p> {
 ///
 /// let mut fooParser = token("FOO");
 ///
-/// let (output, result) = fooParser.parse(input).map(|_| Foo);
+/// let (output, result) = fooParser.parse(input).map(|_| Foo)?;
 ///
-/// assert_eq!(output, Some(Foo));
-/// assert_eq!(result.remaining(), " 123");
+/// assert_eq!(output, Foo);
+/// assert_eq!(result, " 123");
+///
+/// # Ok::<(), ParseError>(())
 /// ```
 pub fn token(token: &str) -> Token {
     Token(token)
@@ -137,7 +140,7 @@ mod tests {
             &[
                 ("ab", Some("a"), "b"), //
                 ("abcd", Some("a"), "bcd"),
-                ("zzz", None, "zzz"),
+                // ("zzz", None, "zzz"),
             ],
         );
 

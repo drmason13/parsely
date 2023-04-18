@@ -1,8 +1,8 @@
 use std::fmt;
 
-use crate::Parser;
+use crate::{Parse, ParseResult};
 
-pub struct Or<L: Parser, R: Parser> {
+pub struct Or<L: Parse, R: Parse> {
     left: L,
     right: R,
 }
@@ -12,23 +12,23 @@ pub struct Or<L: Parser, R: Parser> {
 /// This short-circuits such that the right parser isn't attempted if the left one matches.
 pub fn or<L, R>(left: L, right: R) -> Or<L, R>
 where
-    L: Parser,
-    R: Parser,
+    L: Parse,
+    R: Parse,
 {
     Or { left, right }
 }
 
-impl<L, R> Parser for Or<L, R>
+impl<L, R> Parse for Or<L, R>
 where
-    L: Parser,
-    R: Parser,
+    L: Parse,
+    R: Parse,
 {
-    fn parse<'a>(&mut self, input: &'a str) -> crate::ParseResult<'a> {
-        self.left.parse(input).or(&mut self.right)
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+        self.left.parse(input).or_else(|_| self.right.parse(input))
     }
 }
 
-impl<L: Parser, R: Parser> fmt::Display for Or<L, R>
+impl<L: Parse, R: Parse> fmt::Display for Or<L, R>
 where
     L: fmt::Display,
     R: fmt::Display,

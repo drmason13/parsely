@@ -1,74 +1,35 @@
 use std::fmt;
 
-use crate::{ParseResult, Parser};
+use crate::{Parse, ParseResult};
 
-pub struct Then<L: Parser, R: Parser> {
+pub struct Then<L: Parse, R: Parse> {
     left: L,
     right: R,
 }
 
 pub fn then<L, R>(left: L, right: R) -> Then<L, R>
 where
-    L: Parser,
-    R: Parser,
+    L: Parse,
+    R: Parse,
 {
     Then { left, right }
 }
 
-impl<L, R> Parser for Then<L, R>
+impl<L, R> Parse for Then<L, R>
 where
-    L: Parser,
-    R: Parser,
+    L: Parse,
+    R: Parse,
 {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
-        match self.left.parse(input).then(&mut self.right) {
-            (
-                ParseResult {
-                    output: Some(left),
-                    remaining: _,
-                },
-                Some(ParseResult {
-                    output: Some(right),
-                    remaining: _,
-                }),
-            ) => {
-                // both parsers matched: split input at end of second output
-                let boundary = left.len() + right.len();
-                let (output, remaining) = input.split_at(boundary);
-                ParseResult {
-                    output: Some(output),
-                    remaining,
-                }
-            }
-            (
-                ParseResult {
-                    output: Some(_left),
-                    remaining: _,
-                },
-                Some(ParseResult {
-                    output: None,
-                    remaining: _,
-                }),
-            ) => {
-                // first parser matched, second parser didn't: do not match
-                ParseResult {
-                    output: None,
-                    remaining: input,
-                }
-            }
-            (_left, None) => {
-                // first parser executed and did not match: do not match
-                ParseResult {
-                    output: None,
-                    remaining: input,
-                }
-            }
-            _ => unreachable!("Then must only execute the second parser if the first one matches"),
-        }
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+        let (left, remaining) = self.left.parse(input)?;
+        let (right, _) = self.right.parse(remaining)?;
+
+        let boundary = left.len() + right.len();
+        Ok(input.split_at(boundary))
     }
 }
 
-impl<L: Parser, R: Parser> fmt::Display for Then<L, R>
+impl<L: Parse, R: Parse> fmt::Display for Then<L, R>
 where
     L: fmt::Display,
     R: fmt::Display,

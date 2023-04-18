@@ -1,23 +1,22 @@
 use std::fmt;
 
 use crate::parsers::char;
-use crate::{ParseResult, Parser};
+use crate::{Parse, ParseError, ParseResult};
 
 pub struct Digit {
     radix: u32,
 }
 
-impl Parser for Digit {
-    fn parse<'a>(&mut self, input: &'a str) -> ParseResult<'a> {
+impl Parse for Digit {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
         if let Some(c) = input.chars().next() {
             if c.is_digit(self.radix) {
-                let (output, remaining) = input.split_at(c.len_utf8());
-                ParseResult::new(Some(output), remaining)
+                Ok(input.split_at(c.len_utf8()))
             } else {
-                ParseResult::new(None, input)
+                Err(ParseError::NoMatch)
             }
         } else {
-            ParseResult::new(None, input)
+            Err(ParseError::NoMatch)
         }
     }
 }
@@ -58,7 +57,7 @@ impl Digit {
 /// # Note
 ///
 /// This parser will transform its output into
-pub fn int() -> impl Parser + fmt::Display {
+pub fn int() -> impl Parse + fmt::Display {
     char('-').many(0..=1).then(digit().many(1..))
 }
 
@@ -74,7 +73,7 @@ pub fn int() -> impl Parser + fmt::Display {
 ///
 /// # Note
 ///
-/// This parser will not transform its output into another type, but this can be done using [`ParseResult::map`].
+/// This parser will not transform its output into another type, but this can be done using [`Parse::map`].
 pub fn hex() -> Digit {
     Digit { radix: 16 }
 }
@@ -82,13 +81,13 @@ pub fn hex() -> Digit {
 // To return impl Parser or the specific parser?
 // `impl Parser` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
 // the specific parser is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
-pub fn float() -> impl Parser + fmt::Display {
+pub fn float() -> impl Parse + fmt::Display {
     int() //
         .then(char('.'))
         .then(digit().many(0..))
 }
 
-pub fn number() -> impl Parser + fmt::Display {
+pub fn number() -> impl Parse + fmt::Display {
     float().or(int())
 }
 

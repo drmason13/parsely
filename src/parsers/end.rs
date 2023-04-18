@@ -1,13 +1,13 @@
-use crate::{ParseResult, Parser};
+use crate::{Parse, ParseError, ParseResult};
 
 pub struct End;
 
-impl Parser for End {
-    fn parse<'a>(&mut self, input: &'a str) -> crate::ParseResult<'a> {
+impl Parse for End {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
         if input.is_empty() {
-            ParseResult::new(Some(""), "")
+            Ok(("", ""))
         } else {
-            ParseResult::new(None, input)
+            Err(ParseError::NoMatch)
         }
     }
 }

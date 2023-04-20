@@ -12,6 +12,22 @@ impl Parse for End {
     }
 }
 
+/// ```
+/// use parsely::{char, end, Parse, ParseError};
+///
+/// let mut parser = char('a').count(3).then(end());
+///
+/// let (output, remaining) = parser.parse("aaa")?;
+///
+/// assert_eq!(output, "aaa");
+/// assert_eq!(remaining, "");
+///
+///
+/// let result = parser.parse("aaaaaaaaa");
+/// assert_eq!(result, Err(ParseError::NoMatch));
+///
+/// # Ok::<(), ParseError>(())
+/// ```
 pub fn end() -> End {
     End
 }

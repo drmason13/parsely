@@ -136,6 +136,14 @@ pub fn many<P: Parse>(range: impl RangeBounds<usize>, parser: P) -> Many<P> {
     Many { parser, min, max }
 }
 
+pub fn count<P: Parse>(count: usize, parser: P) -> Many<P> {
+    Many {
+        parser,
+        min: count,
+        max: count,
+    }
+}
+
 impl<P: Parse> fmt::Display for Many<P>
 where
     P: fmt::Display,

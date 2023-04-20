@@ -56,6 +56,16 @@ pub trait Parse: Sized {
         many(range, self)
     }
 
+    /// Creates a new parser that will attempt to parse with this parser exactly n times.
+    ///
+    /// See [`combinators::Many`] for more details.
+    fn count(self, n: usize) -> Many<Self>
+    where
+        Self: Sized,
+    {
+        count(n, self)
+    }
+
     /// Creates a new parser that will attempt to parse with this parser, and if it fails, attempt to parse with the given parser.
     ///
     /// This can be used to build a chain of possible ways to parse the same input.

@@ -1,11 +1,12 @@
 use std::fmt;
 
-use crate::{Parse, ParseError, ParseResult};
+use crate::{Lex, LexResult};
 
+#[derive(Clone)]
 pub struct Char(pub char);
 
-impl Parse for Char {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+impl Lex for Char {
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         let mut chars = input.char_indices();
 
         match chars.next() {
@@ -17,7 +18,7 @@ impl Parse for Char {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(ParseError::NoMatch),
+            _ => Err(crate::Error::NoMatch),
         }
     }
 }
@@ -26,10 +27,11 @@ pub fn char(char: char) -> Char {
     Char(char)
 }
 
+#[derive(Clone)]
 pub struct WhiteSpace;
 
-impl Parse for WhiteSpace {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+impl Lex for WhiteSpace {
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         let mut chars = input.char_indices();
 
         match chars.next() {
@@ -41,7 +43,7 @@ impl Parse for WhiteSpace {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(ParseError::NoMatch),
+            _ => Err(crate::Error::NoMatch),
         }
     }
 }
@@ -50,15 +52,15 @@ pub fn ws() -> WhiteSpace {
     WhiteSpace
 }
 
-impl fmt::Display for Char {
+impl fmt::Debug for Char {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "char('{}')", self.0)
+        write!(f, "Char('{}')", self.0)
     }
 }
 
-impl fmt::Display for WhiteSpace {
+impl fmt::Debug for WhiteSpace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ws")
+        write!(f, "WhiteSpace")
     }
 }
 
@@ -69,7 +71,7 @@ mod tests {
 
     #[test]
     fn parsing() {
-        test_parser_batch(
+        test_lexer_batch(
             "simple input",
             char('a'),
             &[
@@ -79,7 +81,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "short input",
             char('a'),
             &[
@@ -89,8 +91,8 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
-            "unicode in parser",
+        test_lexer_batch(
+            "unicode in lexer",
             char('â'),
             &[
                 ("âb", Some("â"), "b"), //
@@ -99,7 +101,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "unicode in input",
             char('a'),
             &[
@@ -109,8 +111,8 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
-            "unicode in parser with short input",
+        test_lexer_batch(
+            "unicode in lexer with short input",
             char('â'),
             &[
                 ("â", Some("â"), ""), //
@@ -119,7 +121,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "whitespace",
             ws(),
             &[

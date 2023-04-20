@@ -1,22 +1,33 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 
 //!
-//! Parsely is a parser combinator library for Rust with the following aims
+//! Parsely is a lexer-parser combinator library for Rust with the following aims
 //!
 //! * Simple to use
-//! * Well documented built-in parsers
+//! * Well documented built-in lexers
 //!
 //! While it doesn't prioritise speed, it will often be "fast enough" for a projects that do a little bit of parsing here and there.
 //!
 //! If parsing speed is important to your application's performance (for example a compiler) then this library isn't meant for you.
 //!
-//! Take a look at the [`Parse`] trait and the built in [`parsers`] and [`combinators`].
+//! Take a look at the [`Lex`] and [`Parse`] traits and the module level documentation: [`lexer`], [`parser`] and [`combinator`].
+
+pub mod error;
+pub use error::Error;
+
+mod lex;
+pub mod lexer;
+
+pub use lex::{Lex, LexResult};
+pub use lexer::*;
 
 mod parse;
 pub mod parser;
 
-pub use parse::{Parse, ParseError, ParseResult};
+pub use parse::{Parse, ParseResult};
 pub use parser::*;
+
+pub mod combinator;
 
 #[doc(hidden)]
 #[cfg(test)]

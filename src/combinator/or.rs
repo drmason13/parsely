@@ -1,8 +1,8 @@
 use std::fmt;
 
-use crate::{Parse, ParseResult};
+use crate::{Lex, LexResult, Parse, ParseResult};
 
-pub struct Or<L: Parse, R: Parse> {
+pub struct Or<L, R> {
     left: L,
     right: R,
 }
@@ -10,43 +10,51 @@ pub struct Or<L: Parse, R: Parse> {
 /// Creates a parser that will attempt to parse with the left parser, and if it fails try to parse with the right parser.
 ///
 /// This short-circuits such that the right parser isn't attempted if the left one matches.
-pub fn or<L, R>(left: L, right: R) -> Or<L, R>
-where
-    L: Parse,
-    R: Parse,
-{
+pub fn or<L, R>(left: L, right: R) -> Or<L, R> {
     Or { left, right }
 }
 
-impl<L, R> Parse for Or<L, R>
+impl<L, R, O> Parse for Or<L, R>
 where
-    L: Parse,
-    R: Parse,
+    L: Parse<Output = O>,
+    R: Parse<Output = O>,
 {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+    type Output = O;
+
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, O> {
         self.left.parse(input).or_else(|_| self.right.parse(input))
     }
 }
 
-impl<L: Parse, R: Parse> fmt::Display for Or<L, R>
+impl<L, R> Lex for Or<L, R>
 where
-    L: fmt::Display,
-    R: fmt::Display,
+    L: Lex,
+    R: Lex,
+{
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+        self.left.lex(input).or_else(|_| self.right.lex(input))
+    }
+}
+
+impl<L, R> fmt::Debug for Or<L, R>
+where
+    L: fmt::Debug,
+    R: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({} or {})", self.left, self.right)
+        write!(f, "Or({:?}, {:?})", self.left, self.right)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::{char, token};
+    use crate::lexer::{char, token};
     use crate::test_utils::*;
 
     #[test]
     fn parsing() {
-        test_parser_batch(
+        test_lexer_batch(
             "token or char",
             or(token("foo"), char('X')),
             &[
@@ -61,7 +69,7 @@ mod tests {
 
     #[test]
     fn nested() {
-        test_parser_batch(
+        test_lexer_batch(
             "(foo then bar) or (baz then quux)",
             or(
                 token("foo").then(token("bar")), //
@@ -74,7 +82,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "(foo or (bar or baz))",
             or(
                 token("foo"), //
@@ -88,7 +96,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "((foo or bar) or baz)",
             or(
                 or(token("foo"), token("bar")), //

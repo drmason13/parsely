@@ -1,52 +1,10 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
-use crate::parser::char;
-use crate::{Parse, ParseError, ParseResult};
-
-pub struct Digit {
-    radix: u32,
-}
-
-impl Parse for Digit {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
-        if let Some(c) = input.chars().next() {
-            if c.is_digit(self.radix) {
-                Ok(input.split_at(c.len_utf8()))
-            } else {
-                Err(ParseError::NoMatch)
-            }
-        } else {
-            Err(ParseError::NoMatch)
-        }
-    }
-}
-
-pub fn digit() -> Digit {
-    Digit { radix: 10 }
-}
-
-impl Digit {
-    /// Create a new Digit parser that matches digits with the base n.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use parsely::digit;
-    ///
-    /// let base_10 = digit();
-    ///
-    /// let base_32 = digit().base(32);
-    /// ```
-    pub fn base(&self, n: u32) -> Digit {
-        Digit { radix: n }
-    }
-}
+use crate::{char, digit, Parse};
 
 /// A parser that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
 ///
-/// To parse unsigned integers that forbid the leading '-' consider using:
+//TODO: To parse unsigned integers that forbid the leading '-' consider using:
 //TODO: * [`uint()`] which will parse only base 10 digits
 //TODO: * [`digit(10)`] which is the implementation of [`uint()`]
 ///
@@ -54,44 +12,37 @@ impl Digit {
 /// * [`float()`] which will parse only decimals
 /// * [`number()`] which will parse integers or decimals
 ///
-pub fn int() -> impl Parse + fmt::Display {
-    char('-').many(0..=1).then(digit().many(1..))
-}
-
-/// A parser that parses an hexadecimal character, i.e. one or more base 16 digits.
-///
-/// No leading `0x` or other hex notation in the input is accepted.
-///
-/// To parse decimals consider using:
-/// * [`float()`] which will parse only decimals
-/// * [`number()`] which will parse integers or decimals
-///
-/// # Examples
-///
-/// # Note
-///
-//TODO: This parser will not transform its output into another type, but this can be done using [`Parse::map`].
-pub fn hex() -> Digit {
-    Digit { radix: 16 }
+pub fn int<T>() -> impl Parse<Output = T> + fmt::Display {
+    char('-')
+        .many(0..=1)
+        .then(digit().many(1..))
+        .map(|n| n.parse())
 }
 
 // To return impl Parser or the specific parser?
 // `impl Parser` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
 // the specific parser is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
-pub fn float() -> impl Parse + fmt::Display {
-    int() //
+pub fn float<O: FromStr + PartialEq + fmt::Debug>() -> impl Parse<Output = O> {
+    parse_float::<O>
+}
+
+// a function version that *is* a parser, doesn't return one
+pub fn parse_float<O: FromStr>(input: &str) -> Result<(O, &str), crate::Error> {
+    let (output, remaining) = char('-')
+        .many(0..=1) //
+        .then(digit().many(1..))
         .then(char('.'))
         .then(digit().many(0..))
+        .lex(input);
+
+    let float = output
+        .parse::<O>()
+        .map_err(|_| crate::Error::FailedConversion)?;
+    Ok((float, remaining))
 }
 
-pub fn number() -> impl Parse + fmt::Display {
+pub fn number() -> impl Parse {
     float().or(int())
-}
-
-impl fmt::Display for Digit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "digit({})", self.radix)
-    }
 }
 
 #[cfg(test)]

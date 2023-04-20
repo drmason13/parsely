@@ -9,6 +9,8 @@
 //! While it doesn't prioritise speed, it will often be "fast enough" for a projects that do a little bit of parsing here and there.
 //!
 //! If parsing speed is important to your application's performance (for example a compiler) then this library isn't meant for you.
+//!
+//! Take a look at the [`Parse`] trait and the built in [`parsers`] and [`combinators`].
 
 pub mod combinators;
 pub mod parsers;
@@ -32,18 +34,21 @@ pub(crate) mod test_utils;
 
 /// This trait is implemented by all Parsely parsers.
 ///
-/// The [`Parser::parse`] method returns a tuple `(matched, remaining)` of `&str`.
-/// First the part of the input successfully matched and then the remaining part of the input that was not matched.
-/// The order reads left to right as the parser reads the input, and matches the return order of [`std::str::split_at`].
+/// Its principle method is [`parse`](Parse::parse) which takes an input `&str` and returns an output, along with any remaining input.
 ///
-/// # Map parser output to a new type
+/// ### Map parser output to a new type
 ///
 /// The output of most parsers will be `&str`, the same type as the input.
 ///
-/// To map the output to a different type you can use the [`Parse::map`] or [`Parse::try_map`] methods which accept a closure to do the conversion.
+//TODO: To map the output to a different type you can use the [`Parse::map`] or [`Parse::try_map`] methods which accept a closure to do the conversion.
 ///
-/// Some built in parsers accept a generic argument of a type to map the output to for you. For example [`parsers::int`] and [`parsers::number`].
+//TODO: Some built in parsers accept a generic argument of a type to map the output to for you. For example [`parsers::int`] and [`parsers::number`].
 pub trait Parse: Sized {
+    /// The  method returns a tuple `(matched, remaining)` of `&str`.
+    ///
+    /// First the part of the input successfully matched and then the remaining part of the input that was not matched.
+    ///
+    /// The order reads left to right as the parser reads the input, and matches the return order of [`str::split_at`].
     fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i>;
 
     /// Creates a new parser that will attempt to parse with this parser multiple times.
@@ -142,5 +147,56 @@ pub trait Parse: Sized {
         Self: Sized,
     {
         then(self, parser)
+    }
+}
+
+/// Functions that take &str and return `Result<(&str, &str), ParseError>` are Parsers.
+///
+/// The matched part of the input str is returned on the left hand side.
+///
+/// The remaining part of the input str is returned on the right hand side.
+///
+/// This is the same order that [`str::split_at()`] returns.
+///
+/// ```
+/// use parsely::{digit, Parse, ParseError};
+///
+/// fn my_parser(input: &str) -> Result<(&str, &str), ParseError> {
+///     let boundary = input.find("abc").ok_or(ParseError::NoMatch)?;
+///     let (output, remaining) = input.split_at(boundary + 3);
+///
+///     Ok((output, remaining))
+/// }
+///
+/// // this parser function matches up to and including the token "abc"
+/// let (output, remaining) = my_parser("...abc")?;
+/// assert_eq!(output, "...abc");
+///
+/// // because it implements Parse, we can use it to build a more complex parser chain
+/// let (output, remaining) = my_parser.then(digit().many(1..=3)).count(3).parse("...abc123.abc123..abc123...")?;
+/// assert_eq!(output, "...abc123.abc123..abc123");
+/// assert_eq!(remaining, "...");
+///
+/// # Ok::<(), ParseError>(())
+/// ```
+///
+/// There is a type alias available to make the function signature *slightly* shorter
+/// but it does need lifetime specifiers, we use `i` for input, the lifetime of the input str.
+/// ```
+/// use parsely::{digit, Parse, ParseError, ParseResult};
+///
+/// fn my_parser<'i>(input: &'i str) -> ParseResult<'i> {
+///    // ...
+///    # let boundary = input.find("abc").ok_or(ParseError::NoMatch)?;
+///    # let (output, remaining) = input.split_at(boundary + 3);
+///    # Ok((output, remaining))
+/// }
+/// ```
+impl<F> Parse for F
+where
+    F: Fn(&str) -> Result<(&str, &str), ParseError>,
+{
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+        self(input)
     }
 }

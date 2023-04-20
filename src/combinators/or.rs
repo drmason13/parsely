@@ -7,7 +7,7 @@ pub struct Or<L: Parse, R: Parse> {
     right: R,
 }
 
-/// Attempt to parse with the left parser, and if it fails try to parse with the right parser.
+/// Creates a parser that will attempt to parse with the left parser, and if it fails try to parse with the right parser.
 ///
 /// This short-circuits such that the right parser isn't attempted if the left one matches.
 pub fn or<L, R>(left: L, right: R) -> Or<L, R>

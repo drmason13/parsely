@@ -21,10 +21,10 @@ impl<'p> Parse for Token<'p> {
 ///
 /// Create this parser by providing the token to match.
 ///
-/// When calling the [`Parser::parse`] method, this parser will return the matched token and the remaining input in a [`ParseResult`] struct.
+/// When calling the [`Parse::parse`] method, this parser will return a tuple `(matched, remaining)` of the matched token and the remaining input.
 ///
-/// You can map this parser's output (which will be the matched token if successful) to another type using [`ParseResult::map`],
-/// and you can chain other parsers to parse the remaining input with [`ParseResult::then`].
+//TODO: You can map this parser's output (which will be the matched token if successful) to another type using [`ParseResult::map`],
+//TODO: and you can chain other parsers to parse the remaining input with [`ParseResult::then`].
 ///
 /// # Examples
 ///

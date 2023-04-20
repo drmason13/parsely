@@ -47,16 +47,13 @@ impl Digit {
 /// A parser that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
 ///
 /// To parse unsigned integers that forbid the leading '-' consider using:
-/// * [`uint()`] which will parse only base 10 digits
-/// * [`digit(10)`] which is the implementation of [`uint()`]
+//TODO: * [`uint()`] which will parse only base 10 digits
+//TODO: * [`digit(10)`] which is the implementation of [`uint()`]
 ///
 /// To parse decimals consider using:
 /// * [`float()`] which will parse only decimals
 /// * [`number()`] which will parse integers or decimals
 ///
-/// # Note
-///
-/// This parser will transform its output into
 pub fn int() -> impl Parse + fmt::Display {
     char('-').many(0..=1).then(digit().many(1..))
 }
@@ -73,7 +70,7 @@ pub fn int() -> impl Parse + fmt::Display {
 ///
 /// # Note
 ///
-/// This parser will not transform its output into another type, but this can be done using [`Parse::map`].
+//TODO: This parser will not transform its output into another type, but this can be done using [`Parse::map`].
 pub fn hex() -> Digit {
     Digit { radix: 16 }
 }

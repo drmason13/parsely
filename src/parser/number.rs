@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::parsers::char;
+use crate::parser::char;
 use crate::{Parse, ParseError, ParseResult};
 
 pub struct Digit {

@@ -60,7 +60,8 @@ impl<P: Parse> Parse for Many<P> {
 /// Basic usage:
 ///
 /// ```
-/// use parsely::{digit, many, Parse, ParseError};
+/// use parsely::{digit, Parse, ParseError};
+/// use parsely::parser::combinator::many;
 ///
 /// // these are all equivalent
 /// let mut zero_or_more_digits = many(.., digit());

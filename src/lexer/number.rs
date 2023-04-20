@@ -1,22 +1,22 @@
 use std::fmt;
 
-use crate::parser::char;
-use crate::{Parse, ParseError, ParseResult};
+use crate::lexer::char;
+use crate::{Lex, LexError, LexResult};
 
 pub struct Digit {
     radix: u32,
 }
 
-impl Parse for Digit {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+impl Lex for Digit {
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         if let Some(c) = input.chars().next() {
             if c.is_digit(self.radix) {
                 Ok(input.split_at(c.len_utf8()))
             } else {
-                Err(ParseError::NoMatch)
+                Err(LexError::NoMatch)
             }
         } else {
-            Err(ParseError::NoMatch)
+            Err(LexError::NoMatch)
         }
     }
 }
@@ -26,7 +26,7 @@ pub fn digit() -> Digit {
 }
 
 impl Digit {
-    /// Create a new Digit parser that matches digits with the base n.
+    /// Create a new Digit lexer that matches digits with the base n.
     ///
     /// # Examples
     ///
@@ -44,47 +44,47 @@ impl Digit {
     }
 }
 
-/// A parser that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
+/// A lexer that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
 ///
-/// To parse unsigned integers that forbid the leading '-' consider using:
-//TODO: * [`uint()`] which will parse only base 10 digits
+/// To lex unsigned integers that forbid the leading '-' consider using:
+//TODO: * [`uint()`] which will lex only base 10 digits
 //TODO: * [`digit(10)`] which is the implementation of [`uint()`]
 ///
-/// To parse decimals consider using:
-/// * [`float()`] which will parse only decimals
-/// * [`number()`] which will parse integers or decimals
+/// To lex decimals consider using:
+/// * [`float()`] which will lex only decimals
+/// * [`number()`] which will lex integers or decimals
 ///
-pub fn int() -> impl Parse + fmt::Display {
+pub fn int() -> impl Lex + fmt::Display {
     char('-').many(0..=1).then(digit().many(1..))
 }
 
-/// A parser that parses an hexadecimal character, i.e. one or more base 16 digits.
+/// A lexer that parses an hexadecimal character, i.e. one or more base 16 digits.
 ///
 /// No leading `0x` or other hex notation in the input is accepted.
 ///
-/// To parse decimals consider using:
-/// * [`float()`] which will parse only decimals
-/// * [`number()`] which will parse integers or decimals
+/// To lex decimals consider using:
+/// * [`float()`] which will lex only decimals
+/// * [`number()`] which will lex integers or decimals
 ///
 /// # Examples
 ///
 /// # Note
 ///
-//TODO: This parser will not transform its output into another type, but this can be done using [`Parse::map`].
+//TODO: This lexer will not transform its output into another type, but this can be done using [`Lex::map`].
 pub fn hex() -> Digit {
     Digit { radix: 16 }
 }
 
-// To return impl Parser or the specific parser?
-// `impl Parser` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
-// the specific parser is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
-pub fn float() -> impl Parse + fmt::Display {
+// To return impl Lexr or the specific lexer?
+// `impl Lexr` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
+// the specific lexer is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
+pub fn float() -> impl Lex + fmt::Display {
     int() //
         .then(char('.'))
         .then(digit().many(0..))
 }
 
-pub fn number() -> impl Parse + fmt::Display {
+pub fn number() -> impl Lex + fmt::Display {
     float().or(int())
 }
 
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn test_digit() {
-        test_parser_batch(
+        test_lexer_batch(
             "digit works",
             digit(),
             &[
@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn parsing() {
-        test_parser_batch(
+        test_lexer_batch(
             "int matches base 10 digits",
             int(),
             &[
@@ -133,7 +133,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "float matches only decimals",
             float(),
             &[
@@ -146,7 +146,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "number matches base 10 digits or decimals",
             number(),
             &[

@@ -1,68 +1,68 @@
 use std::fmt;
 
-use crate::{Parse, ParseError, ParseResult};
+use crate::{Lex, LexError, LexResult};
 
 // This `struct` is created by the function `[token]`. See its documentation for more.
 pub struct Token<'p>(pub &'p str);
 
-impl<'p> Parse for Token<'p> {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+impl<'p> Lex for Token<'p> {
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         if input.starts_with(self.0) {
             Ok(input.split_at(self.0.len()))
         } else {
-            Err(ParseError::NoMatch)
+            Err(LexError::NoMatch)
         }
     }
 }
 
-/// A parser that matches a specific string slice.
+/// A lexer that matches a specific string slice.
 ///
-/// This parser is useful for keywords or other specific sequences of characters in your input that should be matched.
+/// This lexer is useful for keywords or other specific sequences of characters in your input that should be matched.
 ///
-/// Create this parser by providing the token to match.
+/// Create this lexer by providing the token to match.
 ///
-/// When calling the [`Parse::parse`] method, this parser will return a tuple `(matched, remaining)` of the matched token and the remaining input.
+/// When calling the [`Lex::lex`] method, this lexer will return a tuple `(matched, remaining)` of the matched token and the remaining input.
 ///
-//TODO: You can map this parser's output (which will be the matched token if successful) to another type using [`ParseResult::map`],
-//TODO: and you can chain other parsers to parse the remaining input with [`ParseResult::then`].
+//TODO: You can map this lexer's output (which will be the matched token if successful) to another type using [`LexResult::map`],
+//TODO: and you can chain other lexers to lex the remaining input with [`LexResult::then`].
 ///
 /// # Examples
 ///
 /// Basic usage:
 ///
 /// ```
-/// use parsely::{token, Parse, ParseError};
+/// use parsely::{token, Lex, LexError};
 ///
 /// let input = "FOO 123";
 ///
-/// let mut fooParser = token("FOO");
+/// let mut fooLexr = token("FOO");
 ///
-/// let (output, remaining) = fooParser.parse(input)?;
+/// let (output, remaining) = fooLexr.lex(input)?;
 ///
 /// assert_eq!(output, "FOO");
 /// assert_eq!(remaining, " 123");
 ///
-/// # Ok::<(), ParseError>(())
+/// # Ok::<(), LexError>(())
 /// ```
 ///
 /// Map the output to a custom struct:
 ///
 /// ```ignore
-/// use parsely::{token, Parse, ParseError};
+/// use parsely::{token, Lex, LexError};
 ///
 /// #[derive(Debug, PartialEq)]
 /// struct Foo;
 ///
 /// let input = "FOO 123";
 ///
-/// let mut fooParser = token("FOO");
+/// let mut fooLexr = token("FOO");
 ///
-/// let (output, result) = fooParser.parse(input).map(|_| Foo)?;
+/// let (output, result) = fooLexer.lex(input).map(|_| Foo)?;
 ///
 /// assert_eq!(output, Foo);
 /// assert_eq!(result, " 123");
 ///
-/// # Ok::<(), ParseError>(())
+/// # Ok::<(), LexError>(())
 /// ```
 pub fn token(token: &str) -> Token {
     Token(token)
@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn parsing() {
-        test_parser_batch(
+        test_lexer_batch(
             "simple input",
             token("foo"),
             &[
@@ -91,7 +91,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "short input",
             token("foo"),
             &[
@@ -101,8 +101,8 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
-            "unicode in parser",
+        test_lexer_batch(
+            "unicode in lexer",
             token("Bâr"),
             &[
                 ("Bârb", Some("Bâr"), "b"), //
@@ -111,7 +111,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "unicode in input",
             token("foo"),
             &[
@@ -121,8 +121,8 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
-            "unicode in parser with short input",
+        test_lexer_batch(
+            "unicode in lexer with short input",
             token("Bâr"),
             &[
                 ("Bâr", Some("Bâr"), ""), //
@@ -133,8 +133,8 @@ mod tests {
     }
 
     #[test]
-    fn token_parser_matches_char_parser() {
-        test_parser_batch(
+    fn token_lexer_matches_char_lexer() {
+        test_lexer_batch(
             "matches char: simple input",
             token("a"),
             &[
@@ -144,7 +144,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "matches char: short input",
             token("a"),
             &[
@@ -154,8 +154,8 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
-            "matches char: unicode in parser",
+        test_lexer_batch(
+            "matches char: unicode in lexer",
             token("â"),
             &[
                 ("âb", Some("â"), "b"), //
@@ -164,7 +164,7 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
+        test_lexer_batch(
             "matches char: unicode in input",
             token("a"),
             &[
@@ -174,8 +174,8 @@ mod tests {
             ],
         );
 
-        test_parser_batch(
-            "matches char: unicode in parser with short input",
+        test_lexer_batch(
+            "matches char: unicode in lexer with short input",
             token("â"),
             &[
                 ("â", Some("â"), ""), //

@@ -1,35 +1,35 @@
 use std::fmt;
 
-use crate::{Parse, ParseResult};
+use crate::{Lex, LexResult};
 
-pub struct Then<L: Parse, R: Parse> {
+pub struct Then<L: Lex, R: Lex> {
     left: L,
     right: R,
 }
 
 pub fn then<L, R>(left: L, right: R) -> Then<L, R>
 where
-    L: Parse,
-    R: Parse,
+    L: Lex,
+    R: Lex,
 {
     Then { left, right }
 }
 
-impl<L, R> Parse for Then<L, R>
+impl<L, R> Lex for Then<L, R>
 where
-    L: Parse,
-    R: Parse,
+    L: Lex,
+    R: Lex,
 {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
-        let (left, remaining) = self.left.parse(input)?;
-        let (right, _) = self.right.parse(remaining)?;
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+        let (left, remaining) = self.left.lex(input)?;
+        let (right, _) = self.right.lex(remaining)?;
 
         let boundary = left.len() + right.len();
         Ok(input.split_at(boundary))
     }
 }
 
-impl<L: Parse, R: Parse> fmt::Display for Then<L, R>
+impl<L: Lex, R: Lex> fmt::Display for Then<L, R>
 where
     L: fmt::Display,
     R: fmt::Display,
@@ -42,12 +42,12 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::{char, token};
+    use crate::lexer::{char, token};
     use crate::test_utils::*;
 
     #[test]
     fn parsing() {
-        test_parser_batch(
+        test_lexer_batch(
             "token then char",
             then(token("foo"), char('X')),
             &[

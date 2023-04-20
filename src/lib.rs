@@ -18,6 +18,12 @@ pub mod lexer;
 pub use lex::{Lex, LexError, LexResult};
 pub use lexer::*;
 
+mod parse;
+pub mod parser;
+
+pub use parse::{Parse, ParseError, ParseResult};
+pub use parser::*;
+
 #[doc(hidden)]
 #[cfg(test)]
 pub(crate) mod test_utils;

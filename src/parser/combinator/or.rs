@@ -1,34 +1,39 @@
-use std::fmt;
+use std::{fmt, marker::PhantomData};
 
 use crate::{Parse, ParseResult};
 
-pub struct Or<L: Parse, R: Parse> {
+pub struct Or<L: Parse, R: Parse, O> {
     left: L,
     right: R,
+    phantom: PhantomData<O>,
 }
 
 /// Creates a parser that will attempt to parse with the left parser, and if it fails try to parse with the right parser.
 ///
 /// This short-circuits such that the right parser isn't attempted if the left one matches.
-pub fn or<L, R>(left: L, right: R) -> Or<L, R>
+pub fn or<L, R, O>(left: L, right: R) -> Or<L, R, O>
 where
     L: Parse,
     R: Parse,
 {
-    Or { left, right }
+    Or {
+        left,
+        right,
+        phantom: PhantomData,
+    }
 }
 
-impl<L, R> Parse for Or<L, R>
+impl<L, R, O> Parse for Or<L, R, O>
 where
     L: Parse,
     R: Parse,
 {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, O> {
         self.left.parse(input).or_else(|_| self.right.parse(input))
     }
 }
 
-impl<L: Parse, R: Parse> fmt::Display for Or<L, R>
+impl<L: Parse, R: Parse, O> fmt::Display for Or<L, R, O>
 where
     L: fmt::Display,
     R: fmt::Display,
@@ -41,7 +46,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::{char, token};
+    use crate::lexer::{char, token};
     use crate::test_utils::*;
 
     #[test]

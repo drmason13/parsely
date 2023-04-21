@@ -33,12 +33,6 @@ pub fn number() -> impl Parse + fmt::Display {
     float().or(int())
 }
 
-impl fmt::Display for Digit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "digit({})", self.radix)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -29,7 +29,7 @@ pub trait Parse: Sized {
     /// Creates a new parser that will attempt to parse with this parser multiple times.
     ///
     /// See [`combinators::Many`] for more details.
-    fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
+    fn many(self, range: impl RangeBounds<usize>) -> Many<Self, Self::Output>
     where
         Self: Sized,
     {
@@ -39,7 +39,7 @@ pub trait Parse: Sized {
     /// Creates a new parser that will attempt to parse with this parser exactly n times.
     ///
     /// See [`combinators::Many`] for more details.
-    fn count(self, n: usize) -> Many<Self>
+    fn count(self, n: usize) -> Many<Self, Self::Output>
     where
         Self: Sized,
     {
@@ -82,7 +82,7 @@ pub trait Parse: Sized {
     /// ```
     ///
     /// Note that there is a whitespace parser available, see [`parsers::ws`]
-    fn or<L: Parse>(self, parser: L) -> Or<Self, L>
+    fn or<P: Parse, O>(self, parser: P) -> Or<Self, P, O>
     where
         Self: Sized,
     {
@@ -117,7 +117,7 @@ pub trait Parse: Sized {
     ///
     /// # Ok::<(), ParseError>(())
     /// ```
-    fn then<L: Parse>(self, parser: L) -> Then<Self, L>
+    fn then<P: Parse, O>(self, parser: P) -> Then<Self, P, O>
     where
         Self: Sized,
     {
@@ -160,7 +160,7 @@ pub trait Parse: Sized {
 /// ```
 /// use parsely::{digit, Parse, ParseError, ParseResult};
 ///
-/// fn my_parser<'i>(input: &'i str) -> ParseResult<'i> {
+/// fn my_parser<'i>(input: &'i str) -> ParseResult<'i, O> {
 ///    // ...
 ///    # let boundary = input.find("abc").ok_or(ParseError::NoMatch)?;
 ///    # let (output, remaining) = input.split_at(boundary + 3);

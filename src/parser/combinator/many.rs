@@ -6,9 +6,9 @@ use std::{
 use crate::{Parse, ParseError, ParseResult};
 
 /// This parser is returned by [`many()`]. See it's documentation for more details.
-pub struct Many<L: Parse> {
+pub struct Many<P: Parse, O> {
     /// The parser to be repeated.
-    parser: L,
+    parser: P,
 
     /// The minimum number of times the parser must match for the parse to succeed.
     ///
@@ -21,10 +21,15 @@ pub struct Many<L: Parse> {
     ///
     /// To enforce that input is fully consumed after parsing, see [`crate::parsers::end()`]
     max: usize,
+
+    /// output from each parser is accumulated in this vec
+    output: Vec<O>,
 }
 
-impl<L: Parse> Parse for Many<L> {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+impl<P: Parse, O> Parse for Many<P, O> {
+    type Output = O;
+
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, O> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;
@@ -119,7 +124,7 @@ impl<L: Parse> Parse for Many<L> {
 /// assert_eq!(remaining, "5");
 /// # Ok::<(), ParseError>(())
 /// ```
-pub fn many<L: Parse>(range: impl RangeBounds<usize>, parser: L) -> Many<L> {
+pub fn many<P: Parse, O>(range: impl RangeBounds<usize>, parser: P) -> Many<P, O> {
     let min = match range.start_bound() {
         Bound::Included(&n) => n,
         Bound::Unbounded => 0,
@@ -137,7 +142,7 @@ pub fn many<L: Parse>(range: impl RangeBounds<usize>, parser: L) -> Many<L> {
     Many { parser, min, max }
 }
 
-pub fn count<L: Parse>(count: usize, parser: L) -> Many<L> {
+pub fn count<P: Parse, O>(count: usize, parser: P) -> Many<P, O> {
     Many {
         parser,
         min: count,
@@ -145,9 +150,9 @@ pub fn count<L: Parse>(count: usize, parser: L) -> Many<L> {
     }
 }
 
-impl<L: Parse> fmt::Display for Many<L>
+impl<P: Parse, O> fmt::Display for Many<P, O>
 where
-    L: fmt::Display,
+    P: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.max == usize::MAX {

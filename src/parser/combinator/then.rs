@@ -1,26 +1,31 @@
-use std::fmt;
+use std::{fmt, marker::PhantomData};
 
 use crate::{Parse, ParseResult};
 
-pub struct Then<L: Parse, R: Parse> {
+pub struct Then<L: Parse, R: Parse, O> {
     left: L,
     right: R,
+    phantom: PhantomData<O>,
 }
 
-pub fn then<L, R>(left: L, right: R) -> Then<L, R>
+pub fn then<L, R, O>(left: L, right: R) -> Then<L, R, O>
 where
     L: Parse,
     R: Parse,
 {
-    Then { left, right }
+    Then {
+        left,
+        right,
+        phantom: PhantomData,
+    }
 }
 
-impl<L, R> Parse for Then<L, R>
+impl<L, R, O> Parse for Then<L, R, O>
 where
     L: Parse,
     R: Parse,
 {
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i> {
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, O> {
         let (left, remaining) = self.left.parse(input)?;
         let (right, _) = self.right.parse(remaining)?;
 
@@ -29,7 +34,7 @@ where
     }
 }
 
-impl<L: Parse, R: Parse> fmt::Display for Then<L, R>
+impl<L: Parse, R: Parse, O> fmt::Display for Then<L, R, O>
 where
     L: fmt::Display,
     R: fmt::Display,
@@ -42,7 +47,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::{char, token};
+    use crate::lexer::{char, token};
     use crate::test_utils::*;
 
     #[test]

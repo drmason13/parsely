@@ -68,9 +68,9 @@ pub fn token(token: &str) -> Token {
     Token(token)
 }
 
-impl fmt::Display for Token<'_> {
+impl fmt::Debug for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "token(\"{}\")", self.0)
+        write!(f, "Token(\"{}\")", self.0)
     }
 }
 

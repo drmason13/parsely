@@ -54,7 +54,7 @@ impl Digit {
 /// * [`float()`] which will lex only decimals
 /// * [`number()`] which will lex integers or decimals
 ///
-pub fn int() -> impl Lex + fmt::Display {
+pub fn int() -> impl Lex + fmt::Debug {
     char('-').many(0..=1).then(digit().many(1..))
 }
 
@@ -78,17 +78,17 @@ pub fn hex() -> Digit {
 // To return impl Lexr or the specific lexer?
 // `impl Lexr` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
 // the specific lexer is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
-pub fn float() -> impl Lex + fmt::Display {
+pub fn float() -> impl Lex + fmt::Debug {
     int() //
         .then(char('.'))
         .then(digit().many(0..))
 }
 
-pub fn number() -> impl Lex + fmt::Display {
+pub fn number() -> impl Lex + fmt::Debug {
     float().or(int())
 }
 
-impl fmt::Display for Digit {
+impl fmt::Debug for Digit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "digit({})", self.radix)
     }
@@ -117,6 +117,35 @@ mod tests {
                 ("", None, ""), //
                 ("123", Some("1"), "23"),
                 ("abc", None, "abc"),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_hex() {
+        test_lexer_batch(
+            "hex works",
+            hex(),
+            &[
+                ("", None, ""), //
+                ("123", Some("1"), "23"),
+                ("abc", Some("a"), "bc"),
+                ("ABC", Some("A"), "BC"),
+                ("GHI", None, "GHI"),
+            ],
+        );
+
+        test_lexer_batch(
+            "hex many works",
+            hex().many(1..),
+            &[
+                ("", None, ""), //
+                ("123", Some("123"), ""),
+                ("abc", Some("abc"), ""),
+                ("ABC", Some("ABC"), ""),
+                ("GHI", None, "GHI"),
+                ("EFG", Some("EF"), "G"),
+                ("C0FFEE", Some("C0FFEE"), ""),
             ],
         );
     }

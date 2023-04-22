@@ -1,25 +1,35 @@
 use std::fmt;
 
-use crate::{Lex, LexResult};
+use crate::{Lex, LexResult, Parse, ParseResult};
 
-pub struct Then<L: Lex, R: Lex> {
+pub struct Then<L, R> {
     left: L,
     right: R,
 }
 
-pub fn then<L, R>(left: L, right: R) -> Then<L, R>
-where
-    L: Lex,
-    R: Lex,
-{
+pub fn then<L, R>(left: L, right: R) -> Then<L, R> {
     Then { left, right }
 }
 
-impl<L, R> Lex for Then<L, R>
+impl<L, R> Parse for Then<L, R>
 where
-    L: Lex,
-    R: Lex,
+    L: Parse,
+    R: Parse,
 {
+    type Output = (<L as Parse>::Output, <R as Parse>::Output);
+
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+        let (left, remaining) = self.left.parse(input)?;
+        let (right, remaining) = self.right.parse(remaining)?;
+
+        let boundary = input.len() - remaining.len();
+        let (_, remaining) = input.split_at(boundary);
+
+        Ok(((left, right), remaining))
+    }
+}
+
+impl<L: Lex, R: Lex> Lex for Then<L, R> {
     fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         let (left, remaining) = self.left.lex(input)?;
         let (right, _) = self.right.lex(remaining)?;
@@ -29,13 +39,13 @@ where
     }
 }
 
-impl<L: Lex, R: Lex> fmt::Display for Then<L, R>
+impl<L, R> fmt::Debug for Then<L, R>
 where
-    L: fmt::Display,
-    R: fmt::Display,
+    L: fmt::Debug,
+    R: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {}", self.left, self.right)
+        write!(f, "Then({:?} -> {:?})", self.left, self.right)
     }
 }
 

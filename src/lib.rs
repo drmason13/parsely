@@ -24,6 +24,8 @@ pub mod parser;
 pub use parse::{Parse, ParseError, ParseResult};
 pub use parser::*;
 
+pub mod combinator;
+
 #[doc(hidden)]
 #[cfg(test)]
 pub(crate) mod test_utils;

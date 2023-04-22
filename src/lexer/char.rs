@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::{Lex, LexError, LexResult};
 
+#[derive(Clone)]
 pub struct Char(pub char);
 
 impl Lex for Char {
@@ -26,6 +27,7 @@ pub fn char(char: char) -> Char {
     Char(char)
 }
 
+#[derive(Clone)]
 pub struct WhiteSpace;
 
 impl Lex for WhiteSpace {
@@ -50,15 +52,15 @@ pub fn ws() -> WhiteSpace {
     WhiteSpace
 }
 
-impl fmt::Display for Char {
+impl fmt::Debug for Char {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "char('{}')", self.0)
+        write!(f, "Char('{}')", self.0)
     }
 }
 
-impl fmt::Display for WhiteSpace {
+impl fmt::Debug for WhiteSpace {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ws")
+        write!(f, "WhiteSpace")
     }
 }
 

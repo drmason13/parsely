@@ -1,11 +1,20 @@
-use std::ops::RangeBounds;
+use std::{fmt, ops::RangeBounds};
 
-use crate::lexer::combinator::{count, many, or, then, Many, Or, Then};
+use crate::combinator::{many, or, then, Many, Map, Or, Then};
 
 #[non_exhaustive]
 #[derive(Debug, PartialEq)]
 pub enum LexError {
     NoMatch,
+}
+
+impl std::error::Error for LexError {}
+impl fmt::Display for LexError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LexError::NoMatch => write!(f, "No Match"),
+        }
+    }
 }
 
 pub type LexResult<'i> = Result<(&'i str, &'i str), LexError>;
@@ -40,7 +49,7 @@ pub trait Lex: Sized {
     where
         Self: Sized,
     {
-        count(n, self)
+        crate::combinator::count(n, self)
     }
 
     /// Creates a new lexer that will attempt to lex with this lexer, and if it fails, attempt to lex with the given lexer.
@@ -120,6 +129,14 @@ pub trait Lex: Sized {
     {
         then(self, lexer)
     }
+
+    fn map<F, O, E>(self, f: F) -> Map<Self, F>
+    where
+        Self: Sized,
+        F: Fn(&str) -> Result<O, E>,
+    {
+        crate::combinator::map(self, f)
+    }
 }
 
 /// Functions that take &str and return `Result<(&str, &str), LexError>` are Lexers.
@@ -166,7 +183,7 @@ pub trait Lex: Sized {
 /// ```
 impl<F> Lex for F
 where
-    F: Fn(&str) -> Result<(&str, &str), LexError>,
+    F: FnMut(&str) -> Result<(&str, &str), LexError>,
 {
     fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         self(input)

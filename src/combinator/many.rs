@@ -3,24 +3,53 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-use crate::{Lex, LexError, LexResult};
+use crate::{Lex, LexError, LexResult, Parse, ParseError, ParseResult};
 
-/// This lexer is returned by [`many()`]. See it's documentation for more details.
-pub struct Many<L: Lex> {
-    /// The lexer to be repeated.
-    lexer: L,
+/// This parser is returned by [`many()`]. See it's documentation for more details.
+pub struct Many<T> {
+    /// The parser to be repeated.
+    item: T,
 
-    /// The minimum number of times the lexer must match for the lex to succeed.
+    /// The minimum number of times the parser must match for the parse to succeed.
     ///
-    /// If the lexer matches fewer than min times, the overall lex fails, and no input is consumed.
+    /// If the parser matches fewer than min times, the overall parse fails, and no input is consumed.
     min: usize,
 
-    /// The maximum number of times the lexer will attempt to match.
+    /// The maximum number of times the parser will attempt to match.
     ///
-    /// The lexer will never match more than max times, because it doesn't try to.
+    /// The parser will never match more than max times, because it doesn't try to.
     ///
-    /// To enforce that input is fully consumed after parsing, see [`crate::lexers::end()`]
+    /// To enforce that input is fully consumed after parsing, see [`crate::parsers::end()`]
     max: usize,
+}
+
+impl<P: Parse> Parse for Many<P> {
+    type Output = Vec<<P as Parse>::Output>;
+
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+        let mut count = 0;
+        let mut offset = 0;
+        let mut working_input = input;
+
+        let mut outputs = Vec::with_capacity(self.max);
+
+        while count < self.max {
+            if let Ok((output, remaining)) = self.item.parse(working_input) {
+                count += 1;
+                offset = input.len() - remaining.len();
+                outputs.push(output);
+                working_input = remaining;
+            } else {
+                break;
+            }
+        }
+
+        if count < self.min {
+            Err(ParseError::NoMatch)
+        } else {
+            Ok((outputs, &input[offset..]))
+        }
+    }
 }
 
 impl<L: Lex> Lex for Many<L> {
@@ -30,9 +59,9 @@ impl<L: Lex> Lex for Many<L> {
         let mut working_input = input;
 
         while count < self.max {
-            if let Ok((output, remaining)) = self.lexer.lex(working_input) {
+            if let Ok((matched, remaining)) = self.item.lex(working_input) {
                 count += 1;
-                offset += output.len();
+                offset += matched.len();
                 working_input = remaining;
             } else {
                 break;
@@ -42,18 +71,18 @@ impl<L: Lex> Lex for Many<L> {
         if count < self.min {
             Err(LexError::NoMatch)
         } else {
-            Ok((&input[..offset], &input[offset..]))
+            Ok(input.split_at(offset))
         }
     }
 }
 
-/// Creates a lexer that applies a given lexer multiple times.
+/// Creates a parser that applies a given parser multiple times.
 ///
 /// This function takes a Range-like argument as a succint description of start and end bounds.
 ///
-/// The start bound becomes the minimum number of times the lexer must match to succeed.
+/// The start bound becomes the minimum number of times the parser must match to succeed.
 ///
-/// The end bound becomes the maximum number of times the lexer will attempt to lex.
+/// The end bound becomes the maximum number of times the parser will attempt to parse.
 ///
 /// # Examples
 ///
@@ -61,7 +90,7 @@ impl<L: Lex> Lex for Many<L> {
 ///
 /// ```
 /// use parsely::{digit, Lex, LexError};
-/// use parsely::lexer::combinator::many;
+/// use parsely::combinator::many;
 ///
 /// // these are all equivalent
 /// let mut zero_or_more_digits = many(.., digit());
@@ -119,7 +148,7 @@ impl<L: Lex> Lex for Many<L> {
 /// assert_eq!(remaining, "5");
 /// # Ok::<(), LexError>(())
 /// ```
-pub fn many<L: Lex>(range: impl RangeBounds<usize>, lexer: L) -> Many<L> {
+pub fn many<T>(range: impl RangeBounds<usize>, item: T) -> Many<T> {
     let min = match range.start_bound() {
         Bound::Included(&n) => n,
         Bound::Unbounded => 0,
@@ -134,38 +163,100 @@ pub fn many<L: Lex>(range: impl RangeBounds<usize>, lexer: L) -> Many<L> {
         Bound::Unbounded => usize::MAX,
     };
 
-    Many { lexer, min, max }
+    Many { item, min, max }
 }
 
-pub fn count<L: Lex>(count: usize, lexer: L) -> Many<L> {
+pub fn count<T>(count: usize, item: T) -> Many<T> {
     Many {
-        lexer,
+        item,
         min: count,
         max: count,
     }
 }
 
-impl<L: Lex> fmt::Display for Many<L>
+impl<T> fmt::Debug for Many<T>
 where
-    L: fmt::Display,
+    T: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.max == usize::MAX {
-            write!(f, "many({}.., {})", self.min, self.lexer)
+            write!(f, "Many({}.., {:?})", self.min, self.item)
         } else {
-            write!(f, "many({}..={}, {})", self.min, self.max, self.lexer)
+            write!(f, "Many({}..={}, {:?})", self.min, self.max, self.item)
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::char;
     use crate::test_utils::*;
 
+    #[derive(PartialEq, Debug, Clone)]
+    struct A;
+    impl FromStr for A {
+        type Err = ParseError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            if s == "a" {
+                Ok(A)
+            } else {
+                Err(ParseError::NoMatch)
+            }
+        }
+    }
+
     #[test]
-    fn min_and_max() {
+    fn min_and_max_parse() {
+        let a_parser = char('a').map(A::from_str);
+
+        test_parser_batch(
+            "1..=3 matches 1, 2 or 3 times",
+            many(1..=3, a_parser.clone()),
+            &[
+                ("", None, ""), //
+                ("abcd", Some(vec![A]), "bcd"),
+                ("zzz", None, "zzz"),
+                ("zaa", None, "zaa"),
+                ("aaaaa", Some(vec![A, A, A]), "aa"),
+                ("aa|aaa", Some(vec![A, A]), "|aaa"),
+            ],
+        );
+
+        test_parser_batch(
+            ".. matches any number of times",
+            many(.., a_parser.clone()),
+            &[
+                ("", Some(vec![]), ""), //
+                ("abcd", Some(vec![A]), "bcd"),
+                ("zzz", Some(vec![]), "zzz"),
+                ("zaa", Some(vec![]), "zaa"),
+                ("aaaaa", Some(vec![A, A, A, A, A]), ""),
+                ("aa|aaa", Some(vec![A, A]), "|aaa"),
+            ],
+        );
+
+        test_parser_batch(
+            "3..5 matches 3 or 4 times",
+            many(3..5, a_parser),
+            &[
+                ("", None, ""), //
+                ("abcd", None, "abcd"),
+                ("zzz", None, "zzz"),
+                ("zaa", None, "zaa"),
+                ("aaaaa", Some(vec![A, A, A, A]), "a"),
+                ("aa|aaa", None, "aa|aaa"),
+                ("a|aaaa", None, "a|aaaa"),
+                ("aaa|aa", Some(vec![A, A, A]), "|aa"),
+            ],
+        );
+    }
+
+    #[test]
+    fn min_and_max_lex() {
         test_lexer_batch(
             "1..=3 matches 1, 2 or 3 times",
             many(1..=3, char('a')),

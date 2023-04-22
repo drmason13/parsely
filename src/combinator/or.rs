@@ -1,21 +1,29 @@
 use std::fmt;
 
-use crate::{Lex, LexResult};
+use crate::{Lex, LexResult, Parse, ParseResult};
 
-pub struct Or<L: Lex, R: Lex> {
+pub struct Or<L, R> {
     left: L,
     right: R,
 }
 
-/// Creates a lexer that will attempt to lex with the left lexer, and if it fails try to lex with the right lexer.
+/// Creates a parser that will attempt to parse with the left parser, and if it fails try to parse with the right parser.
 ///
-/// This short-circuits such that the right lexer isn't attempted if the left one matches.
-pub fn or<L, R>(left: L, right: R) -> Or<L, R>
-where
-    L: Lex,
-    R: Lex,
-{
+/// This short-circuits such that the right parser isn't attempted if the left one matches.
+pub fn or<L, R>(left: L, right: R) -> Or<L, R> {
     Or { left, right }
+}
+
+impl<L, R, O> Parse for Or<L, R>
+where
+    L: Parse<Output = O>,
+    R: Parse<Output = O>,
+{
+    type Output = O;
+
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, O> {
+        self.left.parse(input).or_else(|_| self.right.parse(input))
+    }
 }
 
 impl<L, R> Lex for Or<L, R>
@@ -28,13 +36,13 @@ where
     }
 }
 
-impl<L: Lex, R: Lex> fmt::Display for Or<L, R>
+impl<L, R> fmt::Debug for Or<L, R>
 where
-    L: fmt::Display,
-    R: fmt::Display,
+    L: fmt::Debug,
+    R: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({} or {})", self.left, self.right)
+        write!(f, "Or({:?}, {:?})", self.left, self.right)
     }
 }
 

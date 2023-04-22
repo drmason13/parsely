@@ -1,11 +1,10 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
-use crate::{char, digit};
-use crate::{Parse, ParseError, ParseResult};
+use crate::{char, digit, Parse, ParseError};
 
 /// A parser that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
 ///
-/// To parse unsigned integers that forbid the leading '-' consider using:
+//TODO: To parse unsigned integers that forbid the leading '-' consider using:
 //TODO: * [`uint()`] which will parse only base 10 digits
 //TODO: * [`digit(10)`] which is the implementation of [`uint()`]
 ///
@@ -23,13 +22,26 @@ pub fn int<T>() -> impl Parse<Output = T> + fmt::Display {
 // To return impl Parser or the specific parser?
 // `impl Parser` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
 // the specific parser is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
-pub fn float() -> impl Parse + fmt::Display {
-    int() //
-        .then(char('.'))
-        .then(digit().many(0..))
+pub fn float<O: FromStr + PartialEq + fmt::Debug>() -> impl Parse<Output = O> {
+    parse_float::<O>
 }
 
-pub fn number() -> impl Parse + fmt::Display {
+// a function version that *is* a parser, doesn't return one
+pub fn parse_float<O: FromStr>(input: &str) -> Result<(O, &str), ParseError> {
+    let (output, remaining) = char('-')
+        .many(0..=1) //
+        .then(digit().many(1..))
+        .then(char('.'))
+        .then(digit().many(0..))
+        .lex(input);
+
+    let float = output
+        .parse::<O>()
+        .map_err(|_| ParseError::FailedConversion)?;
+    Ok((float, remaining))
+}
+
+pub fn number() -> impl Parse {
     float().or(int())
 }
 

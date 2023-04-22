@@ -5,7 +5,7 @@ use std::{
 
 use crate::{Lex, LexResult, Parse, ParseResult};
 
-/// This parser is returned by [`many()`]. See it's documentation for more details.
+/// This combinator is returned by [`many()`]. See it's documentation for more details.
 pub struct Many<T> {
     /// The parser to be repeated.
     item: T,
@@ -19,7 +19,7 @@ pub struct Many<T> {
     ///
     /// The parser will never match more than max times, because it doesn't try to.
     ///
-    /// To enforce that input is fully consumed after parsing, see [`crate::parsers::end()`]
+    /// To enforce that input is fully consumed, see [`crate::lexer::end()`]
     max: usize,
 }
 
@@ -76,7 +76,7 @@ impl<L: Lex> Lex for Many<L> {
     }
 }
 
-/// Creates a parser that applies a given parser multiple times.
+/// Creates a combinator that applies a given parser or lexer multiple times.
 ///
 /// This function takes a Range-like argument as a succint description of start and end bounds.
 ///

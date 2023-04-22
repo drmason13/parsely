@@ -22,7 +22,7 @@ pub trait Parse: Sized {
 
     /// Creates a new parser that will attempt to parse with this parser multiple times.
     ///
-    /// See [`combinators::Many`] for more details.
+    /// See [`crate::combinator::Many`] for more details.
     fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
     where
         Self: Sized,
@@ -32,7 +32,7 @@ pub trait Parse: Sized {
 
     /// Creates a new parser that will attempt to parse with this parser exactly n times.
     ///
-    /// See [`combinators::Many`] for more details.
+    /// See [`crate::combinator::Many`] for more details.
     fn count(self, n: usize) -> Many<Self>
     where
         Self: Sized,
@@ -111,8 +111,6 @@ pub trait Parse: Sized {
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
-    ///
-    /// Note that there is a whitespace parser available, see [`parsers::ws`]
     fn or<P: Parse>(self, parser: P) -> Or<Self, P>
     where
         Self: Sized,

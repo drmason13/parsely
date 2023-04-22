@@ -10,7 +10,7 @@
 //!
 //! If parsing speed is important to your application's performance (for example a compiler) then this library isn't meant for you.
 //!
-//! Take a look at the [`Lex`] and [`Parse`] traits and the built in [`lexers`], [`parsers`] and [`combinators`].
+//! Take a look at the [`Lex`] and [`Parse`] traits and the module level documentation: [`lexer`], [`parser`] and [`combinator`].
 
 pub mod error;
 pub use error::Error;

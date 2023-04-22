@@ -19,7 +19,7 @@ pub trait Lex: Sized {
 
     /// Creates a new lexer that will attempt to lex with this lexer multiple times.
     ///
-    /// See [`combinators::Many`] for more details.
+    /// See [`crate::combinator::Many`] for more details.
     fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
     where
         Self: Sized,
@@ -29,7 +29,7 @@ pub trait Lex: Sized {
 
     /// Creates a new lexer that will attempt to lex with this lexer exactly n times.
     ///
-    /// See [`combinators::Many`] for more details.
+    /// See [`crate::combinator::Many`] for more details.
     fn count(self, n: usize) -> Many<Self>
     where
         Self: Sized,
@@ -72,7 +72,7 @@ pub trait Lex: Sized {
     /// # Ok::<(), parsely::Error>(())
     /// ```
     ///
-    /// Note that there is a whitespace lexer available, see [`lexers::ws`]
+    /// Note that there is a whitespace lexer available, see [`crate::lexer::ws`]
     fn or<L: Lex>(self, lexer: L) -> Or<Self, L>
     where
         Self: Sized,

@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use crate::{char, digit, Parse, ParseError};
+use crate::{char, digit, Parse};
 
 /// A parser that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
 ///
@@ -27,7 +27,7 @@ pub fn float<O: FromStr + PartialEq + fmt::Debug>() -> impl Parse<Output = O> {
 }
 
 // a function version that *is* a parser, doesn't return one
-pub fn parse_float<O: FromStr>(input: &str) -> Result<(O, &str), ParseError> {
+pub fn parse_float<O: FromStr>(input: &str) -> Result<(O, &str), crate::Error> {
     let (output, remaining) = char('-')
         .many(0..=1) //
         .then(digit().many(1..))
@@ -37,7 +37,7 @@ pub fn parse_float<O: FromStr>(input: &str) -> Result<(O, &str), ParseError> {
 
     let float = output
         .parse::<O>()
-        .map_err(|_| ParseError::FailedConversion)?;
+        .map_err(|_| crate::Error::FailedConversion)?;
     Ok((float, remaining))
 }
 

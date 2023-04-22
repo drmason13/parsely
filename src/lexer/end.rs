@@ -1,4 +1,4 @@
-use crate::{Lex, LexError, LexResult};
+use crate::{Lex, LexResult};
 
 pub struct End;
 
@@ -7,13 +7,13 @@ impl Lex for End {
         if input.is_empty() {
             Ok(("", ""))
         } else {
-            Err(LexError::NoMatch)
+            Err(crate::Error::NoMatch)
         }
     }
 }
 
 /// ```
-/// use parsely::{char, end, Lex, LexError};
+/// use parsely::{char, end, Lex};
 ///
 /// let mut lexer = char('a').count(3).then(end());
 ///
@@ -24,9 +24,9 @@ impl Lex for End {
 ///
 ///
 /// let result = lexer.lex("aaaaaaaaa");
-/// assert_eq!(result, Err(LexError::NoMatch));
+/// assert_eq!(result, Err(parsely::Error::NoMatch));
 ///
-/// # Ok::<(), LexError>(())
+/// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn end() -> End {
     End

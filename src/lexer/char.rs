@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{Lex, LexError, LexResult};
+use crate::{Lex, LexResult};
 
 #[derive(Clone)]
 pub struct Char(pub char);
@@ -18,7 +18,7 @@ impl Lex for Char {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(LexError::NoMatch),
+            _ => Err(crate::Error::NoMatch),
         }
     }
 }
@@ -43,7 +43,7 @@ impl Lex for WhiteSpace {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(LexError::NoMatch),
+            _ => Err(crate::Error::NoMatch),
         }
     }
 }

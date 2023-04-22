@@ -1,23 +1,8 @@
-use std::{fmt, ops::RangeBounds};
+use std::ops::RangeBounds;
 
 use crate::combinator::{many, or, then, Many, Map, Or, Then};
 
-#[non_exhaustive]
-#[derive(Debug, PartialEq)]
-pub enum LexError {
-    NoMatch,
-}
-
-impl std::error::Error for LexError {}
-impl fmt::Display for LexError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LexError::NoMatch => write!(f, "No Match"),
-        }
-    }
-}
-
-pub type LexResult<'i> = Result<(&'i str, &'i str), LexError>;
+pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
 
 /// This trait is implemented by all Parsely lexers.
 ///
@@ -63,7 +48,7 @@ pub trait Lex: Sized {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, token, Lex, LexError};
+    /// use parsely::{char, token, Lex};
     ///
     /// let mut for_or_bar = token("foo").or(token("bar"));
     ///
@@ -84,7 +69,7 @@ pub trait Lex: Sized {
     ///     .or(char('\n'))
     ///     .or(char('\r'));
     ///
-    /// # Ok::<(), LexError>(())
+    /// # Ok::<(), parsely::Error>(())
     /// ```
     ///
     /// Note that there is a whitespace lexer available, see [`lexers::ws`]
@@ -108,7 +93,7 @@ pub trait Lex: Sized {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, hex, Lex, LexError};
+    /// use parsely::{char, hex, Lex};
     ///
     /// let mut hex_color = char('#').then(hex().many(1..));
     ///
@@ -119,9 +104,9 @@ pub trait Lex: Sized {
     ///
     /// let result = hex_color.lex("#TEATEA");
     ///
-    /// assert_eq!(result, Err(LexError::NoMatch));
+    /// assert_eq!(result, Err(parsely::Error::NoMatch));
     ///
-    /// # Ok::<(), LexError>(())
+    /// # Ok::<(), parsely::Error>(())
     /// ```
     fn then<L: Lex>(self, lexer: L) -> Then<Self, L>
     where
@@ -139,7 +124,7 @@ pub trait Lex: Sized {
     }
 }
 
-/// Functions that take &str and return `Result<(&str, &str), LexError>` are Lexers.
+/// Functions that take &str and return `Result<(&str, &str), parsely::Error>` are Lexers.
 ///
 /// The matched part of the input str is returned on the left hand side.
 ///
@@ -148,10 +133,10 @@ pub trait Lex: Sized {
 /// This is the same order that [`str::split_at()`] returns.
 ///
 /// ```
-/// use parsely::{digit, Lex, LexError};
+/// use parsely::{digit, Lex};
 ///
-/// fn my_lexer(input: &str) -> Result<(&str, &str), LexError> {
-///     let boundary = input.find("abc").ok_or(LexError::NoMatch)?;
+/// fn my_lexer(input: &str) -> Result<(&str, &str), parsely::Error> {
+///     let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
 ///     let (output, remaining) = input.split_at(boundary + 3);
 ///
 ///     Ok((output, remaining))
@@ -166,24 +151,24 @@ pub trait Lex: Sized {
 /// assert_eq!(output, "...abc123.abc123..abc123");
 /// assert_eq!(remaining, "...");
 ///
-/// # Ok::<(), LexError>(())
+/// # Ok::<(), parsely::Error>(())
 /// ```
 ///
 /// There is a type alias available to make the function signature *slightly* shorter
 /// but it does need lifetime specifiers, we use `i` for input, the lifetime of the input str.
 /// ```
-/// use parsely::{digit, Lex, LexError, LexResult};
+/// use parsely::{digit, Lex, LexResult};
 ///
 /// fn my_lexer<'i>(input: &'i str) -> LexResult<'i> {
 ///    // ...
-///    # let boundary = input.find("abc").ok_or(LexError::NoMatch)?;
+///    # let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
 ///    # let (output, remaining) = input.split_at(boundary + 3);
 ///    # Ok((output, remaining))
 /// }
 /// ```
 impl<F> Lex for F
 where
-    F: FnMut(&str) -> Result<(&str, &str), LexError>,
+    F: FnMut(&str) -> Result<(&str, &str), crate::Error>,
 {
     fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         self(input)

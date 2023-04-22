@@ -3,7 +3,7 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-use crate::{Lex, LexError, LexResult, Parse, ParseError, ParseResult};
+use crate::{Lex, LexResult, Parse, ParseResult};
 
 /// This parser is returned by [`many()`]. See it's documentation for more details.
 pub struct Many<T> {
@@ -45,7 +45,7 @@ impl<P: Parse> Parse for Many<P> {
         }
 
         if count < self.min {
-            Err(ParseError::NoMatch)
+            Err(crate::Error::NoMatch)
         } else {
             Ok((outputs, &input[offset..]))
         }
@@ -69,7 +69,7 @@ impl<L: Lex> Lex for Many<L> {
         }
 
         if count < self.min {
-            Err(LexError::NoMatch)
+            Err(crate::Error::NoMatch)
         } else {
             Ok(input.split_at(offset))
         }
@@ -89,7 +89,7 @@ impl<L: Lex> Lex for Many<L> {
 /// Basic usage:
 ///
 /// ```
-/// use parsely::{digit, Lex, LexError};
+/// use parsely::{digit, Lex};
 /// use parsely::combinator::many;
 ///
 /// // these are all equivalent
@@ -108,14 +108,14 @@ impl<L: Lex> Lex for Many<L> {
 /// let mut one_or_more_digits = many(1.., digit());
 ///
 /// let result = one_or_more_digits.lex("abc");
-/// assert_eq!(result, Err(LexError::NoMatch));
-/// # Ok::<(), LexError>(())
+/// assert_eq!(result, Err(parsely::Error::NoMatch));
+/// # Ok::<(), parsely::Error>(())
 /// ```
 ///
 /// Chain with [`Lex::many()`]:
 ///
 /// ```
-/// use parsely::{digit, Lex, LexError};
+/// use parsely::{digit, Lex};
 ///
 /// let mut zero_or_more_digits = digit().many(0..);
 ///
@@ -126,13 +126,13 @@ impl<L: Lex> Lex for Many<L> {
 /// # let (output, remaining) = zero_or_more_digits.lex("abc")?;
 /// # assert_eq!(output, "");
 /// # assert_eq!(remaining, "abc");
-/// # Ok::<(), LexError>(())
+/// # Ok::<(), parsely::Error>(())
 /// ```
 ///
 /// Min and Max:
 ///
 /// ```
-/// use parsely::{digit, Lex, LexError};
+/// use parsely::{digit, Lex};
 ///
 /// let mut three_or_four_digits = digit().many(3..=4);
 ///
@@ -141,12 +141,12 @@ impl<L: Lex> Lex for Many<L> {
 /// assert_eq!(remaining, "");
 ///
 /// let result = three_or_four_digits.lex("12");
-/// assert_eq!(result, Err(LexError::NoMatch));
+/// assert_eq!(result, Err(parsely::Error::NoMatch));
 ///
 /// let (output, remaining) = three_or_four_digits.lex("12345")?;
 /// assert_eq!(output, "1234");
 /// assert_eq!(remaining, "5");
-/// # Ok::<(), LexError>(())
+/// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn many<T>(range: impl RangeBounds<usize>, item: T) -> Many<T> {
     let min = match range.start_bound() {
@@ -198,13 +198,13 @@ mod tests {
     #[derive(PartialEq, Debug, Clone)]
     struct A;
     impl FromStr for A {
-        type Err = ParseError;
+        type Err = crate::Error;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             if s == "a" {
                 Ok(A)
             } else {
-                Err(ParseError::NoMatch)
+                Err(crate::Error::NoMatch)
             }
         }
     }

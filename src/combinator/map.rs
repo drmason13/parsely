@@ -1,6 +1,6 @@
 use std::{any::type_name, fmt};
 
-use crate::{Lex, Parse, ParseError};
+use crate::{Lex, Parse};
 
 #[derive(Clone)]
 pub struct Map<L, F> {
@@ -22,8 +22,8 @@ where
     type Output = O;
 
     fn parse<'i>(&mut self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
-        let (matched, remaining) = self.lexer.lex(input).map_err(|_| ParseError::NoMatch)?;
-        let output = (self.f)(matched).map_err(|_| ParseError::FailedConversion)?;
+        let (matched, remaining) = self.lexer.lex(input).map_err(|_| crate::Error::NoMatch)?;
+        let output = (self.f)(matched).map_err(|_| crate::Error::FailedConversion)?;
 
         Ok((output, remaining))
     }

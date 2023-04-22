@@ -12,16 +12,19 @@
 //!
 //! Take a look at the [`Lex`] trait and the built in [`lexers`] and [`combinators`].
 
+pub mod error;
+pub use error::Error;
+
 mod lex;
 pub mod lexer;
 
-pub use lex::{Lex, LexError, LexResult};
+pub use lex::{Lex, LexResult};
 pub use lexer::*;
 
 mod parse;
 pub mod parser;
 
-pub use parse::{Parse, ParseError, ParseResult};
+pub use parse::{Parse, ParseResult};
 pub use parser::*;
 
 pub mod combinator;

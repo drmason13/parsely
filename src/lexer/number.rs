@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::lexer::char;
-use crate::{Lex, LexError, LexResult};
+use crate::{Lex, LexResult};
 
 pub struct Digit {
     radix: u32,
@@ -13,10 +13,10 @@ impl Lex for Digit {
             if c.is_digit(self.radix) {
                 Ok(input.split_at(c.len_utf8()))
             } else {
-                Err(LexError::NoMatch)
+                Err(crate::Error::NoMatch)
             }
         } else {
-            Err(LexError::NoMatch)
+            Err(crate::Error::NoMatch)
         }
     }
 }

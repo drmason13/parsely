@@ -1,36 +1,8 @@
-use std::{fmt, ops::RangeBounds};
+use std::ops::RangeBounds;
 
-use crate::{
-    combinator::{count, many, or, then, Many, Or, Then},
-    LexError,
-};
+use crate::combinator::{count, many, or, then, Many, Or, Then};
 
-#[non_exhaustive]
-#[derive(Debug, PartialEq)]
-pub enum ParseError {
-    NoMatch,
-    FailedConversion,
-}
-
-impl std::error::Error for ParseError {}
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::NoMatch => write!(f, "No Match"),
-            ParseError::FailedConversion => write!(f, "Failed to convert matched input"),
-        }
-    }
-}
-
-impl From<LexError> for ParseError {
-    fn from(value: LexError) -> Self {
-        match value {
-            LexError::NoMatch => ParseError::NoMatch,
-        }
-    }
-}
-
-pub type ParseResult<'i, O> = Result<(O, &'i str), ParseError>;
+pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error>;
 
 /// This trait is implemented by all Parsely parsers.
 ///
@@ -79,7 +51,7 @@ pub trait Parse: Sized {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, token, Lex, Parse, ParseError};
+    /// use parsely::{char, token, Lex, Parse};
     ///
     /// # #[derive(Debug, PartialEq)]
     /// enum FooBar {
@@ -87,9 +59,9 @@ pub trait Parse: Sized {
     ///     Bar,
     /// }
     ///
-    /// fn parse_foo_bar(input: &str) -> Result<(FooBar, &str), ParseError> {
-    ///     token("foo").map(|_| Ok::<FooBar, ParseError>(FooBar::Foo))
-    ///         .or(token("bar").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
+    /// fn parse_foo_bar(input: &str) -> Result<(FooBar, &str), parsely::Error> {
+    ///     token("foo").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo))
+    ///         .or(token("bar").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar))).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar("foobarbaz")?;
@@ -101,12 +73,12 @@ pub trait Parse: Sized {
     ///
     /// assert_eq!(output, FooBar::Bar);
     /// assert_eq!(remaining, "baz");
-    /// # Ok::<(), ParseError>(())
+    /// # Ok::<(), parsely::Error>(())
     /// ```
     ///
     /// Chained and nested or:
     /// ```
-    /// use parsely::{char, token, Lex, Parse, ParseError, ParseResult};
+    /// use parsely::{char, token, Lex, Parse, ParseResult};
     ///
     /// # #[derive(Debug, PartialEq)]
     /// # enum FooBar {
@@ -114,10 +86,10 @@ pub trait Parse: Sized {
     /// #     Bar,
     /// # }
     /// fn parse_foo_bar<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
-    ///     token("foo").map(|_| Ok::<FooBar, ParseError>(FooBar::Foo))
-    ///         .or(token("floobydoobyfooo").map(|_| Ok::<FooBar, ParseError>(FooBar::Foo)))
-    ///         .or(token("babababarrr").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar)))
-    ///         .or(token("bar").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
+    ///     token("foo").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo))
+    ///         .or(token("floobydoobyfooo").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo)))
+    ///         .or(token("babababarrr").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar)))
+    ///         .or(token("bar").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar))).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar("babababarrr is a Bar")?;
@@ -128,8 +100,8 @@ pub trait Parse: Sized {
     /// // or can be nested, so parse_foo_bar can be written as:
     ///
     /// fn parse_foo_bar_nested<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
-    ///     token("foo").or(token("floobydoobyfooo")).map(|_| Ok::<FooBar, ParseError>(FooBar::Foo))
-    ///         .or(token("bar").or(token("babababarrr")).map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
+    ///     token("foo").or(token("floobydoobyfooo")).map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo))
+    ///         .or(token("bar").or(token("babababarrr")).map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar))).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar_nested("floobydoobyfooo is a Foo too")?;
@@ -137,7 +109,7 @@ pub trait Parse: Sized {
     /// assert_eq!(output, FooBar::Foo);
     /// assert_eq!(remaining, " is a Foo too");
     ///
-    /// # Ok::<(), ParseError>(())
+    /// # Ok::<(), parsely::Error>(())
     /// ```
     ///
     /// Note that there is a whitespace parser available, see [`parsers::ws`]
@@ -161,7 +133,7 @@ pub trait Parse: Sized {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, hex, Lex, Parse, ParseError, ParseResult};
+    /// use parsely::{char, hex, Lex, Parse, ParseResult};
     ///
     /// # #[derive(Debug, PartialEq)]
     /// pub struct Rgb(u8, u8, u8);
@@ -172,9 +144,9 @@ pub trait Parse: Sized {
     ///
     ///     let (output, remaining) = hex_color.count(3).parse(remaining)?;
     ///     let mut colors = output.iter().copied();
-    ///     let r = colors.next().ok_or(ParseError::NoMatch)?;
-    ///     let g = colors.next().ok_or(ParseError::NoMatch)?;
-    ///     let b = colors.next().ok_or(ParseError::NoMatch)?;
+    ///     let r = colors.next().ok_or(parsely::Error::NoMatch)?;
+    ///     let g = colors.next().ok_or(parsely::Error::NoMatch)?;
+    ///     let b = colors.next().ok_or(parsely::Error::NoMatch)?;
     ///
     ///     Ok((Rgb(r, g, b), remaining))
     /// };
@@ -186,9 +158,9 @@ pub trait Parse: Sized {
     ///
     /// let result = hex_rgb.parse("#TEATEA");
     ///
-    /// assert_eq!(result, Err(ParseError::NoMatch));
+    /// assert_eq!(result, Err(parsely::Error::NoMatch));
     ///
-    /// # Ok::<(), ParseError>(())
+    /// # Ok::<(), parsely::Error>(())
     /// ```
     fn then<P: Parse>(self, parser: P) -> Then<Self, P>
     where
@@ -198,7 +170,7 @@ pub trait Parse: Sized {
     }
 }
 
-/// Functions that take &str and return `Result<(&str, &str), ParseError>` are Parseers.
+/// Functions that take &str and return `Result<(&str, &str), parsely::Error>` are Parseers.
 ///
 /// The matched part of the input str is returned on the left hand side.
 ///
@@ -207,11 +179,11 @@ pub trait Parse: Sized {
 /// This is the same order that [`str::split_at()`] returns.
 ///
 /// ```
-/// use parsely::{digit, Parse, ParseError};
+/// use parsely::{digit, Parse};
 /// # use parsely::{char, hex, Lex, ParseResult};
 ///
-/// fn my_parser(input: &str) -> Result<(u32, &str), ParseError> {
-///     let boundary = input.find("abc").ok_or(ParseError::NoMatch)?;
+/// fn my_parser(input: &str) -> Result<(u32, &str), parsely::Error> {
+///     let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
 ///     let (_, remaining) = input.split_at(boundary + 3);
 ///
 ///     Ok((7, remaining))
@@ -230,9 +202,9 @@ pub trait Parse: Sized {
 /// #
 /// #    let (output, remaining) = hex_color.count(3).parse(remaining)?;
 /// #    let mut colors = output.iter().copied();
-/// #    let r = colors.next().ok_or(ParseError::NoMatch)?;
-/// #    let g = colors.next().ok_or(ParseError::NoMatch)?;
-/// #    let b = colors.next().ok_or(ParseError::NoMatch)?;
+/// #    let r = colors.next().ok_or(parsely::Error::NoMatch)?;
+/// #    let g = colors.next().ok_or(parsely::Error::NoMatch)?;
+/// #    let b = colors.next().ok_or(parsely::Error::NoMatch)?;
 /// #
 /// #    Ok((Rgb(r, g, b), remaining))
 /// # };
@@ -248,24 +220,24 @@ pub trait Parse: Sized {
 /// assert!(outputs.next().is_none());
 /// assert_eq!(remaining, "...");
 ///
-/// # Ok::<(), ParseError>(())
+/// # Ok::<(), parsely::Error>(())
 /// ```
 ///
 /// There is a type alias available to make the function signature *slightly* shorter
 /// but it does need lifetime specifiers, we use `i` for input, the lifetime of the input str.
 /// ```
-/// use parsely::{digit, Parse, ParseError, ParseResult};
+/// use parsely::{digit, Parse, ParseResult};
 ///
 /// fn my_parser<'i>(input: &'i str) -> ParseResult<'i, u32> {
 ///    // ...
-///    # let boundary = input.find("abc").ok_or(ParseError::NoMatch)?;
+///    # let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
 ///    # let (_, remaining) = input.split_at(boundary + 3);
 ///    # Ok((7, remaining))
 /// }
 /// ```
 impl<F, O> Parse for F
 where
-    F: Fn(&str) -> Result<(O, &str), ParseError>,
+    F: Fn(&str) -> Result<(O, &str), crate::Error>,
 {
     type Output = O;
 

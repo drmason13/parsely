@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{Lex, LexError, LexResult};
+use crate::{Lex, LexResult};
 
 // This `struct` is created by the function `[token]`. See its documentation for more.
 pub struct Token<'p>(pub &'p str);
@@ -10,7 +10,7 @@ impl<'p> Lex for Token<'p> {
         if input.starts_with(self.0) {
             Ok(input.split_at(self.0.len()))
         } else {
-            Err(LexError::NoMatch)
+            Err(crate::Error::NoMatch)
         }
     }
 }
@@ -31,7 +31,7 @@ impl<'p> Lex for Token<'p> {
 /// Basic usage:
 ///
 /// ```
-/// use parsely::{token, Lex, LexError};
+/// use parsely::{token, Lex};
 ///
 /// let input = "FOO 123";
 ///
@@ -42,13 +42,13 @@ impl<'p> Lex for Token<'p> {
 /// assert_eq!(output, "FOO");
 /// assert_eq!(remaining, " 123");
 ///
-/// # Ok::<(), LexError>(())
+/// # Ok::<(), parsely::Error>(())
 /// ```
 ///
 /// Map the output to a custom struct:
 ///
 /// ```ignore
-/// use parsely::{token, Lex, LexError};
+/// use parsely::{token, Lex};
 ///
 /// #[derive(Debug, PartialEq)]
 /// struct Foo;
@@ -62,7 +62,7 @@ impl<'p> Lex for Token<'p> {
 /// assert_eq!(output, Foo);
 /// assert_eq!(result, " 123");
 ///
-/// # Ok::<(), LexError>(())
+/// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn token(token: &str) -> Token {
     Token(token)

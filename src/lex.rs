@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use crate::combinator::{many, or, then, Many, Map, Or, Then, TryMap};
+use crate::combinator::{count, many, optional, or, then, Many, Map, Optional, Or, Then, TryMap};
 
 pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
 
@@ -29,12 +29,26 @@ pub trait Lex: Sized {
 
     /// Creates a new lexer that will attempt to lex with this lexer exactly n times.
     ///
+    /// This is equivalent to `.many(n..=n)`.
+    ///
     /// See [`crate::combinator::Many`] for more details.
     fn count(self, n: usize) -> Many<Self>
     where
         Self: Sized,
     {
-        crate::combinator::count(n, self)
+        count(n, self)
+    }
+
+    /// Creates a new lexer that will match 0 or 1 times, making it optional.
+    ///
+    /// This is equivalent to `.many(0..=1)`.
+    ///
+    /// See [`crate::combinator::Many`] for more details.
+    fn optional(self) -> Optional<Self>
+    where
+        Self: Sized,
+    {
+        optional(self)
     }
 
     /// Creates a new lexer that will attempt to lex with this lexer, and if it fails, attempt to lex with the given lexer.

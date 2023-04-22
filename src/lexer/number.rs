@@ -3,6 +3,7 @@ use std::fmt;
 use crate::lexer::char;
 use crate::{Lex, LexResult};
 
+#[derive(Clone)]
 pub struct Digit {
     radix: u32,
 }

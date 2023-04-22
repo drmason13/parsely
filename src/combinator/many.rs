@@ -6,6 +6,7 @@ use std::{
 use crate::{Lex, LexResult, Parse, ParseResult};
 
 /// This combinator is returned by [`many()`]. See it's documentation for more details.
+#[derive(Clone)]
 pub struct Many<T> {
     /// The parser to be repeated.
     item: T,

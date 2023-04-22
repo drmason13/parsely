@@ -27,6 +27,34 @@ pub fn char(char: char) -> Char {
     Char(char)
 }
 
+pub struct CharIf<F> {
+    condition: F,
+}
+
+impl<F> Lex for CharIf<F>
+where
+    F: Fn(char) -> bool,
+{
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+        if let Some(c) = input.chars().next() {
+            if (self.condition)(c) {
+                Ok(input.split_at(c.len_utf8()))
+            } else {
+                Err(crate::Error::NoMatch)
+            }
+        } else {
+            Err(crate::Error::NoMatch)
+        }
+    }
+}
+
+pub fn char_if<F>(condition: F) -> CharIf<F>
+where
+    F: Fn(char) -> bool,
+{
+    CharIf { condition }
+}
+
 #[derive(Clone)]
 pub struct WhiteSpace;
 
@@ -50,6 +78,34 @@ impl Lex for WhiteSpace {
 
 pub fn ws() -> WhiteSpace {
     WhiteSpace
+}
+
+/// Matches an alphabetic character.
+pub fn alpha() -> CharIf<fn(char) -> bool> {
+    char_if(char::is_alphabetic)
+}
+
+/// Matches an alphabetic character.
+pub fn alphanum() -> CharIf<fn(char) -> bool> {
+    char_if(char::is_alphanumeric)
+}
+
+/// Matches an ascii alphanumeric character.
+pub fn ascii_alpha() -> CharIf<fn(char) -> bool> {
+    char_if(|c| c.is_ascii_alphabetic())
+}
+
+/// Matches an ascii alphanumeric character.
+pub fn ascii_alphanum() -> CharIf<fn(char) -> bool> {
+    char_if(|c| c.is_ascii_alphanumeric())
+}
+
+pub fn lowercase() -> CharIf<fn(char) -> bool> {
+    char_if(char::is_lowercase)
+}
+
+pub fn uppercase() -> CharIf<fn(char) -> bool> {
+    char_if(char::is_uppercase)
 }
 
 impl fmt::Debug for Char {

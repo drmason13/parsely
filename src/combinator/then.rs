@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::{Lex, LexResult, Parse, ParseResult};
 
+#[derive(Clone)]
 pub struct Then<L, R> {
     left: L,
     right: R,

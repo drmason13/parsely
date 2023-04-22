@@ -1,13 +1,39 @@
-use std::fmt;
+use std::{fmt, marker::PhantomData};
 
 use crate::{Lex, LexResult};
 
 // This `struct` is created by the function `[token]`. See its documentation for more.
-pub struct Token<'p>(pub &'p str);
+#[derive(Clone)]
+pub struct Token<'p, C: CaseSensitivity>(&'p str, PhantomData<C>);
 
-impl<'p> Lex for Token<'p> {
+pub trait CaseSensitivity {}
+
+pub struct CaseSensitive;
+pub struct CaseInsensitive;
+
+impl CaseSensitivity for CaseSensitive {}
+impl CaseSensitivity for CaseInsensitive {}
+
+impl<'p> Token<'p, CaseSensitive> {
+    pub fn any_case(self) -> Token<'p, CaseInsensitive> {
+        Token(self.0, PhantomData)
+    }
+}
+
+impl<'p> Lex for Token<'p, CaseSensitive> {
     fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
         if input.starts_with(self.0) {
+            Ok(input.split_at(self.0.len()))
+        } else {
+            Err(crate::Error::NoMatch)
+        }
+    }
+}
+
+impl<'p> Lex for Token<'p, CaseInsensitive> {
+    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+        // NOTE: unicode uppercase could wreak havoc here
+        if input.to_uppercase().starts_with(&self.0.to_uppercase()) {
             Ok(input.split_at(self.0.len()))
         } else {
             Err(crate::Error::NoMatch)
@@ -64,13 +90,30 @@ impl<'p> Lex for Token<'p> {
 ///
 /// # Ok::<(), parsely::Error>(())
 /// ```
-pub fn token(token: &str) -> Token {
-    Token(token)
+pub fn token(token: &str) -> Token<CaseSensitive> {
+    Token(token, PhantomData)
 }
 
-impl fmt::Debug for Token<'_> {
+/// Case Insensitive version of [`token`].
+///
+/// The token and the input are uppercased before checking if the token matches.
+/// This unsurprisingly incurs a performance penalty.
+///
+/// Note: no additional action is taken to support all unicode characters,
+/// it is quite likely that this uppercase comparison will lead to unintuitive results for some unicode characters. Caution advised.
+pub fn token_ci(token: &str) -> Token<CaseInsensitive> {
+    Token(token, PhantomData)
+}
+
+impl fmt::Debug for Token<'_, CaseSensitive> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Token(\"{}\")", self.0)
+    }
+}
+
+impl fmt::Debug for Token<'_, CaseInsensitive> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Token(\"{}\", i)", self.0)
     }
 }
 

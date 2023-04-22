@@ -1,6 +1,9 @@
 use std::ops::RangeBounds;
 
-use crate::combinator::{count, many, or, then, Many, Or, Then};
+use crate::{
+    combinator::{count, many, optional, or, skip, then, Many, Optional, Or, Skip, Then},
+    Lex,
+};
 
 pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error>;
 
@@ -32,12 +35,22 @@ pub trait Parse: Sized {
 
     /// Creates a new parser that will attempt to parse with this parser exactly n times.
     ///
+    /// This is equivalent to `.many(n..=n)`.
+    ///
     /// See [`crate::combinator::Many`] for more details.
     fn count(self, n: usize) -> Many<Self>
     where
         Self: Sized,
     {
         count(n, self)
+    }
+
+    /// Creates a new parser that will match 0 or 1 times, making it optional.
+    fn optional(self) -> Optional<Self>
+    where
+        Self: Sized,
+    {
+        optional(self)
     }
 
     /// Creates a new parser that will attempt to parse with this parser, and if it fails, attempt to parse with the given parser.
@@ -166,6 +179,65 @@ pub trait Parse: Sized {
         Self: Sized,
     {
         then(self, parser)
+    }
+
+    /// Creates a parser that runs a lexer on the remaining input after running this parser.
+    ///
+    /// The output of the lexer is ignored, or "skipped".
+    ///
+    /// This is useful when there is filler input that isn't relevant to what is being parsed that you need to match but don't want to map.
+    ///
+    /// # Examples
+    ///
+    /// Comma separated list:
+    ///
+    /// ```
+    /// use parsely::{char, token, combinator::many, Lex, Parse, ParseResult};
+    ///
+    /// #[derive(Debug, PartialEq)]
+    /// struct Foo;
+    ///
+    /// fn list_of_foo(input: &str) -> ParseResult<'_, Vec<Foo>> {
+    ///     token("foo").map(|_| Foo).then_skip(char(',').optional()).many(1..).parse(input)
+    /// }
+    ///
+    /// let (output, remaining) = list_of_foo("foo,foo,foofoofoo,foo...")?;
+    /// assert_eq!(output[0], Foo);
+    /// assert_eq!(remaining, "...");
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn then_skip<L: Lex>(self, lexer: L) -> Skip<L, Self> {
+        skip(lexer, self)
+    }
+
+    /// Map the output of this parser to some other type.
+    fn mapped<F, O>(self, f: F) -> Mapped<Self, F>
+    where
+        F: Fn(<Self as Parse>::Output) -> O,
+    {
+        Mapped { f, parser: self }
+    }
+}
+
+// pretty desperate naming here!
+/// Maps the output of a parser to a different output
+pub struct Mapped<P, F> {
+    f: F,
+    parser: P,
+}
+
+impl<P, F, O1, O2> Parse for Mapped<P, F>
+where
+    P: Parse<Output = O1>,
+    F: Fn(O1) -> O2,
+{
+    type Output = O2;
+
+    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+        let (output, remaining) = self.parser.parse(input)?;
+        let mapped = (self.f)(output);
+        Ok((mapped, remaining))
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::{Lex, LexResult};
 
+#[derive(Debug, Clone)]
 pub struct End;
 
 impl Lex for End {

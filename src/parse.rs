@@ -89,7 +89,7 @@ pub trait Parse: Sized {
     ///
     /// fn parse_foo_bar(input: &str) -> Result<(FooBar, &str), ParseError> {
     ///     token("foo").map(|_| Ok::<FooBar, ParseError>(FooBar::Foo))
-    ///         .or::<_, FooBar>(token("bar").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
+    ///         .or(token("bar").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar("foobarbaz")?;
@@ -115,9 +115,9 @@ pub trait Parse: Sized {
     /// # }
     /// fn parse_foo_bar<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
     ///     token("foo").map(|_| Ok::<FooBar, ParseError>(FooBar::Foo))
-    ///         .or::<_, FooBar>(token("floobydoobyfooo").map(|_| Ok::<FooBar, ParseError>(FooBar::Foo)))
-    ///         .or::<_, FooBar>(token("babababarrr").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar)))
-    ///         .or::<_, FooBar>(token("bar").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
+    ///         .or(token("floobydoobyfooo").map(|_| Ok::<FooBar, ParseError>(FooBar::Foo)))
+    ///         .or(token("babababarrr").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar)))
+    ///         .or(token("bar").map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar("babababarrr is a Bar")?;
@@ -129,7 +129,7 @@ pub trait Parse: Sized {
     ///
     /// fn parse_foo_bar_nested<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
     ///     token("foo").or(token("floobydoobyfooo")).map(|_| Ok::<FooBar, ParseError>(FooBar::Foo))
-    ///         .or::<_, FooBar>(token("bar").or(token("babababarrr")).map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
+    ///         .or(token("bar").or(token("babababarrr")).map(|_| Ok::<FooBar, ParseError>(FooBar::Bar))).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar_nested("floobydoobyfooo is a Foo too")?;
@@ -141,7 +141,7 @@ pub trait Parse: Sized {
     /// ```
     ///
     /// Note that there is a whitespace parser available, see [`parsers::ws`]
-    fn or<P: Parse, O>(self, parser: P) -> Or<Self, P>
+    fn or<P: Parse>(self, parser: P) -> Or<Self, P>
     where
         Self: Sized,
     {

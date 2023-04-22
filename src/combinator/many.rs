@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn min_and_max_parse() {
-        let a_parser = char('a').map(A::from_str);
+        let a_parser = char('a').try_map(A::from_str);
 
         test_parser_batch(
             "1..=3 matches 1, 2 or 3 times",

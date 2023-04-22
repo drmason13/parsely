@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use crate::combinator::{many, or, then, Many, Map, Or, Then};
+use crate::combinator::{many, or, then, Many, Map, Or, Then, TryMap};
 
 pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
 
@@ -115,12 +115,20 @@ pub trait Lex: Sized {
         then(self, lexer)
     }
 
-    fn map<F, O, E>(self, f: F) -> Map<Self, F>
+    fn map<F, O>(self, f: F) -> Map<Self, F>
+    where
+        Self: Sized,
+        F: Fn(&str) -> O,
+    {
+        crate::combinator::map(self, f)
+    }
+
+    fn try_map<F, O, E>(self, f: F) -> TryMap<Self, F>
     where
         Self: Sized,
         F: Fn(&str) -> Result<O, E>,
     {
-        crate::combinator::map(self, f)
+        crate::combinator::try_map(self, f)
     }
 }
 

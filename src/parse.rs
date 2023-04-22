@@ -60,8 +60,8 @@ pub trait Parse: Sized {
     /// }
     ///
     /// fn parse_foo_bar(input: &str) -> Result<(FooBar, &str), parsely::Error> {
-    ///     token("foo").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo))
-    ///         .or(token("bar").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar))).parse(input)
+    ///     token("foo").map(|_| FooBar::Foo)
+    ///         .or(token("bar").map(|_| FooBar::Bar)).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar("foobarbaz")?;
@@ -86,10 +86,10 @@ pub trait Parse: Sized {
     /// #     Bar,
     /// # }
     /// fn parse_foo_bar<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
-    ///     token("foo").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo))
-    ///         .or(token("floobydoobyfooo").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo)))
-    ///         .or(token("babababarrr").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar)))
-    ///         .or(token("bar").map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar))).parse(input)
+    ///     token("foo").map(|_| FooBar::Foo)
+    ///         .or(token("floobydoobyfooo").map(|_| FooBar::Foo))
+    ///         .or(token("babababarrr").map(|_| FooBar::Bar))
+    ///         .or(token("bar").map(|_| FooBar::Bar)).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar("babababarrr is a Bar")?;
@@ -100,8 +100,9 @@ pub trait Parse: Sized {
     /// // or can be nested, so parse_foo_bar can be written as:
     ///
     /// fn parse_foo_bar_nested<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
-    ///     token("foo").or(token("floobydoobyfooo")).map(|_| Ok::<FooBar, parsely::Error>(FooBar::Foo))
-    ///         .or(token("bar").or(token("babababarrr")).map(|_| Ok::<FooBar, parsely::Error>(FooBar::Bar))).parse(input)
+    ///     token("foo").or(token("floobydoobyfooo")).map(|_| FooBar::Foo).or(
+    ///         token("bar").or(token("babababarrr")).map(|_| FooBar::Bar)
+    ///     ).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar_nested("floobydoobyfooo is a Foo too")?;
@@ -138,7 +139,7 @@ pub trait Parse: Sized {
     ///
     /// fn hex_rgb<'i>(input: &'i str) -> ParseResult<'i, Rgb> {
     ///     let (_, remaining) = char('#').lex(input)?;
-    ///     let hex_color = hex().count(2).map(|s| u8::from_str_radix(s, 16));
+    ///     let hex_color = hex().count(2).try_map(|s| u8::from_str_radix(s, 16));
     ///
     ///     let (output, remaining) = hex_color.count(3).parse(remaining)?;
     ///     let mut colors = output.iter().copied();
@@ -196,7 +197,7 @@ pub trait Parse: Sized {
 /// // use my_parser_lib::hex_rgb;
 /// # fn hex_rgb<'i>(input: &'i str) -> ParseResult<'i, Rgb> {
 /// #    let (_, remaining) = char('#').lex(input)?;
-/// #    let hex_color = hex().count(2).map(|s| u8::from_str_radix(s, 16));
+/// #    let hex_color = hex().count(2).try_map(|s| u8::from_str_radix(s, 16));
 /// #
 /// #    let (output, remaining) = hex_color.count(3).parse(remaining)?;
 /// #    let mut colors = output.iter().copied();

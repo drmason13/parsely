@@ -35,9 +35,9 @@ impl<'p> Lex for Token<'p> {
 ///
 /// let input = "FOO 123";
 ///
-/// let mut fooLexr = token("FOO");
+/// let mut foo_lexer = token("FOO");
 ///
-/// let (output, remaining) = fooLexr.lex(input)?;
+/// let (output, remaining) = foo_lexer.lex(input)?;
 ///
 /// assert_eq!(output, "FOO");
 /// assert_eq!(remaining, " 123");
@@ -45,19 +45,19 @@ impl<'p> Lex for Token<'p> {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-/// Map the output to a custom struct:
+/// Map the output of a lexer to create a parser:
 ///
-/// ```ignore
-/// use parsely::{token, Lex};
+/// ```
+/// use parsely::{token, Lex, Parse};
 ///
 /// #[derive(Debug, PartialEq)]
 /// struct Foo;
 ///
 /// let input = "FOO 123";
 ///
-/// let mut fooLexr = token("FOO");
+/// let mut foo_parser = token("FOO").map(|_| Foo);
 ///
-/// let (output, result) = fooLexer.lex(input).map(|_| Foo)?;
+/// let (output, result) = foo_parser.parse(input)?;
 ///
 /// assert_eq!(output, Foo);
 /// assert_eq!(result, " 123");

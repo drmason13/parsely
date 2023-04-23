@@ -1,6 +1,5 @@
 use std::fmt;
 
-use crate::lexer::char;
 use crate::{Lex, LexResult};
 
 #[derive(Clone)]
@@ -45,48 +44,52 @@ impl Digit {
     }
 }
 
-/// A lexer that parses an integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
-///
-/// To lex unsigned integers that forbid the leading '-' consider using:
-//TODO: * [`uint()`] which will lex only base 10 digits
-//TODO: * [`digit(10)`] which is the implementation of [`uint()`]
-///
-/// To lex decimals consider using:
-/// * [`float()`] which will lex only decimals
-/// * [`number()`] which will lex integers or decimals
-///
-pub fn int() -> impl Lex + fmt::Debug {
-    char('-').many(0..=1).then(digit().many(1..))
-}
-
 /// A lexer that parses an hexadecimal character, i.e. one or more base 16 digits.
 ///
 /// No leading `0x` or other hex notation in the input is accepted.
 ///
-/// To lex decimals consider using:
-/// * [`float()`] which will lex only decimals
-/// * [`number()`] which will lex integers or decimals
+/// As this is a lexer, no type conversion is performed.
 ///
 /// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use parsely::{hex, Lex};
+///
+/// assert_eq!(("a", "bc"), hex().lex("abc")?);
+///
+/// assert_eq!(("123abcdef", "g"), hex().many(1..).lex("123abcdefg")?);
+/// # Ok::<(), parsely::Error>(())
+/// ```
+///
+/// Convert to u8:
+///
+/// ```
+/// use parsely::{hex, Lex, Parse};
+///
+/// assert_eq!((171, "c"), hex().count(2).try_map(|s| u8::from_str_radix(s, 16)).parse("abc")?);
+///
+/// # Ok::<(), parsely::Error>(())
+/// ```
+///
+/// Convert to `Vec<u8>`:
+///
+/// ```
+/// use parsely::{hex, Lex, Parse};
+///
+/// let mut hex_bytes = hex().many(1..=2).try_map(|s| u8::from_str_radix(s, 16)).many(1..);
+///
+/// assert_eq!((vec![9, 10, 11, 12], ""), hex_bytes.parse("090A0B0C")?);
+///
+/// # Ok::<(), parsely::Error>(())
+/// ```
 ///
 /// # Note
 ///
 //TODO: This lexer will not transform its output into another type, but this can be done using [`Lex::map`].
 pub fn hex() -> Digit {
     Digit { radix: 16 }
-}
-
-// To return impl Lexr or the specific lexer?
-// `impl Lexr` encapsulates the implementation so we can change it without breaking semver, but might cause type shenanigans
-// the specific lexer is a mouthful, not "simple" and easily leads to breaking semver, but might reduce type shenanigans?
-pub fn float() -> impl Lex + fmt::Debug {
-    int() //
-        .then(char('.'))
-        .then(digit().many(0..))
-}
-
-pub fn number() -> impl Lex + fmt::Debug {
-    float().or(int())
 }
 
 impl fmt::Debug for Digit {
@@ -154,37 +157,12 @@ mod tests {
     #[test]
     fn parsing() {
         test_lexer_batch(
-            "int matches base 10 digits",
-            int(),
+            "digit() matches base 10 digits",
+            digit(),
             &[
                 ("abc", None, "abc"), //
-                ("123", Some("123"), ""),
+                ("123", Some("1"), "23"),
                 ("1.23", Some("1"), ".23"),
-            ],
-        );
-
-        test_lexer_batch(
-            "float matches only decimals",
-            float(),
-            &[
-                ("12.6", Some("12.6"), ""),
-                ("12.", Some("12."), ""),
-                ("123", None, "123"),
-                ("12.3A", Some("12.3"), "A"),
-                ("12.A3", Some("12."), "A3"),
-                ("12.0.1", Some("12.0"), ".1"),
-            ],
-        );
-
-        test_lexer_batch(
-            "number matches base 10 digits or decimals",
-            number(),
-            &[
-                ("12.6", Some("12.6"), ""),
-                ("12.", Some("12."), ""),
-                ("123", Some("123"), ""),
-                ("12.3A", Some("12.3"), "A"),
-                ("12.A3", Some("12."), "A3"),
             ],
         );
     }

@@ -1,6 +1,8 @@
 use std::ops::RangeBounds;
 
-use crate::combinator::{count, many, optional, or, then, Many, Map, Optional, Or, Then, TryMap};
+use crate::combinator::{
+    count, many, map, optional, or, then, try_map, Many, Map, Optional, Or, Then, TryMap,
+};
 
 pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
 
@@ -9,7 +11,7 @@ pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
 /// Its principle method is [`lex`](Lex::lex) which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
 ///
 /// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
-pub trait Lex: Sized {
+pub trait Lex {
     /// The  method returns a tuple `(matched, remaining)` of `&str`.
     ///
     /// First the part of the input successfully matched and then the remaining part of the input that was not matched.
@@ -134,7 +136,7 @@ pub trait Lex: Sized {
         Self: Sized,
         F: Fn(&str) -> O,
     {
-        crate::combinator::map(self, f)
+        map(self, f)
     }
 
     fn try_map<F, O, E>(self, f: F) -> TryMap<Self, F>
@@ -142,7 +144,7 @@ pub trait Lex: Sized {
         Self: Sized,
         F: Fn(&str) -> Result<O, E>,
     {
-        crate::combinator::try_map(self, f)
+        try_map(self, f)
     }
 }
 

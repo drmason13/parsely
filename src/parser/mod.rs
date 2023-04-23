@@ -1,3 +1,3 @@
-// mod number;
+mod number;
 
-// pub use self::number::{float, int, number};
+pub use self::number::{float, int, number, uint};

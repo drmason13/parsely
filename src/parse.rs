@@ -12,7 +12,7 @@ pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error>;
 /// Its principle method is [`parse`](Parse::parse) which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
 ///
 /// This is useful to break apart large compparse input into smaller pieces which can be processed by parsers into other types.
-pub trait Parse: Sized {
+pub trait Parse {
     /// The output type produced by a successful parse.
     type Output;
 
@@ -207,7 +207,10 @@ pub trait Parse: Sized {
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
-    fn then_skip<L: Lex>(self, lexer: L) -> Skip<L, Self> {
+    fn then_skip<L: Lex>(self, lexer: L) -> Skip<L, Self>
+    where
+        Self: Sized,
+    {
         skip(lexer, self)
     }
 
@@ -215,6 +218,7 @@ pub trait Parse: Sized {
     fn mapped<F, O>(self, f: F) -> Mapped<Self, F>
     where
         F: Fn(<Self as Parse>::Output) -> O,
+        Self: Sized,
     {
         Mapped { f, parser: self }
     }

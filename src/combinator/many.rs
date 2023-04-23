@@ -1,3 +1,46 @@
+//! Many is the most important sequence combinator.
+//!
+//! It can be used to lex multiple times, turning a lexer that consumes one character such as `digit()` into a lexer that consumes multiple characters:
+//! ```
+//! # use parsely::{digit, Lex};
+//! digit().many(1..);
+//! ```
+//!
+//! Parsers can use many, and their outputs are collected into a `Vec`:
+//! ```
+//! # use parsely::{char, int, Lex, Parse};
+//!
+//! let mut numbers_parser = int::<u32>().then_skip(char(',').optional()).many(1..);
+//!
+//! let (output, _) = numbers_parser.parse("123,456,789")?;
+//! assert_eq!(output, vec![123, 456, 789]);
+//!
+//! # Ok::<(), parsely::Error>(())
+//! ```
+//!
+//! The range argument to many() declares how many times the inner item must match.
+//!
+//! If the inner item does not match enough times then an [`crate::Error`] is raised.
+//!
+//! If it could match more times, there's no error, and no extra input is consumed.
+//!
+//! | range used    | meaning                    |
+//! |---------------|----------------------------|
+//! | `many(..)`    | match any number of times* |
+//! | `many(1..)`   | match 1 or more times      |
+//! | `many(0..)`   | match 0 or more times      |
+//! | `many(..3)`   | match 0, 1, or 2 times     |
+//! | `many(..n)`   | match 0 to n-1 times       |
+//! | `many(..=3)`  | match 0, 1, 2 or 3 times   |
+//! | `many(..=n)`  | match 0 to n times         |
+//! | `many(3..=5)` | match 3, 4 or 5 times      |
+//! | `many(a..=b)` | match a to b times         |
+//! | `many(b..a)`  | if b > a: cannot match!    |
+//!
+//! This reflects the way [`std::ops::Range`] works with inclusive and exclusive bounds.
+//!
+//! * open-ended ranges limit themselves to matching usize::MAX times, which for all practical purposes is any number of times.
+
 use std::{
     fmt,
     ops::{Bound, RangeBounds},
@@ -32,7 +75,9 @@ impl<P: Parse> Parse for Many<P> {
         let mut offset = 0;
         let mut working_input = input;
 
-        let mut outputs = Vec::with_capacity(self.max);
+        let capacity = std::cmp::max(self.min, 4);
+
+        let mut outputs = Vec::with_capacity(capacity);
 
         while count < self.max {
             if let Ok((output, remaining)) = self.item.parse(working_input) {

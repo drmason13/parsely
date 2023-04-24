@@ -85,7 +85,7 @@ pub fn alpha() -> CharIf<fn(char) -> bool> {
     char_if(char::is_alphabetic)
 }
 
-/// Matches an alphabetic character.
+/// Matches an alphanumeric character.
 pub fn alphanum() -> CharIf<fn(char) -> bool> {
     char_if(char::is_alphanumeric)
 }

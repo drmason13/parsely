@@ -1,7 +1,11 @@
 use std::ops::RangeBounds;
 
-use crate::combinator::{
-    count, many, map, optional, or, then, try_map, Many, Map, Optional, Or, Then, TryMap,
+use crate::{
+    combinator::{
+        count, many, map, optional, or, skip_then, then, try_map, Many, Map, Optional, Or,
+        SkipThen, Then, TryMap,
+    },
+    Parse,
 };
 
 pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
@@ -129,6 +133,13 @@ pub trait Lex {
         Self: Sized,
     {
         then(self, lexer)
+    }
+
+    fn skip_then<P: Parse>(self, parser: P) -> SkipThen<Self, P>
+    where
+        Self: Sized,
+    {
+        skip_then(self, parser)
     }
 
     fn map<F, O>(self, f: F) -> Map<Self, F>

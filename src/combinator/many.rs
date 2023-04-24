@@ -8,8 +8,7 @@
 //!
 //! Parsers can use many, and their outputs are collected into a `Vec`:
 //! ```
-//! # use parsely::{char, int, Lex, Parse};
-//!
+//! # use parsely::{char, int, Lex, Parse};//!
 //! let mut numbers_parser = int::<u32>().then_skip(char(',').optional()).many(1..);
 //!
 //! let (output, _) = numbers_parser.parse("123,456,789")?;
@@ -24,22 +23,35 @@
 //!
 //! If it could match more times, there's no error, and no extra input is consumed.
 //!
-//! | range used    | meaning                    |
-//! |---------------|----------------------------|
-//! | `many(..)`    | match any number of times* |
-//! | `many(1..)`   | match 1 or more times      |
-//! | `many(0..)`   | match 0 or more times      |
-//! | `many(..3)`   | match 0, 1, or 2 times     |
-//! | `many(..n)`   | match 0 to n-1 times       |
-//! | `many(..=3)`  | match 0, 1, 2 or 3 times   |
-//! | `many(..=n)`  | match 0 to n times         |
-//! | `many(3..=5)` | match 3, 4 or 5 times      |
-//! | `many(a..=b)` | match a to b times         |
-//! | `many(b..a)`  | if b > a: cannot match!    |
+//! | range used | meaning                         |
+//! |------------|---------------------------------|
+//! | ..         | match any number of times[^max] |
+//! | 1..        | match 1 or more times           |
+//! | 0..        | match 0 or more times           |
+//! | ..3        | match 0, 1, or 2 times          |
+//! | ..n        | match 0 to n-1 times            |
+//! | ..=3       | match 0, 1, 2 or 3 times        |
+//! | ..=n       | match 0 to n times              |
+//! | 3..=5      | match 3, 4 or 5 times           |
+//! | a..=b      | match a to b times              |
+//! | b..a       | if b > a: cannot match!         |
 //!
 //! This reflects the way [`std::ops::Range`] works with inclusive and exclusive bounds.
 //!
-//! * open-ended ranges limit themselves to matching usize::MAX times, which for all practical purposes is any number of times.
+//! [^max]: open-ended ranges limit themselves to matching usize::MAX times, which for all practical purposes is any number of times.
+//!
+//! # Panics
+//!
+//! If a *minimum* that is greater than isize::MAX is given, then the internal `Vec` used to store the parser output will panic with `capacity overflow`:
+//!
+//! ```ignore
+//! let panic_parser = digit().many(isize::MAX + 1..).parse("");  // this code will panic!
+//! ```
+//!
+//! ```text
+//! thread 'main' panicked at 'capacity overflow', library/alloc/src/raw_vec.rs:518:5
+//! ```
+//!
 
 use std::{
     fmt,

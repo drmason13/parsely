@@ -1,7 +1,7 @@
 use std::ops::RangeBounds;
 
 use crate::{
-    combinator::{count, many, optional, or, skip, then, Many, Optional, Or, Skip, Then},
+    combinator::{count, many, optional, or, then, then_skip, Many, Optional, Or, Then, ThenSkip},
     Lex,
 };
 
@@ -207,11 +207,11 @@ pub trait Parse {
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
-    fn then_skip<L: Lex>(self, lexer: L) -> Skip<L, Self>
+    fn then_skip<L: Lex>(self, lexer: L) -> ThenSkip<L, Self>
     where
         Self: Sized,
     {
-        skip(lexer, self)
+        then_skip(lexer, self)
     }
 
     /// Map the output of this parser to some other type.

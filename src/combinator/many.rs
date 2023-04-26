@@ -7,8 +7,9 @@
 //! ```
 //!
 //! Parsers can use many, and their outputs are collected into a `Vec`:
+//!
 //! ```
-//! # use parsely::{char, int, Lex, Parse};//!
+//! # use parsely::{char, int, Lex, Parse};
 //! let mut numbers_parser = int::<u32>().then_skip(char(',').optional()).many(1..);
 //!
 //! let (output, _) = numbers_parser.parse("123,456,789")?;
@@ -38,7 +39,7 @@
 //!
 //! This reflects the way [`std::ops::Range`] works with inclusive and exclusive bounds.
 //!
-//! [^max]: open-ended ranges limit themselves to matching usize::MAX times, which for all practical purposes is any number of times.
+//! [^max]: open-ended ranges limit themselves to matching `isize::MAX / 2` times, which for all practical purposes is any number of times.
 //!
 //! # Panics
 //!
@@ -59,6 +60,9 @@ use std::{
 };
 
 use crate::{Lex, LexResult, Parse, ParseResult};
+
+/// The maximum number of times the [`many()`] combinator will attempt to match, which is the implicit maximum for an open range.
+pub const MAX_LIMIT: usize = (isize::MAX / 2) as usize;
 
 /// This combinator is returned by [`many()`]. See it's documentation for more details.
 #[derive(Clone)]
@@ -153,7 +157,6 @@ impl<L: Lex> Lex for Many<L> {
 /// // these are all equivalent
 /// let mut zero_or_more_digits = many(.., digit());
 /// let mut zero_or_more_digits = many(0.., digit());
-/// let mut zero_or_more_digits = many(0..usize::MAX, digit());
 ///
 /// let (output, remaining) = zero_or_more_digits.lex("123")?;
 /// assert_eq!(output, "123");
@@ -218,7 +221,7 @@ pub fn many<T>(range: impl RangeBounds<usize>, item: T) -> Many<T> {
     let max = match range.end_bound() {
         Bound::Included(&n) => n,
         Bound::Excluded(&n) => n.saturating_sub(1),
-        Bound::Unbounded => usize::MAX,
+        Bound::Unbounded => MAX_LIMIT,
     };
 
     Many { item, min, max }
@@ -237,7 +240,7 @@ where
     T: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.max == usize::MAX {
+        if self.max == MAX_LIMIT {
             write!(f, "Many({}.., {:?})", self.min, self.item)
         } else {
             write!(f, "Many({}..={}, {:?})", self.min, self.max, self.item)

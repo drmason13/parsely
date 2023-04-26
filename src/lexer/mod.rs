@@ -11,6 +11,6 @@ pub use self::char::{
     WhiteSpace,
 };
 pub use self::end::{end, End};
-pub use self::number::{digit, hex, Digit};
+pub use self::number::{digit, hex, non_zero_digit, Digit};
 pub use self::take::{take, take_while, Take, TakeWhile};
 pub use self::token::{token, token_ci, Token};

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{Lex, LexResult};
+use crate::{char_if, Lex, LexResult};
 
 #[derive(Clone)]
 pub struct Digit {
@@ -42,6 +42,10 @@ impl Digit {
     pub fn base(&self, n: u32) -> Digit {
         Digit { radix: n }
     }
+}
+
+pub fn non_zero_digit() -> impl Lex {
+    char_if(|c| c.is_ascii_digit() && c != '0')
 }
 
 /// A lexer that parses an hexadecimal character, i.e. one or more base 16 digits.

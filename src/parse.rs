@@ -185,25 +185,27 @@ pub trait Parse {
     ///
     /// The output of the lexer is ignored, or "skipped".
     ///
+    /// See also [`Lex::skip_then`] which runs and ignores a lexer *before* running this parser.
+    ///
     /// This is useful when there is filler input that isn't relevant to what is being parsed that you need to match but don't want to map.
     ///
     /// # Examples
     ///
-    /// Comma separated list:
+    /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, token, combinator::many, Lex, Parse, ParseResult};
+    /// use parsely::{int, token, Parse, ParseResult};
     ///
     /// #[derive(Debug, PartialEq)]
     /// struct Foo;
     ///
-    /// fn list_of_foo(input: &str) -> ParseResult<'_, Vec<Foo>> {
-    ///     token("foo").map(|_| Foo).then_skip(char(',').optional()).many(1..).parse(input)
+    /// fn parser(input: &str) -> ParseResult<'_, u8> {
+    ///     int::<u8>().then_skip(token("<<<")).parse(input)
     /// }
     ///
-    /// let (output, remaining) = list_of_foo("foo,foo,foofoofoo,foo...")?;
-    /// assert_eq!(output[0], Foo);
-    /// assert_eq!(remaining, "...");
+    /// let (output, remaining) = parser("123<<<")?;
+    /// assert_eq!(output, 123);
+    /// assert_eq!(remaining, "");
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```

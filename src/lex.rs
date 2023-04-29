@@ -135,6 +135,31 @@ pub trait Lex {
         then(self, lexer)
     }
 
+    /// Creates a parser that runs a parser on the remaining input after running this lexer.
+    ///
+    /// The output of this lexer is ignored, or "skipped".
+    ///
+    /// See also [`Parse::then_skip`] which runs and ignores a lexer *after* running a parser.
+    ///
+    /// This is useful when there is filler input that isn't relevant to what is being parsed that you need to match but don't want to map.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{int, token, Lex, Parse, ParseResult};
+    ///
+    /// fn parser(input: &str) -> ParseResult<'_, u8> {
+    ///     token(">>>").skip_then(int::<u8>()).parse(input)
+    /// }
+    ///
+    /// let (output, remaining) = parser(">>>123")?;
+    /// assert_eq!(output, 123);
+    /// assert_eq!(remaining, "");
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
     fn skip_then<P: Parse>(self, parser: P) -> SkipThen<Self, P>
     where
         Self: Sized,

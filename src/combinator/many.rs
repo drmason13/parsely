@@ -61,14 +61,16 @@ use std::{
 
 use crate::{Lex, LexResult, Parse, ParseResult};
 
-/// The maximum number of times the [`many()`] combinator will attempt to match, which is the implicit maximum for an open range.
-pub const MAX_LIMIT: usize = (isize::MAX / 2) as usize;
+use super::delimited::Delimited;
+
+/// The maximum number of times to attempt to match a repeated parser and the implicit maximum for an open range.
+pub(crate) const MAX_LIMIT: usize = (isize::MAX / 2) as usize;
 
 /// This combinator is returned by [`many()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct Many<T> {
-    /// The parser to be repeated.
-    item: T,
+    /// The lexer/parser to be repeated.
+    pub(crate) item: T,
 
     /// The minimum number of times the parser must match for the parse to succeed.
     ///
@@ -81,6 +83,24 @@ pub struct Many<T> {
     ///
     /// To enforce that input is fully consumed, see [`crate::lexer::end()`]
     max: usize,
+}
+
+pub(crate) fn min_max_from_bounds(range: impl RangeBounds<usize>) -> (usize, usize) {
+    let min = match range.start_bound() {
+        Bound::Included(&n) => n,
+        Bound::Unbounded => 0,
+
+        // start bounds cannot be excluded
+        Bound::Excluded(_) => unreachable!(),
+    };
+
+    let max = match range.end_bound() {
+        Bound::Included(&n) => n,
+        Bound::Excluded(&n) => n.saturating_sub(1),
+        Bound::Unbounded => MAX_LIMIT,
+    };
+
+    (min, max)
 }
 
 impl<P: Parse> Parse for Many<P> {
@@ -210,20 +230,7 @@ impl<L: Lex> Lex for Many<L> {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn many<T>(range: impl RangeBounds<usize>, item: T) -> Many<T> {
-    let min = match range.start_bound() {
-        Bound::Included(&n) => n,
-        Bound::Unbounded => 0,
-
-        // start bounds cannot be excluded
-        Bound::Excluded(_) => unreachable!(),
-    };
-
-    let max = match range.end_bound() {
-        Bound::Included(&n) => n,
-        Bound::Excluded(&n) => n.saturating_sub(1),
-        Bound::Unbounded => MAX_LIMIT,
-    };
-
+    let (min, max) = min_max_from_bounds(range);
     Many { item, min, max }
 }
 
@@ -232,6 +239,32 @@ pub fn count<T>(count: usize, item: T) -> Many<T> {
         item,
         min: count,
         max: count,
+    }
+}
+
+impl<T> Many<T> {
+    /// Creates a new parser that matches the same number of times, but expects the input to be separated by `delimiter`.
+    ///
+    /// A trailing match is optional, so this is suitable for parsing separated lists.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{char, int, Parse};
+    ///
+    /// let mut csv_parser = int::<u8>().many(1..).delimiter(char(','));
+    ///
+    /// let (output, remaining) = csv_parser.parse("1,2,3")?;
+    /// assert_eq!(output, vec![1, 2, 3]);
+    /// assert_eq!(remaining, "");
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    pub fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, T> {
+        let Many { min, max, item } = self;
+
+        Delimited::new(min, max, item, delimiter)
     }
 }
 

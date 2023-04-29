@@ -1,6 +1,7 @@
 //! Combinator TODO list:
 //! * then_with -> https://docs.rs/chumsky/latest/chumsky/trait.Parser.html#method.then_with
 
+pub mod delimited;
 pub mod many;
 pub mod map;
 pub mod optional;
@@ -25,3 +26,6 @@ pub use skip::{skip_then, then_skip, SkipThen, ThenSkip};
 
 #[doc(inline)]
 pub use then::{then, Then};
+
+#[doc(inline)]
+pub use delimited::{delimited, Delimited};

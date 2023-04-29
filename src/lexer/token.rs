@@ -2,7 +2,7 @@ use std::{fmt, marker::PhantomData};
 
 use crate::{Lex, LexResult};
 
-// This `struct` is created by the function `[token]`. See its documentation for more.
+/// This lexer is returned by [`token()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Token<'p, C: CaseSensitivity>(&'p str, PhantomData<C>);
 
@@ -15,6 +15,23 @@ impl CaseSensitivity for CaseSensitive {}
 impl CaseSensitivity for CaseInsensitive {}
 
 impl<'p> Token<'p, CaseSensitive> {
+    /// Makes the token case insensitive, that is the case of input characters is ignored.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{token, Lex};
+    ///
+    /// let case_sensitive = token("abc");
+    /// let case_insensitive = token("abc").any_case();
+    ///
+    /// assert!(case_sensitive.lex("aBc").is_err());
+    ///
+    /// assert_eq!(case_insensitive.lex("aBc")?, ("aBc", ""));
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
     pub fn any_case(self) -> Token<'p, CaseInsensitive> {
         Token(self.0, PhantomData)
     }

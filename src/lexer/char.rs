@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::{Lex, LexResult};
 
+/// This lexer is returned by [`char()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct Char(pub char);
 
@@ -23,10 +24,13 @@ impl Lex for Char {
     }
 }
 
+/// This lexer matches the given [`char`](prim@char) once.
 pub fn char(char: char) -> Char {
     Char(char)
 }
 
+/// This lexer is returned by [`char_if()`]. See it's documentation for more details.
+#[derive(Clone)]
 pub struct CharIf<F> {
     condition: F,
 }
@@ -48,6 +52,22 @@ where
     }
 }
 
+/// This lexer matches a single [`char`](prim@char) if it satisfies the given condition.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use parsely::{char_if, Lex};
+///
+/// let uppercase = char_if(|c| c.is_ascii_uppercase());
+///
+/// let (output, remaining) = uppercase.lex("ABC")?;
+/// assert_eq!(output, "A");
+/// assert_eq!(remaining, "BC");
+/// # Ok::<(), parsely::Error>(())
+/// ```
 pub fn char_if<F>(condition: F) -> CharIf<F>
 where
     F: Fn(char) -> bool,
@@ -55,6 +75,7 @@ where
     CharIf { condition }
 }
 
+/// This lexer is returned by [`ws()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct WhiteSpace;
 
@@ -76,34 +97,37 @@ impl Lex for WhiteSpace {
     }
 }
 
+/// This lexer matches a single [`char`](prim@char) if it is a whitespace character.
 pub fn ws() -> WhiteSpace {
     WhiteSpace
 }
 
-/// Matches an alphabetic character.
+/// Matches a single alphabetic character.
 pub fn alpha() -> CharIf<fn(char) -> bool> {
     char_if(char::is_alphabetic)
 }
 
-/// Matches an alphanumeric character.
+/// Matches a single alphanumeric character.
 pub fn alphanum() -> CharIf<fn(char) -> bool> {
     char_if(char::is_alphanumeric)
 }
 
-/// Matches an ascii alphanumeric character.
+/// Matches a single ascii alphanumeric character.
 pub fn ascii_alpha() -> CharIf<fn(char) -> bool> {
     char_if(|c| c.is_ascii_alphabetic())
 }
 
-/// Matches an ascii alphanumeric character.
+/// Matches a single ascii alphanumeric character.
 pub fn ascii_alphanum() -> CharIf<fn(char) -> bool> {
     char_if(|c| c.is_ascii_alphanumeric())
 }
 
+/// Matches a single lowercase character.
 pub fn lowercase() -> CharIf<fn(char) -> bool> {
     char_if(char::is_lowercase)
 }
 
+/// Matches an uppercase character.
 pub fn uppercase() -> CharIf<fn(char) -> bool> {
     char_if(char::is_uppercase)
 }

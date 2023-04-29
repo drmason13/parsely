@@ -1,31 +1,29 @@
-//! Combinator TODO list:
-//! * then_with -> https://docs.rs/chumsky/latest/chumsky/trait.Parser.html#method.then_with
+//! The built in combinators provided by parsely
 
-pub mod delimited;
-pub mod many;
-pub mod map;
-pub mod optional;
-pub mod or;
-pub mod skip;
-pub mod then;
+// Combinator TODO list:
+// * then_with -> <https://docs.rs/chumsky/latest/chumsky/trait.Parser.html#method.then_with>
 
-#[doc(inline)]
-pub use many::{count, many, Many};
+mod map;
+mod optional;
+mod or;
+pub mod sequence;
+mod skip;
+mod then;
 
 #[doc(inline)]
-pub use map::{map, try_map, Map, TryMap};
+pub use self::sequence::{count, delimited, many, Delimited, Many};
 
 #[doc(inline)]
-pub use optional::{optional, Optional};
+pub use self::map::{map, try_map, Map, TryMap};
 
 #[doc(inline)]
-pub use or::{or, Or};
+pub use self::optional::{optional, Optional};
 
 #[doc(inline)]
-pub use skip::{skip_then, then_skip, SkipThen, ThenSkip};
+pub use self::or::{or, Or};
 
 #[doc(inline)]
-pub use then::{then, Then};
+pub use self::skip::{skip_then, then_skip, SkipThen, ThenSkip};
 
 #[doc(inline)]
-pub use delimited::{delimited, Delimited};
+pub use self::then::{then, Then};

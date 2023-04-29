@@ -1,18 +1,23 @@
 #![deny(rustdoc::broken_intra_doc_links)]
+#![deny(missing_docs)]
 
-//!
-//! Parsely is a lexer-parser combinator library for Rust with the following aims
+//! Parsely is a simple string parsing library for Rust with the following aims
 //!
 //! * Simple to use
-//! * Well documented built-in lexers
+//! * Well documented
 //!
 //! While it doesn't prioritise speed, it will often be "fast enough" for a projects that do a little bit of parsing here and there.
 //!
-//! If parsing speed is important to your application's performance (for example a compiler) then this library isn't meant for you.
+//! Parsely provides combinators for you to build up complex parsers from simple reusable pieces.
+//!
+//! What makes Parsely different from other (excellent) parser combinator libraries?
+//!
+//! - the limitation of UTF-8 [`&str`](prim@str) input and the speed and simplicity this affords.
+//! - the fundamental split between **lexing** (splitting strings into smaller parts) and **parsing** (converting string parts into other types).
 //!
 //! Take a look at the [`Lex`] and [`Parse`] traits and the module level documentation: [`lexer`], [`parser`] and [`combinator`].
 
-pub mod error;
+mod error;
 pub use error::Error;
 
 mod lex;

@@ -8,24 +8,51 @@ use crate::{
     Parse,
 };
 
+/// The type returned by a lex: the order of the tuple is `(matched, remaining)`
+///
+/// * First the part of the input successfully matched
+/// * Then the remaining part of the input that was not matched.
+///
+/// The order reads left to right as the lexer reads the input, and matches the return order of [`str::split_at`].
+///
+/// Often the lifetime parameter can be elided:
+/// ```rust
+/// # use parsely::{LexResult};
+/// fn my_lexer(input: &str) -> LexResult<'_> {
+///     // ...
+///     # Ok((input, ""))
+/// }
+/// ```
 pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
 
 /// This trait is implemented by all Parsely lexers.
 ///
-/// Its principle method is [`lex`](Lex::lex) which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
+/// Its principle method is [`lex`](Lex::lex) which takes an input `&str` and returns the matched part of the input, along with any remaining input.
+///
+/// By repeating this process and mapping the matched parts of the input to your types, you will create a parser.
 ///
 /// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
+///
+/// Most Parsely parser combinators will be built up from primitives that implement Lex such as [`char()`], [`token()`] and [`digit()`].
+///
+/// We'll refer to types that implement [`Lex`] as Lexers.
+///
+/// Lexers can be combined using combinators. That's what the majority of the methods in this trait provide: convenient ways to combine different lexers and parser together.
+///
+/// The [`combinator`] module defines the concrete types that these methods return.
+///
+/// [`lex`]: Lex::lex
+/// [`char()`]: crate::char
+/// [`token()`]: crate::token
+/// [`digit()`]: crate::digit
+/// [`combinator`]: crate::combinator
 pub trait Lex {
-    /// This method returns a tuple `(matched, remaining)` of `&str`.
-    ///
-    /// First the part of the input successfully matched and then the remaining part of the input that was not matched.
-    ///
-    /// The order reads left to right as the lexer reads the input, and matches the return order of [`str::split_at`].
+    /// Match part or all of an input str, breaking it down into smaller pieces to make parsing easier.
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i>;
 
     /// Creates a new lexer that will attempt to lex with this lexer multiple times.
     ///
-    /// See [`crate::combinator::Many`] for more details.
+    /// See [`crate::combinator::many()`] for more details.
     fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
     where
         Self: Sized,
@@ -45,11 +72,9 @@ pub trait Lex {
         count(n, self)
     }
 
-    /// Creates a new lexer that will match 0 or 1 times, making it optional.
+    /// Creates a new lexer from this one that will match 0 or 1 times, making it optional.
     ///
-    /// This is equivalent to `.many(0..=1)`.
-    ///
-    /// See [`crate::combinator::Many`] for more details.
+    /// This is equivalent to `.many(0..=1)`. Using `.optional()` is preferred for legibility.
     fn optional(self) -> Optional<Self>
     where
         Self: Sized,
@@ -167,6 +192,26 @@ pub trait Lex {
         skip_then(self, parser)
     }
 
+    /// Creates a parser by mapping the matched part of this lexer to an output type.
+    ///
+    /// This is best for mapping specific known tokens. If the conversion might fail you must use [`Lex::try_map()`] instead.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use std::net::Ipv4Addr;
+    ///
+    /// use parsely::{token, Lex, Parse};
+    ///
+    /// let parser = token("localhost").map(|_| Ipv4Addr::new(127, 0, 0, 1));
+    ///
+    /// let (output, remaining) = parser.parse("localhost")?;
+    /// assert_eq!(output, Ipv4Addr::LOCALHOST);
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
     fn map<F, O>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -175,6 +220,30 @@ pub trait Lex {
         map(self, f)
     }
 
+    /// Creates a parser by mapping the matched part of this lexer to an output type.
+    ///
+    /// Unlike Map, this returns a Result<T, parsely::Error> to represent failed conversions.
+    ///
+    /// This is needed to map matched input using [`std::str::FromStr::from_str`].
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use std::{net::Ipv4Addr, str::FromStr};
+    ///
+    /// use parsely::{char, digit, Lex, Parse};
+    ///
+    /// fn bad_ip_parser() -> impl Parse<Output=Ipv4Addr> {
+    ///     digit().many(1..=3).count(4).delimiter(char('.')).try_map(FromStr::from_str)
+    /// }
+    ///
+    /// let (output, remaining) = bad_ip_parser().parse("127.0.0.1")?;
+    /// assert_eq!(output, Ipv4Addr::LOCALHOST);
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
     fn try_map<F, O, E>(self, f: F) -> TryMap<Self, F>
     where
         Self: Sized,

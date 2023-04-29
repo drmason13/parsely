@@ -2,12 +2,18 @@ use std::fmt;
 
 use crate::{Lex, LexResult, Parse, ParseResult};
 
+/// This combinator is returned by [`then()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct Then<L, R> {
     left: L,
     right: R,
 }
 
+/// This combinator is used to run 2 parsers or 2 lexers sequentially.
+///
+/// Both must match, if either the left or right item returns an error, [`then()`] fails.
+///
+/// This combinator can be chained using [`Parse::then()`] or [`Lex::then()`]
 pub fn then<L, R>(left: L, right: R) -> Then<L, R> {
     Then { left, right }
 }

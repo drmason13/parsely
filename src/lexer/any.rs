@@ -1,5 +1,6 @@
 use crate::Lex;
 
+/// This lexer is returned by [`any()`]. See it's documentation for more details.
 #[derive(Debug, Clone)]
 pub struct Any;
 
@@ -15,7 +16,7 @@ impl Lex for Any {
 
 /// This parser will match and consume 1 char of the input.
 ///
-/// If the input is empty it fails.
+/// If the input is empty then it fails.
 pub fn any() -> Any {
     Any
 }

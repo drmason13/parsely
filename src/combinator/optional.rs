@@ -1,5 +1,13 @@
+//! [`lexer.optional()`](Lex::optional) will succeed even if `lexer` fails.
+//!
+//! [`parser.optional()`](Parse::optional) will succeed even if `parser` fails.
+
+use std::fmt;
+
 use crate::{Lex, Parse, ParseResult};
 
+/// This combinator is returned by [`optional()`]. See it’s documentation for more details.
+#[derive(Clone)]
 pub struct Optional<T> {
     item: T,
 }
@@ -34,7 +42,15 @@ where
 
 /// Makes an optional parser/lexer.
 ///
-/// If the match fails, then the error is silenced and the input is returned as remaining input.
+/// If the parser or lexer fails, then the error is silenced and the whole input is returned as remaining input.
+///
+/// This is more conveniently created using the [`Lex::optional`] and [`Parse::optional`] methods.
 pub fn optional<T>(item: T) -> Optional<T> {
     Optional { item }
+}
+
+impl<T: fmt::Debug> fmt::Debug for Optional<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Optional({:?})", self.item)
+    }
 }

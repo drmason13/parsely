@@ -5,6 +5,22 @@ use crate::{
     Lex,
 };
 
+/// The type returned by a parse. The order of the tuple is `(output, remaining)`
+///
+/// * First the output of the parser
+/// * Then the remaining part of the input.
+///
+/// The order reads left to right as the parser reads the input, and matches the return order of [`str::split_at`].
+///
+/// Often the lifetime parameter can be elided:
+/// ```rust
+/// # use parsely::{ParseResult};
+/// # struct Foo;
+/// fn my_parser(input: &str) -> ParseResult<'_, Foo> {
+///     // ...
+///     # Ok((Foo, ""))
+/// }
+/// ```
 pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error>;
 
 /// This trait is implemented by all Parsely parsers.
@@ -28,7 +44,7 @@ pub trait Parse {
 
     /// Creates a new parser that will attempt to parse with this parser multiple times.
     ///
-    /// See [`crate::combinator::Many`] for more details.
+    /// See [`crate::combinator::many()`] and the [`sequence module`](crate::combinator::sequence) for more details.
     fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
     where
         Self: Sized,
@@ -48,7 +64,29 @@ pub trait Parse {
         count(n, self)
     }
 
-    /// Creates a new parser that will match 0 or 1 times, making it optional.
+    /// Creates a new parser from this one that will match 0 or 1 times, making it optional.
+    ///
+    /// The output is wrapped in an [`Option`]: if this parser doesn't match it outputs a `None`.
+    ///
+    /// This means `.optional()` is **not** equivalent to `.many(0..=1)` which outputs into a [`Vec`].
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{int, token, Lex, Parse};
+    ///
+    /// let parser = int::<u32>().optional();
+    ///
+    /// let (output, remaining) = parser.clone().then(token("abc").map(|_| 7)).parse("123abc")?;
+    /// assert_eq!(output, (Some(123), 7));
+    ///
+    /// let (output, remaining) = parser.parse("abc")?;
+    /// assert_eq!(output, None);
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
     fn optional(self) -> Optional<Self>
     where
         Self: Sized,

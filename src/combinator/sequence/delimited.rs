@@ -1,9 +1,13 @@
+//! [`.many(..).delimited(delimiter)`](super::many::Many::delimiter()) will expect a delimiter in between each item.
+
 use std::ops::RangeBounds;
 
 use crate::{Lex, LexResult, Parse, ParseResult};
 
 use super::many::min_max_from_bounds;
 
+/// This combinator is returned by [`Many::delimiter()`](super::many::Many::delimiter()). See it's documentation for more details.
+#[derive(Debug, Clone)]
 pub struct Delimited<L, T> {
     delimiter: L,
     item: T,
@@ -11,7 +15,8 @@ pub struct Delimited<L, T> {
     max: usize,
 }
 
-impl<L, T> Delimited<L, T> {
+impl<L: Lex, T> Delimited<L, T> {
+    /// Returns a new Delimited combinator. See also [`delimited()`]
     pub fn new(min: usize, max: usize, item: T, delimiter: L) -> Self {
         Delimited {
             min,
@@ -104,7 +109,15 @@ where
     }
 }
 
-pub fn delimited<L, T>(delimiter: L, range: impl RangeBounds<usize>, item: T) -> Delimited<L, T> {
+/// Creates a parser/lexer that expects a delimiter in between each item.
+///
+/// Like [`many()`](crate::combinator::many()) this function takes a range to specify a minimum and maximum number of matches.
+/// See the module docs of [`many`](crate::combinator::many) for more details.
+pub fn delimited<L: Lex, T>(
+    delimiter: L,
+    range: impl RangeBounds<usize>,
+    item: T,
+) -> Delimited<L, T> {
     let (min, max) = min_max_from_bounds(range);
 
     Delimited::new(min, max, item, delimiter)

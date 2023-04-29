@@ -1,5 +1,6 @@
 use crate::{Lex, Parse};
 
+/// This combinator is returned by [`then_skip()`]. See it's documentation for more details.
 #[derive(Debug, Clone)]
 pub struct ThenSkip<L, T> {
     lexer: L,
@@ -9,6 +10,10 @@ pub struct ThenSkip<L, T> {
 /// *After* running the item (parser or lexer), this combinator will run the given lexer and discard its output.
 ///
 /// If the lexer fails, it is still a parse failure. Use `.optional()` if the input to be skipped isn't required.
+///
+/// This combinator can be chained using [`Parse::then_skip()`].
+//
+// TODO: what actually happens if you do a then_skip(lexer_a, lexer_b) ???
 pub fn then_skip<L: Lex, T>(lexer: L, item: T) -> ThenSkip<L, T> {
     ThenSkip { lexer, item }
 }
@@ -32,6 +37,7 @@ impl<L: Lex, T: Parse> Parse for ThenSkip<L, T> {
     }
 }
 
+/// This combinator is returned by [`skip_then()`]. See it's documentation for more details.
 #[derive(Debug, Clone)]
 pub struct SkipThen<L, T> {
     lexer: L,
@@ -41,6 +47,8 @@ pub struct SkipThen<L, T> {
 /// *Before* running the item (parser or lexer), this combinator will run the given lexer and discard its output.
 ///
 /// If the lexer fails, it is still a parse failure. Use `.optional()` if the input to be skipped isn't required.
+///
+/// This combinator can be chained using [`Lex::skip_then()`].
 pub fn skip_then<L: Lex, T>(lexer: L, item: T) -> SkipThen<L, T> {
     SkipThen { lexer, item }
 }

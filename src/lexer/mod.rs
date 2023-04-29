@@ -1,3 +1,5 @@
+//! The built in lexers provided by parsely
+
 mod any;
 mod char;
 mod end;

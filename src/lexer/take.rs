@@ -1,10 +1,12 @@
 use crate::Lex;
 
+/// This lexer is returned by [`take()`]. See it's documentation for more details.
 #[derive(Clone, Debug)]
 pub struct Take {
     count: usize,
 }
 
+/// This lexer is returned by [`take_while()`]. See it's documentation for more details.
 #[derive(Clone, Debug)]
 pub struct TakeWhile<F> {
     condition: F,
@@ -40,10 +42,16 @@ where
     }
 }
 
+/// This lexer matches `count` characters if that many are available in the input.
+///
+/// If there are fewer than `count` characters in the input then this lexer fails.
 pub fn take(count: usize) -> Take {
     Take { count }
 }
 
+/// This lexer matches all characters that satisfy the condition.
+///
+/// If no characters satisfy the condition, the lex is still successful.
 pub fn take_while<F>(condition: F) -> TakeWhile<F>
 where
     F: Fn(char) -> bool,

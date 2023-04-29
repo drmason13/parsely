@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::{char_if, Lex, LexResult};
 
+/// This lexer is returned by [`digit()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct Digit {
     radix: u32,
@@ -21,6 +22,7 @@ impl Lex for Digit {
     }
 }
 
+/// This lexer matches a single base 10 digit i.e. one of "1234567890".
 pub fn digit() -> Digit {
     Digit { radix: 10 }
 }
@@ -44,15 +46,16 @@ impl Digit {
     }
 }
 
-pub fn non_zero_digit() -> impl Lex {
+/// This lexer matches a single non-zero base 10 digit i.e. one of "123456789".
+pub fn non_zero_digit() -> impl Lex + Clone {
     char_if(|c| c.is_ascii_digit() && c != '0')
 }
 
-/// A lexer that parses an hexadecimal character, i.e. one or more base 16 digits.
+/// This lexer matches a single hexadecimal character, i.e. one of "0123456789abcdefABCDEF".
 ///
 /// No leading `0x` or other hex notation in the input is accepted.
 ///
-/// As this is a lexer, no type conversion is performed, but there are examples of how you might want to do this.
+/// As this is a lexer, no type conversion is performed, see the examples for how you might want to do this.
 ///
 /// # Examples
 ///

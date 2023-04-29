@@ -1,3 +1,26 @@
+//! This module provides built-in Parsers for numbers such as float, int, uint and number.
+//!
+//!
+//! # Specifying output type
+//!
+//! These parsers require a generic parameter to indicate the exact type of number they should output, which will usually require a turbofish: `uint::<u8>()`.
+//!
+//! Note:
+//!
+//! There is unfortunately no compile time protection against specifying somewhat non-sensical types such as:
+//! * `float::<u8>()` - which will never be able to fully match a decimal input like `123.45` because it will match `123` as a u8 instead.
+//! * `int::<Ipv4Addr>()` - which will never be able to parse anything because int does not expect a `.` in the input.
+//!
+//! We don't consider this a common enough problem to use any complex numerical traits to bound the types to avoid this.
+//!
+//! # Maximum number of digits
+//!
+//! These parsers parse a maximum of 100_000 digits (plus 100_000 decimal places in the case of [`float`]), which is probably plenty right?
+//!
+//! This number isn't stable though, so try not to depend on the fact somehow!
+//!
+//! I decided to avoid an unbound number of digits so it was more robust in the face of malicious input, but this library has not been tested for security yet.
+
 use std::str::FromStr;
 
 use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
@@ -6,21 +29,40 @@ use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
 ///
 /// To parse unsigned integers that forbid the leading '-' consider using:
 /// * [`uint()`] which will parse only base 10 digits
-/// * [`digit().many(1..)`] which is the lexer that powers [`uint()`]
 ///
 /// To parse decimals consider using:
 /// * [`float()`] which will parse only decimals
 /// * [`number()`] which will parse integers or decimals
 ///
-pub fn int<T: FromStr>() -> impl Parse<Output = T> {
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use parsely::{int, Parse};
+///
+/// assert_eq!(int().parse("123")?, (123, ""));
+/// # Ok::<(), parsely::Error>(())
+/// ```
+///
+pub fn int<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
     char('-')
         .optional()
         .then(char_if(|c| c.is_ascii_digit() && c != '0'))
-        .then(digit().many(0..100_000))
+        .then(digit().many(0..=100_000))
         .try_map(FromStr::from_str)
 }
 
-pub fn uint<T: FromStr>() -> impl Parse<Output = T> {
+/// Parses an unsigned integer, i.e. one or more base 10 digits.
+///
+/// To parse signed integers that allow a leading '-' consider using:
+/// * [`int()`] which will parse only base 10 digits
+///
+/// To parse decimals consider using:
+/// * [`float()`] which will parse only decimals
+/// * [`number()`] which will parse integers or decimals
+///
+pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
     non_zero_digit()
         .then(digit().many(0..100_000))
         .try_map(FromStr::from_str)
@@ -102,7 +144,7 @@ pub fn float<T: FromStr>() -> impl Parse<Output = T> {
 /// ```
 ///
 /// This happens because
-pub fn number<T: FromStr>() -> impl Parse<Output = T> {
+pub fn number<T: FromStr + Clone>() -> impl Parse<Output = T> {
     float::<T>().or(int::<T>())
 }
 

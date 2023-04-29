@@ -1,60 +1,3 @@
-//! Many is the most important sequence combinator.
-//!
-//! It can be used to lex multiple times, turning a lexer that consumes one character such as `digit()` into a lexer that consumes multiple characters:
-//! ```
-//! # use parsely::{digit, Lex};
-//! digit().many(1..);
-//! ```
-//!
-//! Parsers can use many, and their outputs are collected into a `Vec`:
-//!
-//! ```
-//! # use parsely::{char, int, Lex, Parse};
-//! let numbers_parser = int::<u32>().then_skip(char(',').optional()).many(1..);
-//!
-//! let (output, _) = numbers_parser.parse("123,456,789")?;
-//! assert_eq!(output, vec![123, 456, 789]);
-//!
-//! # Ok::<(), parsely::Error>(())
-//! ```
-//!
-//! The range argument to many() declares how many times the inner item must match.
-//!
-//! If the inner item does not match enough times then an [`crate::Error`] is raised.
-//!
-//! If it could match more times, there's no error, and no extra input is consumed.
-//!
-//! | range used | meaning                         |
-//! |------------|---------------------------------|
-//! | ..         | match any number of times[^max] |
-//! | 1..        | match 1 or more times           |
-//! | 0..        | match 0 or more times           |
-//! | ..3        | match 0, 1, or 2 times          |
-//! | ..n        | match 0 to n-1 times            |
-//! | ..=3       | match 0, 1, 2 or 3 times        |
-//! | ..=n       | match 0 to n times              |
-//! | 3..=5      | match 3, 4 or 5 times           |
-//! | a..=b      | match a to b times              |
-//! | b..a       | if b > a: cannot match!         |
-//!
-//! This reflects the way [`std::ops::Range`] works with inclusive and exclusive bounds.
-//!
-//! [^max]: open-ended ranges limit themselves to matching `isize::MAX / 2` times, which for all practical purposes is any number of times.
-//!
-//! # Panics
-//!
-//! If a *minimum* that is greater than isize::MAX is given, then the internal `Vec` used to store the parser output will panic with `capacity overflow`:
-//!
-//! ```should_panic
-//! # use parsely::{int, Parse};
-//! let panic_parser = int::<u32>().many(usize::MAX..).parse("");  // this code will panic!
-//! ```
-//!
-//! ```text
-//! thread 'main' panicked at 'capacity overflow', library/alloc/src/raw_vec.rs:518:5
-//! ```
-//!
-
 use std::{
     fmt,
     ops::{Bound, RangeBounds},
@@ -167,6 +110,8 @@ impl<L: Lex> Lex for Many<L> {
 ///
 /// The end bound becomes the maximum number of times the parser will attempt to parse.
 ///
+/// This combinator can be chained using [`Parse::many()`] or [`Lex::many()`].
+///
 /// # Examples
 ///
 /// Basic usage:
@@ -235,6 +180,13 @@ pub fn many<T>(range: impl RangeBounds<usize>, item: T) -> Many<T> {
     Many { item, min, max }
 }
 
+/// Creates a combinator that applies a given parser or lexer multiple times.
+///
+/// This function takes a Range-like argument as a succint description of start and end bounds.
+///
+/// The start bound becomes the minimum number of times the parser must match to succeed.
+///
+/// The end bound becomes the maximum number of times the parser will attempt to parse.
 pub fn count<T>(count: usize, item: T) -> Many<T> {
     Many {
         item,

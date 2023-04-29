@@ -11,7 +11,7 @@ pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error>;
 ///
 /// Its principle method is [`parse`](Parse::parse) which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
 ///
-/// This is useful to break apart large compparse input into smaller pieces which can be processed by parsers into other types.
+/// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
 pub trait Parse {
     /// The output type produced by a successful parse.
     type Output;

@@ -29,7 +29,7 @@ where
 {
     type Output = Vec<<T as Parse>::Output>;
 
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;
@@ -72,7 +72,7 @@ where
     T: Lex,
     L: Lex,
 {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;

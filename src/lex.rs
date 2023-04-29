@@ -16,12 +16,12 @@ pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
 ///
 /// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
 pub trait Lex {
-    /// The  method returns a tuple `(matched, remaining)` of `&str`.
+    /// This method returns a tuple `(matched, remaining)` of `&str`.
     ///
     /// First the part of the input successfully matched and then the remaining part of the input that was not matched.
     ///
     /// The order reads left to right as the lexer reads the input, and matches the return order of [`str::split_at`].
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i>;
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i>;
 
     /// Creates a new lexer that will attempt to lex with this lexer multiple times.
     ///
@@ -70,7 +70,7 @@ pub trait Lex {
     /// ```
     /// use parsely::{char, token, Lex};
     ///
-    /// let mut for_or_bar = token("foo").or(token("bar"));
+    /// let for_or_bar = token("foo").or(token("bar"));
     ///
     /// let (output, remaining) = for_or_bar.lex("foobarbaz")?;
     ///
@@ -84,7 +84,7 @@ pub trait Lex {
     ///
     /// // `or` can be chained multiple times:
     ///
-    /// let mut whitespace = char(' ')
+    /// let whitespace = char(' ')
     ///     .or(char('\t'))
     ///     .or(char('\n'))
     ///     .or(char('\r'));
@@ -115,7 +115,7 @@ pub trait Lex {
     /// ```
     /// use parsely::{char, hex, Lex};
     ///
-    /// let mut hex_color = char('#').then(hex().many(1..));
+    /// let hex_color = char('#').then(hex().many(1..));
     ///
     /// let (output, remaining) = hex_color.lex("#C0FFEE")?;
     ///
@@ -228,9 +228,9 @@ pub trait Lex {
 /// ```
 impl<F> Lex for F
 where
-    F: FnMut(&str) -> Result<(&str, &str), crate::Error>,
+    F: Fn(&str) -> Result<(&str, &str), crate::Error>,
 {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         self(input)
     }
 }

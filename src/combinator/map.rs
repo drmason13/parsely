@@ -21,7 +21,7 @@ where
 {
     type Output = O;
 
-    fn parse<'i>(&mut self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
         let (matched, remaining) = self.lexer.lex(input).map_err(|_| crate::Error::NoMatch)?;
         let output = (self.f)(matched);
 
@@ -48,7 +48,7 @@ where
 {
     type Output = O;
 
-    fn parse<'i>(&mut self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
         let (matched, remaining) = self.lexer.lex(input).map_err(|_| crate::Error::NoMatch)?;
         let output = (self.f)(matched).map_err(|_| crate::Error::FailedConversion)?;
 

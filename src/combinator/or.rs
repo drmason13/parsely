@@ -22,7 +22,7 @@ where
 {
     type Output = O;
 
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, O> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, O> {
         self.left.parse(input).or_else(|_| self.right.parse(input))
     }
 }
@@ -32,7 +32,7 @@ where
     L: Lex,
     R: Lex,
 {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         self.left.lex(input).or_else(|_| self.right.lex(input))
     }
 }

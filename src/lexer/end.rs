@@ -4,7 +4,7 @@ use crate::{Lex, LexResult};
 pub struct End;
 
 impl Lex for End {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         if input.is_empty() {
             Ok(("", ""))
         } else {
@@ -16,7 +16,7 @@ impl Lex for End {
 /// ```
 /// use parsely::{char, end, Lex};
 ///
-/// let mut lexer = char('a').count(3).then(end());
+/// let lexer = char('a').count(3).then(end());
 ///
 /// let (output, remaining) = lexer.lex("aaa")?;
 ///

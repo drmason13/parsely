@@ -8,7 +8,7 @@ pub struct Digit {
 }
 
 impl Lex for Digit {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         if let Some(c) = input.chars().next() {
             if c.is_digit(self.radix) {
                 Ok(input.split_at(c.len_utf8()))
@@ -52,7 +52,7 @@ pub fn non_zero_digit() -> impl Lex {
 ///
 /// No leading `0x` or other hex notation in the input is accepted.
 ///
-/// As this is a lexer, no type conversion is performed.
+/// As this is a lexer, no type conversion is performed, but there are examples of how you might want to do this.
 ///
 /// # Examples
 ///
@@ -63,7 +63,7 @@ pub fn non_zero_digit() -> impl Lex {
 ///
 /// assert_eq!(("a", "bc"), hex().lex("abc")?);
 ///
-/// assert_eq!(("123abcdef", "g"), hex().many(1..).lex("123abcdefg")?);
+/// assert_eq!(("0123456789abcdef", "g"), hex().many(1..).lex("0123456789abcdefg")?);
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
@@ -82,16 +82,12 @@ pub fn non_zero_digit() -> impl Lex {
 /// ```
 /// use parsely::{hex, Lex, Parse};
 ///
-/// let mut hex_bytes = hex().many(1..=2).try_map(|s| u8::from_str_radix(s, 16)).many(1..);
+/// let hex_bytes = hex().many(1..=2).try_map(|s| u8::from_str_radix(s, 16)).many(1..);
 ///
-/// assert_eq!((vec![9, 10, 11, 12], ""), hex_bytes.parse("090A0B0C")?);
+/// assert_eq!((vec![9, 10, 11, 12, 7], ""), hex_bytes.parse("090A0B0C7")?);
 ///
 /// # Ok::<(), parsely::Error>(())
 /// ```
-///
-/// # Note
-///
-//TODO: This lexer will not transform its output into another type, but this can be done using [`Lex::map`].
 pub fn hex() -> Digit {
     Digit { radix: 16 }
 }

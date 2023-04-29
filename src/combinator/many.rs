@@ -10,7 +10,7 @@
 //!
 //! ```
 //! # use parsely::{char, int, Lex, Parse};
-//! let mut numbers_parser = int::<u32>().then_skip(char(',').optional()).many(1..);
+//! let numbers_parser = int::<u32>().then_skip(char(',').optional()).many(1..);
 //!
 //! let (output, _) = numbers_parser.parse("123,456,789")?;
 //! assert_eq!(output, vec![123, 456, 789]);
@@ -45,8 +45,9 @@
 //!
 //! If a *minimum* that is greater than isize::MAX is given, then the internal `Vec` used to store the parser output will panic with `capacity overflow`:
 //!
-//! ```ignore
-//! let panic_parser = digit().many(isize::MAX + 1..).parse("");  // this code will panic!
+//! ```should_panic
+//! # use parsely::{int, Parse};
+//! let panic_parser = int::<u32>().many(usize::MAX..).parse("");  // this code will panic!
 //! ```
 //!
 //! ```text
@@ -106,7 +107,7 @@ pub(crate) fn min_max_from_bounds(range: impl RangeBounds<usize>) -> (usize, usi
 impl<P: Parse> Parse for Many<P> {
     type Output = Vec<<P as Parse>::Output>;
 
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;
@@ -135,7 +136,7 @@ impl<P: Parse> Parse for Many<P> {
 }
 
 impl<L: Lex> Lex for Many<L> {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;
@@ -175,8 +176,8 @@ impl<L: Lex> Lex for Many<L> {
 /// use parsely::combinator::many;
 ///
 /// // these are all equivalent
-/// let mut zero_or_more_digits = many(.., digit());
-/// let mut zero_or_more_digits = many(0.., digit());
+/// let zero_or_more_digits = many(.., digit());
+/// let zero_or_more_digits = many(0.., digit());
 ///
 /// let (output, remaining) = zero_or_more_digits.lex("123")?;
 /// assert_eq!(output, "123");
@@ -186,7 +187,7 @@ impl<L: Lex> Lex for Many<L> {
 /// assert_eq!(output, "");
 /// assert_eq!(remaining, "abc");
 ///
-/// let mut one_or_more_digits = many(1.., digit());
+/// let one_or_more_digits = many(1.., digit());
 ///
 /// let result = one_or_more_digits.lex("abc");
 /// assert_eq!(result, Err(parsely::Error::NoMatch));
@@ -198,7 +199,7 @@ impl<L: Lex> Lex for Many<L> {
 /// ```
 /// use parsely::{digit, Lex};
 ///
-/// let mut zero_or_more_digits = digit().many(0..);
+/// let zero_or_more_digits = digit().many(0..);
 ///
 /// # let (output, remaining) = zero_or_more_digits.lex("123")?;
 /// # assert_eq!(output, "123");
@@ -215,7 +216,7 @@ impl<L: Lex> Lex for Many<L> {
 /// ```
 /// use parsely::{digit, Lex};
 ///
-/// let mut three_or_four_digits = digit().many(3..=4);
+/// let three_or_four_digits = digit().many(3..=4);
 ///
 /// let (output, remaining) = three_or_four_digits.lex("123")?;
 /// assert_eq!(output, "123");
@@ -254,7 +255,7 @@ impl<T> Many<T> {
     /// ```
     /// use parsely::{char, int, Parse};
     ///
-    /// let mut csv_parser = int::<u8>().many(1..).delimiter(char(','));
+    /// let csv_parser = int::<u8>().many(1..).delimiter(char(','));
     ///
     /// let (output, remaining) = csv_parser.parse("1,2,3")?;
     /// assert_eq!(output, vec![1, 2, 3]);

@@ -11,7 +11,7 @@ pub struct TakeWhile<F> {
 }
 
 impl Lex for Take {
-    fn lex<'i>(&mut self, input: &'i str) -> crate::LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
         if input.len() >= self.count {
             Ok(input.split_at(self.count))
         } else {
@@ -24,7 +24,7 @@ impl<F> Lex for TakeWhile<F>
 where
     F: Fn(char) -> bool,
 {
-    fn lex<'i>(&mut self, input: &'i str) -> crate::LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
         let char_indices = input.char_indices();
         let mut boundary = 0;
 

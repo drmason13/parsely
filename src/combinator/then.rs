@@ -19,7 +19,7 @@ where
 {
     type Output = (<L as Parse>::Output, <R as Parse>::Output);
 
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
         let (left, remaining) = self.left.parse(input)?;
         let (right, remaining) = self.right.parse(remaining)?;
 
@@ -31,7 +31,7 @@ where
 }
 
 impl<L: Lex, R: Lex> Lex for Then<L, R> {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let (left, remaining) = self.left.lex(input)?;
         let (right, _) = self.right.lex(remaining)?;
 

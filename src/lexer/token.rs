@@ -21,7 +21,7 @@ impl<'p> Token<'p, CaseSensitive> {
 }
 
 impl<'p> Lex for Token<'p, CaseSensitive> {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         if input.starts_with(self.0) {
             Ok(input.split_at(self.0.len()))
         } else {
@@ -31,7 +31,7 @@ impl<'p> Lex for Token<'p, CaseSensitive> {
 }
 
 impl<'p> Lex for Token<'p, CaseInsensitive> {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         // NOTE: unicode uppercase could wreak havoc here
         if input.to_uppercase().starts_with(&self.0.to_uppercase()) {
             Ok(input.split_at(self.0.len()))
@@ -61,7 +61,7 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 ///
 /// let input = "FOO 123";
 ///
-/// let mut foo_lexer = token("FOO");
+/// let foo_lexer = token("FOO");
 ///
 /// let (output, remaining) = foo_lexer.lex(input)?;
 ///
@@ -81,7 +81,7 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 ///
 /// let input = "FOO 123";
 ///
-/// let mut foo_parser = token("FOO").map(|_| Foo);
+/// let foo_parser = token("FOO").map(|_| Foo);
 ///
 /// let (output, result) = foo_parser.parse(input)?;
 ///

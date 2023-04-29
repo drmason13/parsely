@@ -8,7 +8,7 @@ impl<T> Lex for Optional<T>
 where
     T: Lex,
 {
-    fn lex<'i>(&mut self, input: &'i str) -> crate::LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
         if let Ok((matched, remaining)) = self.item.lex(input) {
             Ok((matched, remaining))
         } else {
@@ -23,7 +23,7 @@ where
 {
     type Output = Option<<T as Parse>::Output>;
 
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
         if let Ok((output, remaining)) = self.item.parse(input) {
             Ok((Some(output), remaining))
         } else {

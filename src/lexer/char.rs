@@ -6,7 +6,7 @@ use crate::{Lex, LexResult};
 pub struct Char(pub char);
 
 impl Lex for Char {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut chars = input.char_indices();
 
         match chars.next() {
@@ -35,7 +35,7 @@ impl<F> Lex for CharIf<F>
 where
     F: Fn(char) -> bool,
 {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         if let Some(c) = input.chars().next() {
             if (self.condition)(c) {
                 Ok(input.split_at(c.len_utf8()))
@@ -59,7 +59,7 @@ where
 pub struct WhiteSpace;
 
 impl Lex for WhiteSpace {
-    fn lex<'i>(&mut self, input: &'i str) -> LexResult<'i> {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut chars = input.char_indices();
 
         match chars.next() {

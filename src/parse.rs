@@ -16,12 +16,15 @@ pub trait Parse {
     /// The output type produced by a successful parse.
     type Output;
 
-    /// The  method returns a tuple `(matched, remaining)` of `&str`.
+    /// Parse a string input into the output type (`Self::Output`) and return any remaining input.
     ///
-    /// First the part of the input successfully matched and then the remaining part of the input that was not matched.
+    /// This method returns a tuple `(output, remaining)` of `&str`.
     ///
-    /// The order reads left to right as the parser reads the input, and matches the return order of [`str::split_at`].
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output>;
+    /// * First is the output of the parser.
+    /// * Second is the remaining part of the input that was not matched.
+    ///
+    /// This order reads left to right as the parser reads the input, and matches the return order of [`str::split_at`].
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output>;
 
     /// Creates a new parser that will attempt to parse with this parser multiple times.
     ///
@@ -140,37 +143,40 @@ pub trait Parse {
     ///
     /// Both parsers are required to match for any input to be consumed.
     ///
+    /// See also [`Lex::then`] which applies two lexers in sequence.
+    ///
+    /// See [`Parse::then_skip`] and [`Lex::skip_then`] to mix lexers and parsers in sequence.
+    ///
     /// # Examples
     ///
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, hex, Lex, Parse, ParseResult};
+    /// use parsely::{int, token, Lex, Parse, ParseResult};
     ///
     /// # #[derive(Debug, PartialEq)]
-    /// pub struct Rgb(u8, u8, u8);
+    /// enum Simpson {
+    ///     Homer,
+    ///     Marge,
+    ///     Bart,
+    ///     Lisa,
+    ///     Maggie,
+    /// }
     ///
-    /// fn hex_rgb<'i>(input: &'i str) -> ParseResult<'i, Rgb> {
-    ///     let (_, remaining) = char('#').lex(input)?;
-    ///     let hex_color = hex().count(2).try_map(|s| u8::from_str_radix(s, 16));
+    /// use Simpson::*;
     ///
-    ///     let (output, remaining) = hex_color.count(3).parse(remaining)?;
-    ///     let mut colors = output.iter().copied();
-    ///     let r = colors.next().ok_or(parsely::Error::NoMatch)?;
-    ///     let g = colors.next().ok_or(parsely::Error::NoMatch)?;
-    ///     let b = colors.next().ok_or(parsely::Error::NoMatch)?;
+    /// let homer = token("Homer").map(|_| Homer);
+    /// let marge = token("Marge").map(|_| Marge);
+    /// let bart = token("Bart").map(|_| Bart);
+    /// let lisa = token("Lisa").map(|_| Lisa);
+    /// let maggie = token("Maggie").map(|_| Maggie);
     ///
-    ///     Ok((Rgb(r, g, b), remaining))
-    /// };
+    /// let parser = homer.then(marge).then(lisa).then(maggie).then(bart);
     ///
-    /// //let (output, remaining) = hex_rgb.parse("#C0FFEE")?;
+    /// let (output, remaining) = parser.parse("HomerMargeLisaMaggieBartMilhouse")?;
     ///
-    /// //assert_eq!(output, Rgb(192, 255, 238));
-    /// //assert_eq!(remaining, "");
-    ///
-    /// let result = hex_rgb.parse("#TEATEA");
-    ///
-    /// assert_eq!(result, Err(parsely::Error::NoMatch));
+    /// assert_eq!(output, ((((Homer, Marge), Lisa), Maggie), Bart));
+    /// assert_eq!(remaining, "Milhouse");
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
@@ -226,7 +232,6 @@ pub trait Parse {
     }
 }
 
-// pretty desperate naming here!
 /// Maps the output of a parser to a different output
 pub struct Mapped<P, F> {
     f: F,
@@ -240,85 +245,56 @@ where
 {
     type Output = O2;
 
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
         let (output, remaining) = self.parser.parse(input)?;
         let mapped = (self.f)(output);
         Ok((mapped, remaining))
     }
 }
 
-/// Functions that take &str and return `Result<(&str, &str), parsely::Error>` are Parseers.
+/// Functions that take &str and return `Result<(O, &str), parsely::Error>` impl Parse and can be used with Parsely combinators.
 ///
-/// The matched part of the input str is returned on the left hand side.
+/// The output of the parser is returned on the left hand side.
 ///
 /// The remaining part of the input str is returned on the right hand side.
 ///
-/// This is the same order that [`str::split_at()`] returns.
+/// This means it is easy to create your own parser without implementing `Parse`.
+///
+/// # Examples
 ///
 /// ```
-/// use parsely::{digit, Parse};
-/// # use parsely::{char, hex, Lex, ParseResult};
+/// use parsely::{char, digit, hex, Lex, Parse, ParseResult};
 ///
-/// fn my_parser(input: &str) -> Result<(u32, &str), parsely::Error> {
-///     let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
-///     let (_, remaining) = input.split_at(boundary + 3);
-///
-///     Ok((7, remaining))
-/// }
-///
-/// // this parser function matches up to and including the token "abc", and outputs... 7
-/// let (output, remaining) = my_parser("...abc")?;
-/// assert_eq!(output, 7);
-/// assert_eq!(remaining, "");
-///
-/// // assume we can use our hex_rgb parser from other examples
-/// // use my_parser_lib::hex_rgb;
-/// # fn hex_rgb<'i>(input: &'i str) -> ParseResult<'i, Rgb> {
-/// #    let (_, remaining) = char('#').lex(input)?;
-/// #    let hex_color = hex().count(2).try_map(|s| u8::from_str_radix(s, 16));
-/// #
-/// #    let (output, remaining) = hex_color.count(3).parse(remaining)?;
-/// #    let mut colors = output.iter().copied();
-/// #    let r = colors.next().ok_or(parsely::Error::NoMatch)?;
-/// #    let g = colors.next().ok_or(parsely::Error::NoMatch)?;
-/// #    let b = colors.next().ok_or(parsely::Error::NoMatch)?;
-/// #
-/// #    Ok((Rgb(r, g, b), remaining))
-/// # };
-/// # #[derive(PartialEq, Debug)]
+/// # #[derive(PartialEq, Eq, Debug)]
 /// # struct Rgb(u8, u8, u8);
 ///
-/// // because it implements Parse, we can use it to build a more complex parser chain
-/// let (output, remaining) = my_parser.then(hex_rgb).count(3).parse("...abc#AABBCC    abc#00FF00.. abc#FF00FF...")?;
-/// let mut outputs = output.into_iter();
-/// assert_eq!(outputs.next().unwrap(), (7, Rgb(170, 187, 204)));
-/// assert_eq!(outputs.next().unwrap(), (7, Rgb(0, 255, 0)));
-/// assert_eq!(outputs.next().unwrap(), (7, Rgb(255, 0, 255)));
-/// assert!(outputs.next().is_none());
-/// assert_eq!(remaining, "...");
+/// // Sometimes its easiest to just return some type that implements Parse outputting u8
+/// fn hex_byte() -> impl Parse<Output=u8> {
+///     hex().many(1..=2).try_map(|s| u8::from_str_radix(s, 16))
+/// }
+///
+/// // Here we have a fn that *is* a parser, sometimes you might prefer to define your own parsers this way
+/// fn hex_rgb(input: &str) -> ParseResult<'_, Rgb> {
+///    let (((r, g), b), remaining) = hex_byte().then(hex_byte()).then(hex_byte()).parse(input)?;
+///    Ok((Rgb(r, g, b), remaining))
+/// };
+///
+/// // because hex_rgb implements Parse, we can use it to build a more complex parser chain
+/// let (output, remaining) = char('#').skip_then(hex_rgb).parse("#AABBCC")?;
+/// assert_eq!(output, Rgb(170, 187, 204));
 ///
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-/// There is a type alias available to make the function signature *slightly* shorter
-/// but it does need lifetime specifiers, we use `i` for input, the lifetime of the input str.
-/// ```
-/// use parsely::{digit, Parse, ParseResult};
-///
-/// fn my_parser<'i>(input: &'i str) -> ParseResult<'i, u32> {
-///    // ...
-///    # let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
-///    # let (_, remaining) = input.split_at(boundary + 3);
-///    # Ok((7, remaining))
-/// }
-/// ```
+/// The type alias has a lifetime parameter but it can usually be elided: ```_``.
+/// It's the lifetime `'i` of the input string:  `&'i str`
 impl<F, O> Parse for F
 where
     F: Fn(&str) -> Result<(O, &str), crate::Error>,
 {
     type Output = O;
 
-    fn parse<'i>(&mut self, input: &'i str) -> ParseResult<'i, O> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, O> {
         self(input)
     }
 }

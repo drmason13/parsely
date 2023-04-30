@@ -5,7 +5,7 @@
 //!
 //! Unfortunately this is done in a fairly crude fasion currently, using an enum over *some of* the types implementing [`Pattern`](std::str::pattern::Pattern).
 //!
-//! Noticeably, `FnMut(char) -> bool` is missing from this enum.
+//! Notably, `FnMut(char) -> bool` and [char; N] are missing from this enum.
 
 #[derive(Clone)]
 pub enum PatternLite<'a> {

@@ -222,9 +222,9 @@ pub trait Lex {
 
     /// Creates a parser by mapping the matched part of this lexer to an output type.
     ///
-    /// Unlike Map, this returns a Result<T, parsely::Error> to represent failed conversions.
+    /// Unlike Map, this returns a Result<T, parsely::Error> in case of failed conversions.
     ///
-    /// This is needed to map matched input using [`std::str::FromStr::from_str`].
+    /// This is needed to map matches using [`std::str::FromStr::from_str`].
     ///
     /// # Examples
     ///

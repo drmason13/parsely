@@ -63,20 +63,3 @@ pub fn int<T: FromStr>() -> impl Parse<Output = T> {
         .try_map(|n| n.parse())
 }
 ```
-
-We are compiling now, but if we try to use our parser, it doesn't work!
-
-```rust
-use std::str::FromStr;
-
-use parsely::{char, digit, Lex, Parse};
-
-pub fn int<T: FromStr>() -> impl Parse<Output = T> {
-    char('-')
-        .many(0..=1)
-        .then(digit().many(1..))
-        .try_map(|n| n.parse())
-}
-
-let result = int().parse("123");
-```

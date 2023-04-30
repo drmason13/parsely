@@ -25,6 +25,21 @@ impl Lex for Char {
 }
 
 /// This lexer matches the given [`char`](prim@char) once.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use parsely::{char, Lex};
+///
+/// let matches_a = char('a');
+///
+/// let (output, remaining) = matches_a.lex("abc")?;
+/// assert_eq!(output, "a");
+/// assert_eq!(remaining, "bc");
+/// # Ok::<(), parsely::Error>(())
+/// ```
 pub fn char(char: char) -> Char {
     Char(char)
 }
@@ -130,6 +145,28 @@ pub fn lowercase() -> CharIf<fn(char) -> bool> {
 /// Matches an uppercase character.
 pub fn uppercase() -> CharIf<fn(char) -> bool> {
     char_if(char::is_uppercase)
+}
+
+/// Matches a char that is one of the characters in the given string
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use parsely::{one_of, Lex};
+///
+/// let (matched, remaining) = one_of("abc").lex("char")?;
+/// assert_eq!(matched, "c");
+/// assert_eq!(remaining, "har");
+///
+/// let result = one_of("abc").lex("har");
+/// assert_eq!(result, Err(parsely::Error::NoMatch));
+///
+/// # Ok::<(), parsely::Error>(())
+/// ```
+pub fn one_of(chars: &str) -> impl Lex + '_ {
+    char_if(|c| chars.contains(c))
 }
 
 impl fmt::Debug for Char {

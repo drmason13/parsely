@@ -261,7 +261,7 @@ pub trait Parse {
     }
 
     /// Map the output of this parser to some other type.
-    fn mapped<F, O>(self, f: F) -> Mapped<Self, F>
+    fn map<F, O>(self, f: F) -> Mapped<Self, F>
     where
         F: Fn(<Self as Parse>::Output) -> O,
         Self: Sized,

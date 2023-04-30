@@ -37,3 +37,8 @@ pub mod combinator;
 #[doc(hidden)]
 #[cfg(test)]
 pub(crate) mod test_utils;
+
+// test guide.md
+#[cfg(doctest)]
+#[doc=include_str!("../guide.md")]
+struct Guide;

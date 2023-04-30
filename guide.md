@@ -1,6 +1,6 @@
 
-We'll start with this example implementation of parsing an int and fix the errors, and improve it along the way.
-```rust
+We'll start with this example implementation of parsing an int, fix the errors, and improve it along the way.
+```rust,compile_fail
 use parsely::{char, digit, Lex, Parse};
 
 pub fn int<T>() -> impl Parse<Output = T> {
@@ -28,7 +28,7 @@ The problem here is that we're using `.map()` which is for infallible conversion
 
 Simple fix is to use `try_map` instead:
 
-```rust
+```rust,compile_fail
 use parsely::{char, digit, Lex, Parse};
 
 pub fn int<T>() -> impl Parse<Output = T> {

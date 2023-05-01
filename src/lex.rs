@@ -2,10 +2,10 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        count, many, map, optional, or, skip_then, then, then_skip, try_map, Many, Map, Optional,
-        Or, SkipThen, Then, ThenSkip, TryMap,
+        count, many, map, optional, or, pad, skip_then, then, then_skip, try_map, Many, Map,
+        Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
     },
-    Parse,
+    ws, Parse, WhiteSpace,
 };
 
 /// The type returned by a lex: the order of the tuple is `(matched, remaining)`
@@ -175,23 +175,19 @@ pub trait Lex {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{int, token, Lex, Parse, ParseResult};
+    /// use parsely::{digit, token, Lex};
     ///
-    /// fn parser(input: &str) -> ParseResult<'_, u8> {
-    ///     int::<u8>().then_skip(token("<<<")).parse(input)
-    /// }
-    ///
-    /// let (output, remaining) = parser("123<<<")?;
-    /// assert_eq!(output, 123);
+    /// let (output, remaining) = digit().many(..).then_skip(token("<<<")).lex("123<<<")?;
+    /// assert_eq!(output, "123");
     /// assert_eq!(remaining, "");
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
-    fn then_skip<L: Lex>(self, lexer: L) -> ThenSkip<Self, L>
+    fn then_skip<L: Lex>(self, lexer: L) -> ThenSkip<L, Self>
     where
         Self: Sized,
     {
-        then_skip(self, lexer)
+        then_skip(lexer, self)
     }
 
     /// Creates a parser that runs parses the remaining input after running this lexer.
@@ -284,6 +280,37 @@ pub trait Lex {
         F: Fn(&str) -> Result<O, E>,
     {
         try_map(self, f)
+    }
+
+    /// Pad this lexer with zero or more whitespace lexers so that leading and/or trailing whitespace in the input is ignored.
+    ///
+    /// This is an opionated default usage of the pad combinator for convenience.
+    ///
+    /// The pad combinator will accept arbitrary lexers for the left and right side. See it's documentation for more details.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{int, Parse};
+    ///
+    /// assert_eq!(
+    ///     int::<u32>().pad().parse("   123\n")?,
+    ///     (123, "")
+    /// );
+    ///
+    /// assert_eq!(
+    ///     int::<u32>().pad().many(1..).parse("   123\n\t456\t789\r\n    10")?,
+    ///     (vec![123, 456, 789, 10], "")
+    /// );
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn pad(self) -> Pad<Many<WhiteSpace>, Many<WhiteSpace>, Self>
+    where
+        Self: Sized,
+    {
+        pad(ws().many(0..), ws().many(0..), self)
     }
 }
 

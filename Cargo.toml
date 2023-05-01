@@ -3,4 +3,6 @@ name = "parsely"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[[example]]
+name = "advent_of_code"
+test = true

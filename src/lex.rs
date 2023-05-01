@@ -312,6 +312,29 @@ pub trait Lex {
     {
         pad(ws().many(0..), ws().many(0..), self)
     }
+
+    /// Pad this lexer with the given left and right lexers.
+    ///
+    /// See also [`pad()`](Parse::pad()) which pads with zero or more whitepsace characters by default.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{char, digit, Lex};
+    ///
+    /// let lexer = digit().pad_with(char('['), char(']'));
+    ///
+    /// assert_eq!(lexer.lex("[1]")?, ("1", ""));
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn pad_with<L: Lex, R: Lex>(self, left: L, right: R) -> Pad<L, R, Self>
+    where
+        Self: Sized,
+    {
+        pad(left, right, self)
+    }
 }
 
 /// Functions that take &str and return `Result<(&str, &str), parsely::Error>` are Lexers.

@@ -2,15 +2,11 @@
 //!
 //! This isn't the fastest or most correct JSON parser out there, instead intended to demonstrate usage of parsely.
 
-// first come all the types we parse into...
-
-use std::{
-    collections::BTreeMap,
-    io::BufRead,
-    num::{ParseFloatError, ParseIntError},
-};
+use std::{collections::BTreeMap, io::BufRead};
 
 use parsely::{char, ws, Lex, Parse, ParseResult};
+
+// first come all the types we parse into...
 
 /// All valid JSON can be represented as a single [`Value`].
 #[derive(Debug, PartialEq)]
@@ -31,20 +27,11 @@ pub struct Map<K, V>(BTreeMap<K, V>);
 #[derive(Debug, PartialEq)]
 pub struct Number(N);
 
-// This strategy is inspired by (shamelessly copied from) serde_json
+// This strategy is inspired by serde_json
 #[derive(Debug, PartialEq)]
 pub enum N {
     Int(i64),
     Float(f64),
-}
-
-pub enum JsonParseError {
-    InvalidNumber(ParseNumberError),
-}
-
-pub enum ParseNumberError {
-    InvalidFloat(ParseFloatError),
-    InvalidInt(ParseIntError),
 }
 
 fn number() -> impl Parse<Output = Number> {
@@ -63,29 +50,28 @@ fn null() -> impl Parse<Output = Value> {
 }
 
 fn string() -> impl Parse<Output = String> {
-    parsely::combinator::pad(
-        char('"'),
-        char('"'),
-        escape()
-            // this is particularly dense - I got stuck writing this because I forgot that char_if returned &str instead of char!
-            // also mapping &str -> char to create a "parser" that outputs chars that we then further map to collect into a string...?
-            // there's got to be a simpler way of matching strings?
-            .or(parsely::char_if(|c| c != '"' && c != '\\').map(|s| s.chars().next().unwrap()))
-            .many(..)
-            .map(|chars| chars.into_iter().collect::<String>()),
-    )
+    let str_char = parsely::none_of("\"\\").map(|s| s.chars().next().unwrap());
+
+    let str_inner = escape().or(str_char).many(..);
+
+    str_inner
+        .map(|chars| chars.into_iter().collect::<String>())
+        .pad_with(char('"'), char('"'))
 }
 
 fn escape() -> impl Parse<Output = char> {
     char('\\').skip_then(
-        (char('\\').map(|_| '\\')) //
+        (char('\\').map(|_| '\\'))
             .or(char('t').map(|_| '\t'))
             .or(char('n').map(|_| '\n'))
             .or(char('r').map(|_| '\r'))
+            .or(char('b').map(|_| '\x08'))
+            .or(char('f').map(|_| '\x0c'))
             .or(char('"').map(|_| '"')),
     )
 }
 
+// note that fn as parser is used here (and for map) because returning `impl Parse<Output = Vec<Value>>` would create a "recursive opaque type"
 fn array(input: &str) -> ParseResult<'_, Vec<Value>> {
     parsely::combinator::pad(
         char('['),
@@ -111,7 +97,6 @@ fn map(input: &str) -> ParseResult<'_, Map<String, Value>> {
     .parse(input)
 }
 
-// placeholder that only matches `4` for now
 fn value() -> impl Parse<Output = Value> {
     null()
         .or(bool().map(Value::Bool))
@@ -127,6 +112,8 @@ fn json(input: &str) -> ParseResult<'_, Value> {
 }
 
 fn main() -> Result<(), parsely::Error> {
+    println!("Please enter some JSON to be parsed:");
+
     let stdin = std::io::stdin();
     let input = stdin.lock().lines().next().unwrap().unwrap();
 
@@ -214,9 +201,32 @@ mod json_tests {
             json(r#""string""#)?.0,
             Value::String(String::from("string"))
         );
+        assert_eq!(
+            json(r#""string with:\tescapes\n""#)?.0,
+            Value::String(String::from("string with:\tescapes\n"))
+        );
         assert_eq!(json(r"true")?.0, Value::Bool(true));
         assert_eq!(json(r"false")?.0, Value::Bool(false));
         assert_eq!(json(r"null")?.0, Value::Null);
+
+        Ok(())
+    }
+
+    #[test]
+    fn escapes() -> Result<(), parsely::Error> {
+        assert_eq!(escape().parse(r#"\z"#), Err(parsely::Error::NoMatch));
+        assert_eq!(escape().parse(r#"\""#)?, ('"', ""));
+        assert_eq!(escape().parse(r#"\t"#)?, ('\t', ""));
+        assert_eq!(escape().parse(r#"\n"#)?, ('\n', ""));
+        assert_eq!(escape().parse(r#"\r"#)?, ('\r', ""));
+        assert_eq!(escape().parse(r#"\b"#)?, ('\x08', ""));
+        assert_eq!(escape().parse(r#"\f"#)?, ('\x0c', ""));
+        assert_eq!(escape().parse(r#"\\"#)?, ('\\', ""));
+
+        assert_eq!(json(r#""\z""#), Err(parsely::Error::NoMatch));
+        assert_eq!(json(r#""\"""#)?.0, Value::String(String::from("\"")));
+        assert_eq!(json(r#""\n""#)?.0, Value::String(String::from("\n")));
+        assert_eq!(json(r#""\\""#)?.0, Value::String(String::from("\\")));
 
         Ok(())
     }

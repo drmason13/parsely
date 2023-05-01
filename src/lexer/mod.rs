@@ -70,8 +70,8 @@ mod until;
 
 pub use self::any::{any, Any};
 pub use self::char::{
-    alpha, alphanum, ascii_alpha, ascii_alphanum, char, char_if, lowercase, one_of, uppercase, ws,
-    Char, WhiteSpace,
+    alpha, alphanum, ascii_alpha, ascii_alphanum, char, char_if, lowercase, none_of, one_of,
+    uppercase, ws, Char, WhiteSpace,
 };
 pub use self::end::{end, End};
 pub use self::number::{digit, hex, non_zero_digit, Digit};

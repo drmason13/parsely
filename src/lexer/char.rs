@@ -169,6 +169,28 @@ pub fn one_of(chars: &str) -> impl Lex + '_ {
     char_if(|c| chars.contains(c))
 }
 
+/// Matches a char that is *none* of the characters in the given string.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// use parsely::{none_of, Lex};
+///
+/// let result = none_of("abc").lex("char");
+/// assert_eq!(result, Err(parsely::Error::NoMatch));
+///
+/// let (matched, remaining) = none_of("abc").lex("har")?;
+/// assert_eq!(matched, "h");
+/// assert_eq!(remaining, "ar");
+///
+/// # Ok::<(), parsely::Error>(())
+/// ```
+pub fn none_of(chars: &str) -> impl Lex + '_ {
+    char_if(|c| !chars.contains(c))
+}
+
 impl fmt::Debug for Char {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Char('{}')", self.0)

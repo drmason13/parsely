@@ -313,6 +313,29 @@ pub trait Parse {
     {
         pad(ws().many(0..), ws().many(0..), self)
     }
+
+    /// Pad this parser with the given left and right lexers.
+    ///
+    /// See also [`pad()`](Lex::pad()) which pads with zero or more whitepsace characters by default.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{char, int, Parse};
+    ///
+    /// let parser = int::<u8>().pad_with(char('['), char(']'));
+    ///
+    /// assert_eq!(parser.parse("[123]")?, (123, ""));
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn pad_with<L: Lex, R: Lex>(self, left: L, right: R) -> Pad<L, R, Self>
+    where
+        Self: Sized,
+    {
+        pad(left, right, self)
+    }
 }
 
 /// Maps the output of a parser to a different output

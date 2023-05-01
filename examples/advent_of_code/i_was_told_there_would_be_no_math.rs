@@ -23,7 +23,7 @@ impl FromStr for Dimensions {
             .then(uint::<usize>());
 
         // parsely isn't fancy enough to provide macros to avoid the nested tuples from repeated `.then()`s
-        let (((length, width), height), _) = dimensions.then_skip(end()).parse(s)?;
+        let (((length, width), height), _) = dimensions.then(end()).parse(s)?;
 
         Ok(Dimensions {
             length,
@@ -59,7 +59,7 @@ mod tests {
 
         assert_eq!(
             Err(parsely::Error::NoMatch),
-            "10x20x30x40".parse::<Dimensions>()
+            "10x20x30x40".parse::<Dimensions>() // too many dimensions! thanks end() :)
         );
 
         assert_eq!(

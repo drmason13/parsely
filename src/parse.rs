@@ -4,7 +4,7 @@ use crate::{
     combinator::{
         count, many, optional, or, pad, then, then_skip, Many, Optional, Or, Pad, Then, ThenSkip,
     },
-    ws, Lex, WhiteSpace,
+    end, ws, End, Lex, WhiteSpace,
 };
 
 /// The type returned by a parse. The order of the tuple is `(output, remaining)`
@@ -220,7 +220,7 @@ pub trait Parse {
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
-    fn then<P: Parse>(self, parser: P) -> Then<Self, P>
+    fn then<P>(self, parser: P) -> Then<Self, P>
     where
         Self: Sized,
     {
@@ -260,6 +260,18 @@ pub trait Parse {
         Self: Sized,
     {
         then_skip(lexer, self)
+    }
+
+    /// This "finalizes" the parser, which means it expects there to be no remaining input.
+    ///
+    /// If any input remains after parsing, then the whole parse fails.
+    ///
+    /// This is a convenience method alternative to using `.then_skip(end())` which saves importing [`end()`]
+    fn then_end(self) -> ThenSkip<End, Self>
+    where
+        Self: Sized,
+    {
+        self.then_skip(end())
     }
 
     /// Map the output of this parser to some other type.

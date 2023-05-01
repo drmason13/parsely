@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{Lex, LexResult, Parse, ParseResult};
+use crate::{End, Lex, LexResult, Parse, ParseResult};
 
 /// This combinator is returned by [`then()`]. See it's documentation for more details.
 #[derive(Clone)]
@@ -33,6 +33,20 @@ where
         let (_, remaining) = input.split_at(boundary);
 
         Ok(((left, right), remaining))
+    }
+}
+
+impl<L> Parse for Then<L, End>
+where
+    L: Parse,
+{
+    type Output = <L as Parse>::Output;
+
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+        let (left, remaining) = self.left.parse(input)?;
+        let (_, remaining) = self.right.lex(remaining)?;
+
+        Ok((left, remaining))
     }
 }
 

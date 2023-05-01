@@ -2,8 +2,8 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        count, many, map, optional, or, skip_then, then, try_map, Many, Map, Optional, Or,
-        SkipThen, Then, TryMap,
+        count, many, map, optional, or, skip_then, then, then_skip, try_map, Many, Map, Optional,
+        Or, SkipThen, Then, ThenSkip, TryMap,
     },
     Parse,
 };
@@ -160,7 +160,41 @@ pub trait Lex {
         then(self, lexer)
     }
 
-    /// Creates a parser that runs a parser on the remaining input after running this lexer.
+    /// Run this lexer, and then another item.
+    ///
+    /// The output of the item is ignored, or "skipped".
+    ///
+    /// See also [`Lex::skip_then`] and [`Parse::then_skip`].
+    ///
+    /// This is useful when there is input you need to match but don't want to keep as part of the match.
+    ///
+    /// For a full side by side comparison of all the `skip_then()` and `then_skip()` methods see the [`skip module`](crate::combinator::skip) documentation.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{int, token, Lex, Parse, ParseResult};
+    ///
+    /// fn parser(input: &str) -> ParseResult<'_, u8> {
+    ///     int::<u8>().then_skip(token("<<<")).parse(input)
+    /// }
+    ///
+    /// let (output, remaining) = parser("123<<<")?;
+    /// assert_eq!(output, 123);
+    /// assert_eq!(remaining, "");
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn then_skip<L: Lex>(self, lexer: L) -> ThenSkip<Self, L>
+    where
+        Self: Sized,
+    {
+        then_skip(self, lexer)
+    }
+
+    /// Creates a parser that runs parses the remaining input after running this lexer.
     ///
     /// The output of this lexer is ignored, or "skipped".
     ///

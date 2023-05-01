@@ -1,8 +1,10 @@
 use std::ops::RangeBounds;
 
 use crate::{
-    combinator::{count, many, optional, or, then, then_skip, Many, Optional, Or, Then, ThenSkip},
-    Lex,
+    combinator::{
+        count, many, optional, or, pad, then, then_skip, Many, Optional, Or, Pad, Then, ThenSkip,
+    },
+    ws, Lex, WhiteSpace,
 };
 
 /// The type returned by a parse. The order of the tuple is `(output, remaining)`
@@ -267,6 +269,37 @@ pub trait Parse {
         Self: Sized,
     {
         Mapped { f, parser: self }
+    }
+
+    /// Pad this parser with zero or more whitespace lexers so that leading and/or trailing whitespace in the input doesn't interfere with parsing
+    ///
+    /// This is an opionated default usage of the pad combinator for convenience.
+    ///
+    /// The pad combinator will accept arbitrary lexers for the left and right side. See it's documentation for more details.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{int, Parse};
+    ///
+    /// assert_eq!(
+    ///     int::<u32>().pad().parse("   123\n")?,
+    ///     (123, "")
+    /// );
+    ///
+    /// assert_eq!(
+    ///     int::<u32>().pad().many(1..).parse("   123\n\t456\t789\r\n    10")?,
+    ///     (vec![123, 456, 789, 10], "")
+    /// );
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn pad(self) -> Pad<Many<WhiteSpace>, Many<WhiteSpace>, Self>
+    where
+        Self: Sized,
+    {
+        pad(ws().many(0..), ws().many(0..), self)
     }
 }
 

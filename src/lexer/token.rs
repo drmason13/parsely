@@ -66,9 +66,6 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 ///
 /// When calling the [`Lex::lex`] method, this lexer will return a tuple `(matched, remaining)` of the matched token and the remaining input.
 ///
-//TODO: You can map this lexer's output (which will be the matched token if successful) to another type using [`LexResult::map`],
-//TODO: and you can chain other lexers to lex the remaining input with [`LexResult::then`].
-///
 /// # Examples
 ///
 /// Basic usage:

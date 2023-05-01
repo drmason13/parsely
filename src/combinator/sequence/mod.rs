@@ -70,5 +70,28 @@
 mod delimited;
 mod many;
 
+use std::ops::{Bound, RangeBounds};
+
 pub use delimited::{delimited, Delimited};
 pub use many::{count, many, Many};
+
+/// The maximum number of times to attempt to match a repeated parser and the implicit maximum for an open range.
+pub(crate) const MAX_LIMIT: usize = (isize::MAX / 2) as usize;
+
+pub(crate) fn min_max_from_bounds(range: impl RangeBounds<usize>) -> (usize, usize) {
+    let min = match range.start_bound() {
+        Bound::Included(&n) => n,
+        Bound::Unbounded => 0,
+
+        // start bounds cannot be excluded
+        Bound::Excluded(_) => unreachable!(),
+    };
+
+    let max = match range.end_bound() {
+        Bound::Included(&n) => n,
+        Bound::Excluded(&n) => n.saturating_sub(1),
+        Bound::Unbounded => MAX_LIMIT,
+    };
+
+    (min, max)
+}

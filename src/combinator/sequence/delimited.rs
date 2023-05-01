@@ -4,7 +4,7 @@ use std::ops::RangeBounds;
 
 use crate::{Lex, LexResult, Parse, ParseResult};
 
-use super::many::min_max_from_bounds;
+use super::min_max_from_bounds;
 
 /// This combinator is returned by [`Many::delimiter()`](super::many::Many::delimiter()). See it's documentation for more details.
 #[derive(Debug, Clone)]

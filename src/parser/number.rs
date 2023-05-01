@@ -82,9 +82,9 @@ pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// assert_eq!(remaining, "");
 ///
 ///
-/// // Warning! This isn't interpreted correctly by float()
+/// // Scientific notation matches too
 /// let (output, remaining) = float::<f32>().parse("6.78e-9")?;
-/// assert_eq!(output, 6.78);
+/// assert_eq!(output, 6.78e-9);
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
@@ -98,7 +98,7 @@ pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn float<T: FromStr>() -> impl Parse<Output = T> {
-    char('-')
+    float_scientific_notation().or(char('-')
         .optional()
         .then(non_zero_digit())
         .then(digit().many(0..100_000))
@@ -108,7 +108,19 @@ pub fn float<T: FromStr>() -> impl Parse<Output = T> {
         .try_map(|s| {
             let s = s.replace(',', ".");
             FromStr::from_str(&s)
-        })
+        }))
+}
+
+pub fn float_scientific_notation<T: FromStr>() -> impl Parse<Output = T> {
+    (char('-').optional())
+        .then(non_zero_digit())
+        .then(digit().many(0..100_000))
+        .then(char('.'))
+        .then(digit().many(0..100_000))
+        .then(char('e').or(char('E')))
+        .then(char('-').or(char('+')).optional())
+        .then(digit().many(0..100_000))
+        .try_map(FromStr::from_str)
 }
 
 /// Parses a float or an int.
@@ -155,6 +167,24 @@ mod tests {
 
     #[test]
     fn rust_float_parse() {
+        assert_eq!("1.0e1".parse::<f32>().unwrap(), 10.0);
+        assert_eq!("1.0e+1".parse::<f32>().unwrap(), 10.0);
+        assert_eq!("1.0e-1".parse::<f32>().unwrap(), 0.1);
+        assert_eq!("-1.0e1".parse::<f32>().unwrap(), -10.0);
+        assert_eq!("-1.0e+1".parse::<f32>().unwrap(), -10.0);
+        assert_eq!("-1.0e-1".parse::<f32>().unwrap(), -0.1);
+        assert_eq!("-1.0e-0".parse::<f32>().unwrap(), -1.0);
+        assert_eq!("-1.0e+0".parse::<f32>().unwrap(), -1.0);
+
+        assert_eq!("1.0E1".parse::<f32>().unwrap(), 10.0);
+        assert_eq!("1.0E+1".parse::<f32>().unwrap(), 10.0);
+        assert_eq!("1.0E-1".parse::<f32>().unwrap(), 0.1);
+        assert_eq!("-1.0E1".parse::<f32>().unwrap(), -10.0);
+        assert_eq!("-1.0E+1".parse::<f32>().unwrap(), -10.0);
+        assert_eq!("-1.0E-1".parse::<f32>().unwrap(), -0.1);
+        assert_eq!("-1.0E-0".parse::<f32>().unwrap(), -1.0);
+        assert_eq!("-1.0E+0".parse::<f32>().unwrap(), -1.0);
+
         assert_eq!("34.0".parse::<f32>().unwrap(), 34.0);
         assert_eq!("34.".parse::<f32>().unwrap(), 34.0);
     }
@@ -181,6 +211,48 @@ mod tests {
                 ("12.3A", Some(12.3), "A"),
                 ("12.A3", Some(12.), "A3"),
                 ("12.0.1", Some(12.0), ".1"),
+            ],
+        );
+
+        test_parser_batch(
+            "float matches scientific notation",
+            float::<f32>(),
+            &[
+                ("1.0e1", Some(10.0), ""),
+                ("1.0e-1", Some(0.1), ""),
+                ("2.0e-1", Some(0.2), ""),
+                ("1.0e-2", Some(0.01), ""),
+                ("3.0e+1", Some(30.0), ""),
+                ("1.0e-0", Some(1.0), ""),
+                ("3.0e+0", Some(3.0), ""),
+                ("1.0E1", Some(10.0), ""),
+                ("1.0E-1", Some(0.1), ""),
+                ("2.0E-1", Some(0.2), ""),
+                ("1.0E-2", Some(0.01), ""),
+                ("3.0E+1", Some(30.0), ""),
+                ("1.0E-0", Some(1.0), ""),
+                ("3.0E+0", Some(3.0), ""),
+            ],
+        );
+
+        test_parser_batch(
+            "scientific notation works",
+            float_scientific_notation::<f32>(),
+            &[
+                ("1.0e1", Some(10.0), ""),
+                ("1.0e-1", Some(0.1), ""),
+                ("2.0e-1", Some(0.2), ""),
+                ("1.0e-2", Some(0.01), ""),
+                ("3.0e+1", Some(30.0), ""),
+                ("1.0e-0", Some(1.0), ""),
+                ("3.0e+0", Some(3.0), ""),
+                ("1.0E1", Some(10.0), ""),
+                ("1.0E-1", Some(0.1), ""),
+                ("2.0E-1", Some(0.2), ""),
+                ("1.0E-2", Some(0.01), ""),
+                ("3.0E+1", Some(30.0), ""),
+                ("1.0E-0", Some(1.0), ""),
+                ("3.0E+0", Some(3.0), ""),
             ],
         );
 

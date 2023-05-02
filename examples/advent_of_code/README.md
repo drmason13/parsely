@@ -11,5 +11,5 @@ In this folder there a few solutions to some of the simpler advent of code puzzl
 
 ## 2015
 
-* Day 1: [Not quite lisp](not_quite_lisp.rs) uses [`char()`] and [`.map()`] to translate `(` and `)` into +/-1
+* Day 1: [Not quite lisp](not_quite_lisp.rs) uses [`char()`](../../src/lexer/char.rs) and [`.map()`](../../src/combinator/map.rs) to translate `(` and `)` into +/-1
 * Day 2: [I was told there would be no math](i_was_told_there_would_be_no_math.rs) uses [`.then()`](../../src/combinator/then.rs) and [`.then_skip()`](../../src/combinator/skip.rs) to parse `lxwxh` into 3 separate dimension values

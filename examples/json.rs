@@ -270,7 +270,7 @@ mod json_tests {
         assert_eq!(
             format!("{}", json("{ \"foo\" \t \n :  \"bar\"\t}")?.0),
             r#"{"foo": "bar",}"#,
-            "other whitepsace should also be ignored"
+            "other whitespace should also be ignored"
         );
 
         assert_eq!(

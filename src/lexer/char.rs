@@ -13,7 +13,7 @@ impl Lex for Char {
         match chars.next() {
             Some((_, c)) if c == self.0 => {
                 let boundary = match chars.next() {
-                    Some((j, _)) => j,
+                    Some((n, _)) => n,
                     None => input.len(),
                 };
 
@@ -101,7 +101,7 @@ impl Lex for WhiteSpace {
         match chars.next() {
             Some((_, c)) if c.is_whitespace() => {
                 let boundary = match chars.next() {
-                    Some((j, _)) => j,
+                    Some((n, _)) => n,
                     None => input.len(),
                 };
 

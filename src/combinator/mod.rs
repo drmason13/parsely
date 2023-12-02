@@ -3,6 +3,7 @@
 // Combinator TODO list:
 // * then_with -> <https://docs.rs/chumsky/latest/chumsky/trait.Parser.html#method.then_with>
 
+mod crawl;
 mod map;
 mod optional;
 mod or;
@@ -11,6 +12,8 @@ pub mod sequence;
 pub mod skip;
 mod then;
 
+#[doc(inline)]
+pub use self::crawl::{crawl, Crawl};
 #[doc(inline)]
 pub use self::map::{map, try_map, Map, TryMap};
 #[doc(inline)]

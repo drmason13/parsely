@@ -24,14 +24,14 @@ pub struct Switch<L, T, const N: usize> {
 ///     Baz,
 ///     Quux,
 /// }
-/// # fn main() -> Result<(), parsely::Error> {
+///
 /// let my_token_parser = token("foo").map(|_| MyTokens::Foo)
 ///     .or(token("bar").map(|_| MyTokens::Bar))
 ///     .or(token("baz").map(|_| MyTokens::Baz))
 ///     .or(token("quux").map(|_| MyTokens::Quux));
 ///
 /// assert_eq!(my_token_parser.parse("foo 123")?, (MyTokens::Foo, " 123"));
-/// # Ok(()) }
+/// # Ok::<(), parsely::Error>(())
 /// ```
 ///
 /// The above is simplified by using `switch()` (note that str literals are accepted without token(), this is a special case for switch for convenience):
@@ -45,7 +45,7 @@ pub struct Switch<L, T, const N: usize> {
 ///     Baz,
 ///     Quux,
 /// }
-/// # fn main() -> Result<(), parsely::Error> {
+///
 /// let my_token_parser = switch([
 ///     ("foo", MyTokens::Foo),
 ///     ("bar", MyTokens::Bar),
@@ -54,7 +54,7 @@ pub struct Switch<L, T, const N: usize> {
 /// ]);
 ///
 /// assert_eq!(my_token_parser.parse("foo 123")?, (MyTokens::Foo, " 123"));
-/// #  Ok(()) }
+/// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn switch<L, T, const N: usize>(items: [(L, T); N]) -> Switch<L, T, N> {
     Switch { items }

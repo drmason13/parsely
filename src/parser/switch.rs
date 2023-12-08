@@ -4,16 +4,20 @@ pub struct Switch<L, T, const N: usize> {
     items: [(L, T); N],
 }
 
-/// Creates a Switch parser that parses input by trying each provided lexer in turn and mapping them to the corresponding output type
+/// Creates a Switch parser that parses input by trying each provided lexer in turn and mapping them to the corresponding output.
+///
+/// Note that for convenience, `"string literals"` can be used in place of `token("string literals")`.
 ///
 /// Requirements:
 ///
+/// * **The output type must impl `Clone`** as the matched output will be cloned each time the parser succeeds[^why]
 /// * Each output must be the same type, and that is the type this parser produces
 /// * Each lexer must be provided in order they are to be attempted to match
-/// * The output type must be Clone as one will be cloned ecah time the parser succeeds
 ///
 /// Typical usage is to map a series of tokens 1:1 with a corresponding Rust type, which can be done more verbosely by using a lot of token, map and or:
 ///
+/// [^why]: this allows the parser itself to own the inputs and outputs and be reused to parse multiple different inputs.
+/// This shouldn't differ in performance to the manual `.or().map()` version since that version will create a new value every time instead of cloning.
 /// ```
 /// use parsely::{Lex, Parse, token};
 ///

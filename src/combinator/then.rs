@@ -13,7 +13,11 @@ pub struct Then<L, R> {
 ///
 /// Both must match, if either the left or right item returns an error, [`then()`] fails.
 ///
-/// This combinator can be chained using [`Parse::then()`] or [`Lex::then()`]
+/// To run a parser followed by a lexer, see [`Parse::then_skip()`].
+///
+/// To run a lexer followed by a parser, see [`Lex::skip_then()`].
+///
+/// This combinator can be chained using [`Parse::then()`] or [`Lex::then()`].
 pub fn then<L, R>(left: L, right: R) -> Then<L, R> {
     Then { left, right }
 }
@@ -75,6 +79,7 @@ mod tests {
     use super::*;
     use crate::lexer::{char, token};
     use crate::test_utils::*;
+    use crate::{int, Lex, Parse};
 
     #[test]
     fn parsing() {
@@ -90,5 +95,20 @@ mod tests {
                 ("zzz", None, "zzz"),
             ],
         );
+    }
+
+    #[derive(Debug, PartialEq)]
+    pub enum Color {
+        Red,
+    }
+
+    #[test]
+    fn then_swap() -> Result<(), crate::Error> {
+        let red = token("red").map(|_| Color::Red);
+        let (output, _) = int::<u8>().pad().then(red).swap().parse("4 red")?;
+
+        assert_eq!(output, (Color::Red, 4));
+
+        Ok(())
     }
 }

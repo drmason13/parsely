@@ -8,14 +8,19 @@ use crate::{
     end, ws, End, Lex, WhiteSpace,
 };
 
-/// The type returned by a parse. The order of the tuple is `(output, remaining)`
+/// The type returned by a parse. The order of the tuple is `(output, remaining)`.
 ///
-/// * First the output of the parser
-/// * Then the remaining part of the input.
+/// * First the output of the parser: `O`
+/// * Then the remaining part of the input: `&'i str`
 ///
 /// The order reads left to right as the parser reads the input, and matches the return order of [`str::split_at`].
 ///
+/// Finally, the type is wrapped in a Result, a [`parsely::Error`] is returned when the input doesn't match, or if match fails to convert to the output type (see [`try_map()`]).
+///
 /// Often the lifetime parameter can be elided:
+///
+/// [`parsely::Error`]: crate::Error
+/// [`try_map()`]: crate::Lex::try_map
 /// ```rust
 /// # use parsely::{ParseResult};
 /// # struct Foo;
@@ -24,13 +29,58 @@ use crate::{
 ///     # Ok((Foo, ""))
 /// }
 /// ```
+///
+/// The type alias has a lifetime parameter but it can usually be elided: `'_`.
+/// It's the lifetime `'i` of the input string:  `&'i str`
 pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error>;
 
 /// This trait is implemented by all Parsely parsers.
 ///
-/// Its principle method is [`parse`](Parse::parse) which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
+/// Its principle method is [`parse`] which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
 ///
 /// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
+///
+/// See [`ParseResult`] for more details about the result of running [`parse`].
+///
+/// ## Functions impl Parse
+///
+/// Functions that take &str and return `Result<(O, &str), parsely::Error>` impl Parse and can be used with Parsely combinators.
+///
+/// The output of the parser is returned on the left hand side.
+///
+/// The remaining part of the input str is returned on the right hand side.
+///
+/// This means it is easy to create your own parser without implementing `Parse`.
+///
+/// # Examples
+///
+/// ```
+/// use parsely::{char, digit, hex, Lex, Parse, ParseResult};
+///
+/// // Sometimes its easiest to just return some type that implements Parse outputting u8
+/// fn hex_byte() -> impl Parse<Output=u8> {
+///     hex().many(1..=2).try_map(|s| u8::from_str_radix(s, 16))
+/// }
+///
+/// // Here we have a fn that *is* a parser, sometimes you might prefer to define your own parsers this way
+/// fn hex_rgb(input: &str) -> ParseResult<'_, Rgb> {
+///    let (((r, g), b), remaining) = hex_byte().then(hex_byte()).then(hex_byte()).parse(input)?;
+///    Ok((Rgb(r, g, b), remaining))
+/// };
+///
+/// // because hex_rgb implements Parse, we can use it to build a more complex parser chain
+/// let (output, remaining) = char('#').skip_then(hex_rgb).parse("#AABBCC")?;
+/// assert_eq!(output, Rgb(170, 187, 204));
+///
+///
+/// #[derive(PartialEq, Eq, Debug)]
+/// struct Rgb(u8, u8, u8);
+///
+/// # Ok::<(), parsely::Error>(())
+/// ```
+///
+/// [`parse`]: Parse::parse
+/// [`ParseResult`]: ParseResult
 pub trait Parse {
     /// The output type produced by a successful parse.
     type Output;
@@ -414,42 +464,6 @@ where
     }
 }
 
-/// Functions that take &str and return `Result<(O, &str), parsely::Error>` impl Parse and can be used with Parsely combinators.
-///
-/// The output of the parser is returned on the left hand side.
-///
-/// The remaining part of the input str is returned on the right hand side.
-///
-/// This means it is easy to create your own parser without implementing `Parse`.
-///
-/// # Examples
-///
-/// ```
-/// use parsely::{char, digit, hex, Lex, Parse, ParseResult};
-///
-/// # #[derive(PartialEq, Eq, Debug)]
-/// # struct Rgb(u8, u8, u8);
-///
-/// // Sometimes its easiest to just return some type that implements Parse outputting u8
-/// fn hex_byte() -> impl Parse<Output=u8> {
-///     hex().many(1..=2).try_map(|s| u8::from_str_radix(s, 16))
-/// }
-///
-/// // Here we have a fn that *is* a parser, sometimes you might prefer to define your own parsers this way
-/// fn hex_rgb(input: &str) -> ParseResult<'_, Rgb> {
-///    let (((r, g), b), remaining) = hex_byte().then(hex_byte()).then(hex_byte()).parse(input)?;
-///    Ok((Rgb(r, g, b), remaining))
-/// };
-///
-/// // because hex_rgb implements Parse, we can use it to build a more complex parser chain
-/// let (output, remaining) = char('#').skip_then(hex_rgb).parse("#AABBCC")?;
-/// assert_eq!(output, Rgb(170, 187, 204));
-///
-/// # Ok::<(), parsely::Error>(())
-/// ```
-///
-/// The type alias has a lifetime parameter but it can usually be elided: ```_``.
-/// It's the lifetime `'i` of the input string:  `&'i str`
 impl<F, O> Parse for F
 where
     F: Fn(&str) -> Result<(O, &str), crate::Error>,

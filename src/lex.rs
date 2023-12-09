@@ -2,8 +2,8 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        count, many, map, optional, or, pad, skip_then, then, then_skip, try_map, Many, Map,
-        Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
+        count, many, map, optional, or, pad, sequence::LexMany, skip_then, then, then_skip,
+        try_map, Many, Map, Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
     },
     ws, Parse, WhiteSpace,
 };
@@ -53,7 +53,7 @@ pub trait Lex {
     /// Creates a new lexer that will attempt to lex with this lexer multiple times.
     ///
     /// See [`crate::combinator::many()`] for more details.
-    fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
+    fn many(self, range: impl RangeBounds<usize>) -> Many<Self, Vec<()>>
     where
         Self: Sized,
     {
@@ -65,7 +65,7 @@ pub trait Lex {
     /// This is equivalent to `.many(n..=n)`.
     ///
     /// See [`crate::combinator::Many`] for more details.
-    fn count(self, n: usize) -> Many<Self>
+    fn count(self, n: usize) -> Many<Self, Vec<()>>
     where
         Self: Sized,
     {
@@ -254,7 +254,7 @@ pub trait Lex {
     ///
     /// Unlike [`map()`], this returns a `Result<T, parsely::Error>` in case of failed conversions.
     ///
-    /// This is needed to map matches using [`std::str::FromStr::from_str`].
+    /// This is needed to map matches using [`std::str::FromStr`].
     ///
     /// # Examples
     ///
@@ -306,7 +306,7 @@ pub trait Lex {
     /// );
     /// # Ok::<(), parsely::Error>(())
     /// ```
-    fn pad(self) -> Pad<Many<WhiteSpace>, Many<WhiteSpace>, Self>
+    fn pad(self) -> Pad<LexMany<WhiteSpace>, LexMany<WhiteSpace>, Self>
     where
         Self: Sized,
     {

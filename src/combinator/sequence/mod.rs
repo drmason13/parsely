@@ -53,26 +53,14 @@
 //!
 //! This reflects the way [`std::ops::Range`] works with inclusive and exclusive bounds.
 //!
-//! [^max]: open-ended ranges limit themselves to matching `isize::MAX / 2` times, which for all practical purposes is any number of times.
-//!
-//! # Panics
-//!
-//! If a *minimum* that is greater than isize::MAX is given, then the internal `Vec` used to store the parser output will panic with `capacity overflow`:
-//!
-//! ```should_panic
-//! # use parsely::{int, Parse};
-//! let panic_parser = int::<u32>().many(usize::MAX..).parse("");  // this code will panic!
-//! ```
-//!
-//! ```text
-//! thread 'main' panicked at 'capacity overflow', library/alloc/src/raw_vec.rs:518:5
-//! ```
+//! [^max]: open-ended ranges limit themselves to matching `isize::MAX / 2` times, which for most purposes is more than plenty!
 mod delimited;
 mod many;
 
 use std::ops::{Bound, RangeBounds};
 
 pub use delimited::{delimited, Delimited};
+pub(crate) use many::LexMany;
 pub use many::{count, many, Many};
 
 /// The maximum number of times to attempt to match a repeated parser and the implicit maximum for an open range.

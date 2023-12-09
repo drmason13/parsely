@@ -2,7 +2,8 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        count, many, optional, or, pad, then, then_skip, Many, Optional, Or, Pad, Then, ThenSkip,
+        count, many, optional, or, pad, sequence::LexMany, then, then_skip, Many, Optional, Or,
+        Pad, Then, ThenSkip,
     },
     end, ws, End, Lex, WhiteSpace,
 };
@@ -47,7 +48,7 @@ pub trait Parse {
     /// Creates a new parser that will attempt to parse with this parser multiple times.
     ///
     /// See [`crate::combinator::many()`] and the [`sequence module`](crate::combinator::sequence) for more details.
-    fn many(self, range: impl RangeBounds<usize>) -> Many<Self>
+    fn many(self, range: impl RangeBounds<usize>) -> Many<Self, Vec<<Self as Parse>::Output>>
     where
         Self: Sized,
     {
@@ -59,7 +60,7 @@ pub trait Parse {
     /// This is equivalent to `.many(n..=n)`.
     ///
     /// See [`crate::combinator::Many`] for more details.
-    fn count(self, n: usize) -> Many<Self>
+    fn count(self, n: usize) -> Many<Self, Vec<<Self as Parse>::Output>>
     where
         Self: Sized,
     {
@@ -356,7 +357,7 @@ pub trait Parse {
     /// );
     /// # Ok::<(), parsely::Error>(())
     /// ```
-    fn pad(self) -> Pad<Many<WhiteSpace>, Many<WhiteSpace>, Self>
+    fn pad(self) -> Pad<LexMany<WhiteSpace>, LexMany<WhiteSpace>, Self>
     where
         Self: Sized,
     {

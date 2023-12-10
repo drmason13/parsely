@@ -1,11 +1,18 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(missing_docs)]
 
+//! # Parsely 🌿
+//!
 //! Parsely is a simple string parsing library for Rust with the following aims
 //!
 //! * Excel when used to `impl FromStr` for your types
 //! * Simple to use
 //! * Well documented
+//!
+//! # Example
+//! ```
+#![doc = include_str!("../examples/canonical_example.rs")]
+//! ```
 //!
 //! Parsely provides combinators for you to build up complex parsers from simple reusable pieces.
 //!
@@ -58,7 +65,42 @@ pub mod combinator;
 #[cfg(test)]
 pub(crate) mod test_utils;
 
-// test guide.md
-#[cfg(doctest)]
-#[doc=include_str!("../guide.md")]
-struct Guide;
+#[doc(hidden)]
+#[cfg(test)]
+mod test_automation {
+    use crate::{char, token, until, ws, Lex};
+
+    #[test]
+    fn sync_readme_example() -> Result<(), Box<dyn std::error::Error>> {
+        let example_path = "examples/canonical_example.rs";
+        let example = std::fs::read_to_string(example_path)?;
+
+        let readme_path = "README.md";
+        let readme = std::fs::read_to_string(readme_path)?;
+
+        let fence = "```";
+
+        let (start, remaining) = until("## Example")
+            .then(
+                token("## Example")
+                    .then(ws().many(..))
+                    .then(token(fence))
+                    .then(token("rust"))
+                    .then(char('\n')),
+            )
+            .lex(&readme)?;
+
+        let (_, end) = until(fence).lex(remaining)?;
+
+        let output = {
+            let mut s = start.to_string();
+            s.push_str(&example);
+            s.push_str(end);
+            s
+        };
+
+        std::fs::write(readme_path, output)?;
+
+        Ok(())
+    }
+}

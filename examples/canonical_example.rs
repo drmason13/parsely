@@ -1,4 +1,4 @@
-use parsely::{char_if, token, Lex, Parse, ParseResult};
+use parsely::{char_if, Lex, Parse, ParseResult};
 
 #[derive(Debug, PartialEq)]
 pub struct Color {
@@ -20,7 +20,7 @@ fn hex_primary() -> impl Parse<Output = u8> {
 }
 
 fn hex_color(input: &str) -> ParseResult<Color> {
-    let (((red, green), blue), remaining) = token("#")
+    let (((red, green), blue), remaining) = "#"
         .skip_then(hex_primary().then(hex_primary()).then(hex_primary()))
         .parse(input)?;
 

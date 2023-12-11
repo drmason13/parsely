@@ -85,6 +85,25 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
+/// [`&'static str`](prim@str) literals impl [`Lex`] directly by wraping them in `token()`.
+///
+/// This means the above example can be shortened:
+///
+/// ```
+/// // the Lex trait must be in scope for this to work
+/// use parsely::Lex;
+/// # use parsely::char;
+///
+/// let (at, _) = char('@').lex("@ me")?;
+/// # let at_1 = at;
+/// let (at, _) = '@'.lex("@ me")?;
+/// # let at_2 = at;
+/// assert_eq!(at_1, at_2);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// Using strings directly is preferred in the examples throughout this documentation.
+///
 /// Map the output of a lexer to create a parser:
 ///
 /// ```

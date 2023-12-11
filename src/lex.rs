@@ -387,3 +387,15 @@ where
         self(input)
     }
 }
+
+impl Lex for char {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
+        crate::lexer::char(*self).lex(input)
+    }
+}
+
+impl Lex for &'static str {
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
+        crate::lexer::token(self).lex(input)
+    }
+}

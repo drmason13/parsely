@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, io::BufRead};
 
-use parsely::{char, ws, Lex, Parse, ParseResult};
+use parsely::{ws, Lex, Parse, ParseResult};
 
 // first come all the types we parse into...
 
@@ -40,13 +40,11 @@ fn number() -> impl Parse<Output = Number> {
 }
 
 fn bool() -> impl Parse<Output = bool> {
-    parsely::token("true")
-        .map(|_| true)
-        .or(parsely::token("false").map(|_| false))
+    "true".map(|_| true).or("false".map(|_| false))
 }
 
 fn null() -> impl Parse<Output = Value> {
-    parsely::token("null").map(|_| Value::Null)
+    "null".map(|_| Value::Null)
 }
 
 fn string() -> impl Parse<Output = String> {
@@ -56,44 +54,43 @@ fn string() -> impl Parse<Output = String> {
 
     str_inner
         .map(|chars| chars.into_iter().collect::<String>())
-        .pad_with(char('"'), char('"'))
+        .pad_with('"', '"')
 }
 
 fn escape() -> impl Parse<Output = char> {
-    char('\\').skip_then(
-        (char('\\').map(|_| '\\'))
-            .or(char('t').map(|_| '\t'))
-            .or(char('n').map(|_| '\n'))
-            .or(char('r').map(|_| '\r'))
-            .or(char('b').map(|_| '\x08'))
-            .or(char('f').map(|_| '\x0c'))
-            .or(char('"').map(|_| '"')),
+    '\\'.skip_then(
+        ('\\'.map(|_| '\\'))
+            .or('t'.map(|_| '\t'))
+            .or('n'.map(|_| '\n'))
+            .or('r'.map(|_| '\r'))
+            .or('b'.map(|_| '\x08'))
+            .or('f'.map(|_| '\x0c'))
+            .or('"'.map(|_| '"')),
     )
 }
 
 // note that fn as parser is used here (and for map) because returning `impl Parse<Output = Vec<Value>>` would create a "recursive opaque type"
 fn array(input: &str) -> ParseResult<'_, Vec<Value>> {
     parsely::combinator::pad(
-        char('['),
-        char(']'),
-        value().many(..).delimiter(char(',').then(ws().many(..))),
+        '[',
+        ']',
+        value().many(..).delimiter(','.then(ws().many(..))),
     )
     .parse(input)
 }
 
 fn map(input: &str) -> ParseResult<'_, Map<String, Value>> {
     parsely::combinator::pad(
-        char('{').then(ws().many(..)),
-        ws().many(..).then(char('}')),
-        string().then_skip(char(':').pad()).then(value()).optional(),
+        '{'.then(ws().many(..)),
+        ws().many(..).then('}'),
+        string()
+            .then_skip(':'.pad())
+            .then(value())
+            .many(..)
+            .delimiter(','.pad())
+            .collect::<BTreeMap<String, Value>>(),
     )
-    .map(|inner| {
-        let mut map = BTreeMap::new();
-        if let Some((k, v)) = inner {
-            map.insert(k, v);
-        }
-        Map(map)
-    })
+    .map(Map)
     .parse(input)
 }
 
@@ -256,6 +253,14 @@ mod json_tests {
             r#"[[{"foo": "bar",},],[[null,true,false,1,],2,],{"7": 7,},]"#
         );
 
+        assert_eq!(
+            format!(
+                "{}",
+                json(r#"{"one": 1, "two": 2, "three": 3, "foo": "bar"}"#)?.0
+            ),
+            r#"{"foo": "bar","one": 1,"three": 3,"two": 2,}"#
+        );
+
         Ok(())
     }
 
@@ -280,6 +285,17 @@ mod json_tests {
             ),
             r#"[[{"foo": "bar",},],[[null,true,false,1,],2,],{"7": 7,},]"#,
             "nested arrays and objects should also ignore any whitespace"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_works() -> Result<(), parsely::Error> {
+        assert_eq!(
+            format!("{}", json(r#"{"foo": 123, "poop": [{"x":"x"},2,3]}"#)?.0),
+            r#"{"foo": 123,"poop": [{"x": "x",},2,3,],}"#,
+            "this json is valid so it should parse"
         );
 
         Ok(())

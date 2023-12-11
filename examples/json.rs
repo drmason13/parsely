@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, io::BufRead};
 
-use parsely::{ws, Lex, Parse, ParseResult};
+use parsely::{switch, ws, Lex, Parse, ParseResult};
 
 // first come all the types we parse into...
 
@@ -58,15 +58,15 @@ fn string() -> impl Parse<Output = String> {
 }
 
 fn escape() -> impl Parse<Output = char> {
-    '\\'.skip_then(
-        ('\\'.map(|_| '\\'))
-            .or('t'.map(|_| '\t'))
-            .or('n'.map(|_| '\n'))
-            .or('r'.map(|_| '\r'))
-            .or('b'.map(|_| '\x08'))
-            .or('f'.map(|_| '\x0c'))
-            .or('"'.map(|_| '"')),
-    )
+    '\\'.skip_then(switch([
+        ('\\', '\\'),
+        ('t', '\t'),
+        ('n', '\n'),
+        ('r', '\r'),
+        ('b', '\x08'),
+        ('f', '\x0c'),
+        ('"', '"'),
+    ]))
 }
 
 // note that fn as parser is used here (and for map) because returning `impl Parse<Output = Vec<Value>>` would create a "recursive opaque type"

@@ -54,11 +54,16 @@
 //! # Ok::<(), parsely::Error>(())
 //! ```
 //!
-//! How do I make a parser from my lexer?
+//! ##How do I make a parser from my lexer?
 //!
 //! Take a look at the [parser module](crate::parser) which has examples of building parsers out of custom lexers, built-in lexers and combinations there of!
 //!
-//! TL;DR: use [`map()`](crate::Lex::map)
+//! TL;DR: use [`map()`]
+//!
+//! [`Parse`]: crate::Parse
+//! [`Lex`]: crate::Lex
+//! [`lexer`]: crate::lexer
+//! [`map()`]: crate::Lex::map
 
 mod any;
 mod char;

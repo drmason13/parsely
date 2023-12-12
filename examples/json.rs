@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, io::BufRead};
 
-use parsely::{result_ext::*, switch, ws, Lex, Parse, ParseResult};
+use parsely::{float, int, result_ext::*, switch, ws, Lex, Parse, ParseResult};
 
 // first come all the types we parse into...
 
@@ -35,8 +35,9 @@ pub enum N {
 }
 
 fn number() -> impl Parse<Output = Number> {
-    (parsely::int::<i64>().map(|n| Number(N::Int(n))))
-        .or(parsely::float::<f64>().map(|n| Number(N::Float(n))))
+    float::<f64>()
+        .map(|n| Number(N::Float(n)))
+        .or(int::<i64>().map(|n| Number(N::Int(n))))
 }
 
 fn bool() -> impl Parse<Output = bool> {
@@ -254,6 +255,7 @@ mod json_tests {
     #[test]
     fn primitives() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(json("1")?.0, Value::Number(Number(N::Int(1))));
+        assert_eq!(json("123.45")?.0, Value::Number(Number(N::Float(123.45))));
         assert_eq!(
             json(r#""string""#)?.0,
             Value::String(String::from("string"))

@@ -37,7 +37,7 @@ pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
 ///
 /// We'll refer to types that implement [`Lex`] as Lexers.
 ///
-/// Lexers can be combined using combinators. That's what the majority of the methods in this trait provide: convenient ways to combine different lexers and parser together.
+/// Lexers can be combined using combinators. That's what the majority of the methods in this trait provide: convenient ways to combine different lexers and parsers together.
 ///
 /// The [`combinator`] module defines the concrete types that these methods return.
 ///

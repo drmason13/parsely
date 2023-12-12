@@ -136,7 +136,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 /// let one_or_more_digits = many::<_, ()>(1.., digit());
 ///
 /// let result = one_or_more_digits.lex("abc");
-/// assert_eq!(result, Err(parsely::Error::no_match(ackackack)));
+/// assert!(result.is_err());
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
@@ -169,7 +169,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 /// assert_eq!(remaining, "");
 ///
 /// let result = three_or_four_digits.lex("12");
-/// assert_eq!(result, Err(parsely::Error::no_match(ackackack)));
+/// assert!(result.is_err());
 ///
 /// let (output, remaining) = three_or_four_digits.lex("12345")?;
 /// assert_eq!(output, "1234");

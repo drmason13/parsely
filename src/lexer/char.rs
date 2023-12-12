@@ -179,7 +179,7 @@ pub fn uppercase() -> CharIf<fn(char) -> bool> {
 /// assert_eq!(remaining, "har");
 ///
 /// let result = one_of("abc").lex("har");
-/// assert_eq!(result, Err(parsely::Error::no_match(ackackack)));
+/// assert!(result.is_err());
 ///
 /// # Ok::<(), parsely::Error>(())
 /// ```
@@ -197,7 +197,7 @@ pub fn one_of(chars: &str) -> impl Lex + '_ {
 /// use parsely::{none_of, Lex};
 ///
 /// let result = none_of("abc").lex("char");
-/// assert_eq!(result, Err(parsely::Error::no_match(ackackack)));
+/// assert!(result.is_err());
 ///
 /// let (matched, remaining) = none_of("abc").lex("har")?;
 /// assert_eq!(matched, "h");

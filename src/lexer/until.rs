@@ -45,7 +45,7 @@ impl<'a> Lex for Until<'a> {
 /// let until_def = until("def");
 ///
 /// assert_eq!(until_def.lex("abcdef")?, ("abc", "def"));
-/// assert_eq!(until_def.lex("fedcba"), Err(parsely::Error::no_match(ackackack)));
+/// assert_eq!(until_def.lex("fedcba"), Err(parsely::Error::no_match("fedcba")));
 ///
 ///
 /// let until_abc_slice = until(&['a', 'b', 'c'][..]);

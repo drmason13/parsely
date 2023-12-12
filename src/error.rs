@@ -151,7 +151,7 @@ pub mod result_ext {
 
     /// This trait used to extend [`Result<T, E>`] with methods to convert E into [`Error`].
     pub trait ResultExtGenericError<'i, O> {
-        /// Replaces the error inside with a [`FailedConversion`](ErrorReason::FailedConversion) [`Error`]
+        /// Replaces the error inside with a [`FailedConversion`](crate::ErrorReason::FailedConversion) [`Error`]
         fn fail_conversion(self, input: &'i str) -> Result<O, Error<'i>>;
     }
 
@@ -169,28 +169,41 @@ pub mod result_ext {
 ///
 /// # Example
 ///
-/// Impl FromStr using a parsely Parser
-///
+/// Impl [`FromStr`] using a parsely Parser
 ///
 /// ```
 /// # use std::str::FromStr;
-/// use parsely::{ErrorOwned, Parse};
+/// use parsely::{ErrorOwned, Lex, Parse, ParseResult};
 ///
+/// # const _: &str = stringify! {
 /// struct Foo {
-///     /* ... */
+///       ...
+/// }
+/// # };
+///
+/// #
+/// # struct Foo {}
+/// #
+///
+/// fn parser(input: &str) -> ParseResult<'_, Foo> {
+/// # const _: &str = stringify! {
+///     ...
+/// # };
+/// # parsely::token("...").map(|_| Foo {}).parse(input)
 /// }
 ///
-/// let parser = /* ... */;
-///
 /// impl FromStr for Foo {
-///     type Err = crate::ErrorOwned;
+///     type Err = parsely::ErrorOwned;
 ///
 ///     fn from_str(s: &str) -> Result<Self, Self::Err> {
-///         // wrapping in Ok(..?) converts the Error into an ErrorOwned for us
-///         Ok(parser.parse(s)?)
+///         // ? converts the Error into an ErrorOwned for us
+///         let (foo, _) = parser.parse(s)?;
+///         Ok(foo)
 ///     }
 /// }
 /// ```
+///
+/// [`FromStr`]: std::str::FromStr
 #[derive(PartialEq, Debug)]
 pub struct ErrorOwned {
     reason: ErrorReason,

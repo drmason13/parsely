@@ -45,7 +45,7 @@
 //! If our inexact usage of these terms irks you, then I recommend a parser combinator library intended for parsing programming languages such as [Chumsky](https://docs.rs/chumsky/latest/chumsky/).
 
 mod error;
-pub use error::{result_ext, Error, ErrorOwned};
+pub use error::{result_ext, Error, ErrorOwned, ErrorReason};
 
 mod lex;
 pub mod lexer;

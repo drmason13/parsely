@@ -174,7 +174,7 @@ fn main() -> Result<(), parsely::ErrorOwned> {
     let stdin = std::io::stdin();
     let input = stdin.lock().lines().next().unwrap().unwrap();
 
-    let (output, _remaining) = json(input.as_str()).own_err()?;
+    let (output, _remaining) = json(input.as_str())?;
 
     println!("{output:?}");
 

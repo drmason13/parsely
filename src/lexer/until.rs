@@ -20,7 +20,7 @@ impl<'a> Lex for Until<'a> {
 
         match found_index {
             Some(boundary) => Ok(input.split_at(boundary)),
-            None => Err(crate::Error::NoMatch),
+            None => Err(crate::Error::no_match(input)),
         }
     }
 }
@@ -45,7 +45,7 @@ impl<'a> Lex for Until<'a> {
 /// let until_def = until("def");
 ///
 /// assert_eq!(until_def.lex("abcdef")?, ("abc", "def"));
-/// assert_eq!(until_def.lex("fedcba"), Err(parsely::Error::NoMatch));
+/// assert_eq!(until_def.lex("fedcba"), Err(parsely::Error::no_match(ackackack)));
 ///
 ///
 /// let until_abc_slice = until(&['a', 'b', 'c'][..]);

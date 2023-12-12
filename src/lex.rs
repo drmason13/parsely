@@ -23,7 +23,7 @@ use crate::{
 ///     # Ok((input, ""))
 /// }
 /// ```
-pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
+pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
 
 /// This trait is implemented by all Parsely lexers.
 ///
@@ -149,7 +149,7 @@ pub trait Lex {
     ///
     /// let result = hex_color.lex("#TEATEA");
     ///
-    /// assert_eq!(result, Err(parsely::Error::NoMatch));
+    /// assert_eq!(result, Err(parsely::Error::no_match(ackackack)));
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
@@ -381,7 +381,7 @@ pub trait Lex {
 /// ```
 impl<F> Lex for F
 where
-    F: Fn(&str) -> Result<(&str, &str), crate::Error>,
+    F: Fn(&str) -> LexResult<'_>,
 {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         self(input)

@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::{fmt, ops::RangeBounds};
 
-use crate::{Lex, LexResult, Parse, ParseResult};
+use crate::{result_ext::*, Lex, LexResult, Parse, ParseResult};
 
 use super::delimited::Delimited;
 use super::{min_max_from_bounds, MAX_LIMIT};
@@ -42,21 +42,29 @@ where
         let mut offset = 0;
         let mut working_input = input;
 
+        let mut error = None;
+
         let mut outputs = C::default();
 
         while count < self.max {
-            if let Ok((output, remaining)) = self.item.parse(working_input) {
-                count += 1;
-                offset = input.len() - remaining.len();
-                outputs.extend(Some(output));
-                working_input = remaining;
-            } else {
-                break;
+            match self.item.parse(working_input).offset(working_input) {
+                Ok((output, remaining)) => {
+                    count += 1;
+                    offset = input.len() - remaining.len();
+                    outputs.extend(Some(output));
+                    working_input = remaining;
+                }
+                Err(e) => {
+                    error = Some(e);
+                    break;
+                }
             }
         }
 
         if count < self.min {
-            Err(crate::Error::NoMatch)
+            Err(error
+                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .offset(input))
         } else {
             Ok((outputs, &input[offset..]))
         }
@@ -69,18 +77,26 @@ impl<L: Lex, C> Lex for Many<L, C> {
         let mut offset = 0;
         let mut working_input = input;
 
+        let mut error = None;
+
         while count < self.max {
-            if let Ok((matched, remaining)) = self.item.lex(working_input) {
-                count += 1;
-                offset += matched.len();
-                working_input = remaining;
-            } else {
-                break;
+            match self.item.lex(working_input).offset(working_input) {
+                Ok((matched, remaining)) => {
+                    count += 1;
+                    offset += matched.len();
+                    working_input = remaining;
+                }
+                Err(e) => {
+                    error = Some(e);
+                    break;
+                }
             }
         }
 
         if count < self.min {
-            Err(crate::Error::NoMatch)
+            Err(error
+                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .offset(input))
         } else {
             Ok(input.split_at(offset))
         }
@@ -120,7 +136,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 /// let one_or_more_digits = many::<_, ()>(1.., digit());
 ///
 /// let result = one_or_more_digits.lex("abc");
-/// assert_eq!(result, Err(parsely::Error::NoMatch));
+/// assert_eq!(result, Err(parsely::Error::no_match(ackackack)));
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
@@ -153,7 +169,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 /// assert_eq!(remaining, "");
 ///
 /// let result = three_or_four_digits.lex("12");
-/// assert_eq!(result, Err(parsely::Error::NoMatch));
+/// assert_eq!(result, Err(parsely::Error::no_match(ackackack)));
 ///
 /// let (output, remaining) = three_or_four_digits.lex("12345")?;
 /// assert_eq!(output, "1234");
@@ -306,13 +322,13 @@ mod tests {
     #[derive(PartialEq, Debug, Clone)]
     struct A;
     impl FromStr for A {
-        type Err = crate::Error;
+        type Err = crate::ErrorOwned;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             if s == "a" {
                 Ok(A)
             } else {
-                Err(crate::Error::NoMatch)
+                Err(crate::Error::no_match(s))?
             }
         }
     }

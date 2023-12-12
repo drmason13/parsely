@@ -24,7 +24,7 @@ use crate::{
 ///     # Ok((Foo, ""))
 /// }
 /// ```
-pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error>;
+pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error<'i>>;
 
 /// This trait is implemented by all Parsely parsers.
 ///

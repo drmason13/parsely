@@ -15,7 +15,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn examples_part1() -> Result<(), parsely::Error> {
+    fn examples_part1() -> Result<(), parsely::ErrorOwned> {
         assert!(
             find_floor("(())")? == 0 && find_floor("()()")? == 0,
             "(()) and ()() both result in floor 0."

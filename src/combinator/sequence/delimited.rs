@@ -66,7 +66,7 @@ where
         }
 
         if count < self.min {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         } else {
             Ok((outputs, &input[offset..]))
         }
@@ -103,7 +103,7 @@ where
         }
 
         if count < self.min {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         } else {
             Ok((&input[..offset], &input[offset..]))
         }

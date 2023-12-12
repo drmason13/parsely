@@ -14,7 +14,7 @@ where
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
         let mut char_indices = input.char_indices();
         let Some((mut boundary, _)) = char_indices.next() else {
-            return Err(Error::NoMatch);
+            return Err(Error::no_match(input));
         };
 
         loop {
@@ -25,7 +25,7 @@ where
                 };
                 return Ok((matched, &input[boundary..]));
             } else if boundary == input.len() {
-                return Err(Error::NoMatch);
+                return Err(Error::no_match(input));
             } else {
                 boundary = match char_indices.next() {
                     Some((n, _)) => n,
@@ -43,7 +43,7 @@ where
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut char_indices = input.char_indices();
         let Some((mut boundary, _)) = char_indices.next() else {
-            return Err(Error::NoMatch);
+            return Err(Error::no_match(input));
         };
 
         loop {
@@ -54,7 +54,7 @@ where
                 };
                 return Ok((matched, &input[boundary..]));
             } else if boundary == input.len() {
-                return Err(Error::NoMatch);
+                return Err(Error::no_match(input));
             } else {
                 boundary = match char_indices.next() {
                     Some((n, _)) => n,

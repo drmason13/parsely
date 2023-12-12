@@ -1,4 +1,4 @@
-use crate::{Lex, Parse};
+use crate::{result_ext::*, Lex, Parse};
 
 /// This combinator is returned by [`pad()`]. See it's documentation for more details.
 #[derive(Clone, Debug)]
@@ -13,9 +13,9 @@ where
     T: Lex,
 {
     fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
-        let (_, remaining) = self.left.lex(input)?;
-        let (output, remaining) = self.item.lex(remaining)?;
-        let (_, remaining) = self.right.lex(remaining)?;
+        let (_, inner) = self.left.lex(input)?;
+        let (output, right_pad_and_more) = self.item.lex(inner).offset(input)?;
+        let (_, remaining) = self.right.lex(right_pad_and_more).offset(input)?;
 
         Ok((output, remaining))
     }
@@ -30,9 +30,9 @@ where
     type Output = <T as Parse>::Output;
 
     fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
-        let (_, remaining) = self.left.lex(input)?;
-        let (output, remaining) = self.item.parse(remaining)?;
-        let (_, remaining) = self.right.lex(remaining)?;
+        let (_, inner) = self.left.lex(input)?;
+        let (output, right_pad_and_more) = self.item.parse(inner).offset(input)?;
+        let (_, remaining) = self.right.lex(right_pad_and_more).offset(input)?;
 
         Ok((output, remaining))
     }

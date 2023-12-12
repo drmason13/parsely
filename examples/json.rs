@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, io::BufRead};
 
-use parsely::{switch, ws, Lex, Parse, ParseResult};
+use parsely::{result_ext::*, switch, ws, Lex, Parse, ParseResult};
 
 // first come all the types we parse into...
 
@@ -71,12 +71,9 @@ fn escape() -> impl Parse<Output = char> {
 
 // note that fn as parser is used here (and for map) because returning `impl Parse<Output = Vec<Value>>` would create a "recursive opaque type"
 fn array(input: &str) -> ParseResult<'_, Vec<Value>> {
-    parsely::combinator::pad(
-        '[',
-        ']',
-        value().many(..).delimiter(','.then(ws().many(..))),
-    )
-    .parse(input)
+    parsely::combinator::pad('[', ']', value.many(..).delimiter(','.then(ws().many(..))))
+        .parse(input)
+        .offset(input)
 }
 
 fn map(input: &str) -> ParseResult<'_, Map<String, Value>> {
@@ -85,36 +82,99 @@ fn map(input: &str) -> ParseResult<'_, Map<String, Value>> {
         ws().many(..).then('}'),
         string()
             .then_skip(':'.pad())
-            .then(value())
+            .then(value)
             .many(..)
             .delimiter(','.pad())
             .collect::<BTreeMap<String, Value>>(),
     )
     .map(Map)
     .parse(input)
+    .offset(input)
 }
 
-fn value() -> impl Parse<Output = Value> {
-    null()
+fn value(input: &str) -> ParseResult<Value> {
+    // the simplest implementation uses `or()`
+    // but has the downside that all error information is lost if the error happens inside `bool`, `null`, `string` or `array`
+    /*
+        null()
+            .or(bool().map(Value::Bool))
+            .or(number().map(Value::Number))
+            .or(string().map(Value::String))
+            .or(array.map(Value::Array))
+            .or(map.map(Value::Object))
+            .pad()
+    */
+
+    // unless parsely grows a tuple based choose / switch combinator then
+    // this boilerplate is the only way to preserve errors from previous parsers - which is *very useful* for nested syntaxes like JSON
+    let mut error = match null()
         .or(bool().map(Value::Bool))
-        .or(number().map(Value::Number))
-        .or(string().map(Value::String))
-        .or(array.map(Value::Array))
-        .or(map.map(Value::Object))
         .pad()
+        .parse(input)
+        .offset(input)
+    {
+        Ok(ok) => return Ok(ok),
+        Err(e) => Some(e),
+    };
+
+    match number().map(Value::Number).pad().parse(input).offset(input) {
+        Ok(value) => return Ok(value),
+        Err(e) => {
+            if let Some(previous) = error {
+                error = Some(e.merge(previous));
+            } else {
+                error = Some(e);
+            }
+        }
+    };
+
+    match string().map(Value::String).pad().parse(input).offset(input) {
+        Ok(value) => return Ok(value),
+        Err(e) => {
+            if let Some(previous) = error {
+                error = Some(e.merge(previous));
+            } else {
+                error = Some(e);
+            }
+        }
+    };
+
+    match array.map(Value::Array).pad().parse(input).offset(input) {
+        Ok(value) => return Ok(value),
+        Err(e) => {
+            if let Some(previous) = error {
+                error = Some(e.merge(previous));
+            } else {
+                error = Some(e);
+            }
+        }
+    };
+
+    match map.map(Value::Object).pad().parse(input).offset(input) {
+        Ok(value) => return Ok(value),
+        Err(e) => {
+            if let Some(previous) = error {
+                error = Some(e.merge(previous));
+            } else {
+                error = Some(e);
+            }
+        }
+    };
+
+    Err(error.expect("Value is exhaustive"))
 }
 
 fn json(input: &str) -> ParseResult<'_, Value> {
-    value().pad().parse(input)
+    value.parse(input).offset(input)
 }
 
-fn main() -> Result<(), parsely::Error> {
+fn main() -> Result<(), parsely::ErrorOwned> {
     println!("Please enter some JSON to be parsed:");
 
     let stdin = std::io::stdin();
     let input = stdin.lock().lines().next().unwrap().unwrap();
 
-    let (output, _remaining) = json(input.as_str())?;
+    let (output, _remaining) = json(input.as_str()).own_err()?;
 
     println!("{output:?}");
 
@@ -158,7 +218,7 @@ mod json_tests {
     use super::*;
 
     #[test]
-    fn arrays() -> Result<(), parsely::Error> {
+    fn arrays() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             json("[1, 2, 3]")?,
             (
@@ -192,7 +252,7 @@ mod json_tests {
     }
 
     #[test]
-    fn primitives() -> Result<(), parsely::Error> {
+    fn primitives() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(json("1")?.0, Value::Number(Number(N::Int(1))));
         assert_eq!(
             json(r#""string""#)?.0,
@@ -210,8 +270,11 @@ mod json_tests {
     }
 
     #[test]
-    fn escapes() -> Result<(), parsely::Error> {
-        assert_eq!(escape().parse(r#"\z"#), Err(parsely::Error::NoMatch));
+    fn escapes() -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(
+            escape().parse(r#"\z"#),
+            Err(parsely::Error::no_match("z").offset(r"\z"))
+        );
         assert_eq!(escape().parse(r#"\""#)?, ('"', ""));
         assert_eq!(escape().parse(r#"\t"#)?, ('\t', ""));
         assert_eq!(escape().parse(r#"\n"#)?, ('\n', ""));
@@ -220,7 +283,10 @@ mod json_tests {
         assert_eq!(escape().parse(r#"\f"#)?, ('\x0c', ""));
         assert_eq!(escape().parse(r#"\\"#)?, ('\\', ""));
 
-        assert_eq!(json(r#""\z""#), Err(parsely::Error::NoMatch));
+        assert_eq!(
+            json(r#""\z""#),
+            Err(parsely::Error::no_match(r#"\z""#).offset(r#""\z""#))
+        );
         assert_eq!(json(r#""\"""#)?.0, Value::String(String::from("\"")));
         assert_eq!(json(r#""\n""#)?.0, Value::String(String::from("\n")));
         assert_eq!(json(r#""\\""#)?.0, Value::String(String::from("\\")));
@@ -229,7 +295,7 @@ mod json_tests {
     }
 
     #[test]
-    fn maps() -> Result<(), parsely::Error> {
+    fn maps() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             format!("{}", json(r#"{"foo": "bar"}"#)?.0),
             r#"{"foo": "bar",}"#
@@ -265,7 +331,7 @@ mod json_tests {
     }
 
     #[test]
-    fn whitespace() -> Result<(), parsely::Error> {
+    fn whitespace() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             format!("{}", json("{ \"foo\" \t \n :  \"bar\"\t}")?.0),
             r#"{"foo": "bar",}"#,
@@ -291,7 +357,7 @@ mod json_tests {
     }
 
     #[test]
-    fn it_works() -> Result<(), parsely::Error> {
+    fn it_works() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             format!("{}", json(r#"{"foo": 123, "poop": [{"x":"x"},2,3]}"#)?.0),
             r#"{"foo": 123,"poop": [{"x": "x",},2,3,],}"#,

@@ -8,7 +8,7 @@ use std::fmt;
 ///
 /// Errors in parsely don't directly capture a Span like most parsing libraries.
 ///
-/// They simply store two slices of the original [`&str`](str) input: `remainder` and `input`
+/// They simply store two slices of the original [`&str`](str) input: `remaining` and `input`
 ///
 /// [`parse`]: crate::Parse::parse()
 /// [`lex`]: crate::Lex::lex()
@@ -18,7 +18,7 @@ pub struct Error<'i> {
     pub reason: ErrorReason,
 
     /// The remaining unparsed input
-    pub remainder: &'i str,
+    pub remaining: &'i str,
 
     /// The input to the first parser to run, the *original* input
     pub input: &'i str,
@@ -31,7 +31,7 @@ impl<'i> Error<'i> {
     pub fn no_match(input: &'i str) -> Self {
         Error {
             input,
-            remainder: input,
+            remaining: input,
             reason: ErrorReason::NoMatch,
         }
     }
@@ -42,7 +42,7 @@ impl<'i> Error<'i> {
     pub fn failed_conversion(input: &'i str) -> Self {
         Error {
             input,
-            remainder: input,
+            remaining: input,
             reason: ErrorReason::FailedConversion,
         }
     }
@@ -59,15 +59,15 @@ impl<'i> Error<'i> {
     ///
     /// Warning: This is derived from the current state of the error, so it can't be relied upon to be accurate *during* parsing.
     ///
-    /// Note: this is exactly from the start of the input up until the point where the parser failed to match (`error.remainder`)
+    /// Note: this is exactly from the start of the input up until the point where the parser failed to match (`error.remaining`)
     pub fn matched(&self) -> &str {
-        let byte_offset = self.input.len() - self.remainder.len();
+        let byte_offset = self.input.len() - self.remaining.len();
         &self.input[..byte_offset]
     }
 
     /// Merges this error with another [`Error`] from an optional branch of parsing
     ///
-    /// The resulting error is the one with smallest remainder string slice, as that is assumed to be more specific and thus helpful.
+    /// The resulting error is the one with smallest remaining string slice, as that is assumed to be more specific and thus helpful.
     ///
     /// Without this method, it would be impossible to retain error information within combinators that can succeed despite errors,
     /// e.g. [`.many(0..)`], [`.optional()`] and [`.or()`]
@@ -76,8 +76,8 @@ impl<'i> Error<'i> {
     /// [`.optional()`]: crate::combinator::optional
     /// [`.or()`]: crate::combinator::or
     pub fn merge(self, other: Error<'i>) -> Error<'i> {
-        let mine = self.remainder.len();
-        let theirs = other.remainder.len();
+        let mine = self.remaining.len();
+        let theirs = other.remaining.len();
 
         // TODO: consider smarter heuristics and remember to merge any other metadata that gets added!
         if mine < theirs {
@@ -88,10 +88,10 @@ impl<'i> Error<'i> {
     }
 
     /// This returns an ErrorOwned built from this Error
-    pub fn to_owned(&self) -> ErrorOwned {
+    pub fn own_err(&self) -> ErrorOwned {
         ErrorOwned {
             reason: self.reason,
-            remainder: self.remainder.to_string(),
+            remaining: self.remaining.to_string(),
             input: self.input.to_string(),
         }
     }
@@ -122,23 +122,27 @@ impl<'i> fmt::Display for Error<'i> {
     }
 }
 
-/// This module acts as a sort of targeted prelude for all of the error handling traits used by Parsely.
+/// This module contains two "ResultExt" traits for error handling.
 ///
-/// These are provided for your convenience to act on [`Result`]s directly instead of peppering your parsers with `.map_err(|e| ...)`
-///
-/// Each trait provides a method of [`Error`] of the same name to the appropriate [`Result`] types.
+/// They provide methods on [`Result`]s directly to reduce the need to pepper your parsers with `.map_err(|e| ...)`
 pub mod result_ext {
     use crate::{Error, ErrorOwned, ParseResult};
 
     /// This trait is used to extend [`Result<T, parsely::Error>`]
     pub trait ResultExtParselyError<'i, O> {
-        /// Calls `.offset()` on the parsely::Error inside
+        /// Calls [`.offset()`] on the parsely::Error inside
+        ///
+        /// [`.offset()`]: Error::offset()
         fn offset(self, input: &'i str) -> Self;
 
-        /// Calls `.to_owned()` on the parsely::Error inside
+        /// Calls [`.own_err()`] on the parsely::Error inside
+        ///
+        /// [`.own_err()`]: Error::own_err()
         fn own_err(self) -> Result<(O, &'i str), ErrorOwned>;
 
-        /// Calls `.merge()` on the parsely::Error inside
+        /// Calls [`.merge()`] on the parsely::Error inside
+        ///
+        /// [`.merge()`]: Error::merge()
         fn merge(self, other: Error<'i>) -> Result<(O, &'i str), Error<'i>>;
     }
 
@@ -148,7 +152,7 @@ pub mod result_ext {
         }
 
         fn own_err(self) -> Result<(O, &'i str), ErrorOwned> {
-            self.map_err(|e| e.to_owned())
+            self.map_err(|e| e.own_err())
         }
 
         fn merge(self, other: Error<'i>) -> Result<(O, &'i str), Error<'i>> {
@@ -213,14 +217,27 @@ pub mod result_ext {
 /// [`FromStr`]: std::str::FromStr
 #[derive(PartialEq, Debug)]
 pub struct ErrorOwned {
-    reason: ErrorReason,
-    remainder: String,
-    input: String,
+    /// The reason for the error
+    pub reason: ErrorReason,
+
+    /// The remaining unparsed input
+    pub remaining: String,
+
+    /// The input to the first parser to run, the *original* input
+    pub input: String,
+}
+
+impl ErrorOwned {
+    /// Returns the part of the input that was matched overall before failure
+    pub fn matched(&self) -> &str {
+        let byte_offset = self.input.len() - self.remaining.len();
+        &self.input[..byte_offset]
+    }
 }
 
 impl<'i> From<Error<'i>> for ErrorOwned {
     fn from(value: Error<'i>) -> Self {
-        value.to_owned()
+        value.own_err()
     }
 }
 
@@ -229,7 +246,7 @@ impl fmt::Display for ErrorOwned {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let error = Error {
             reason: self.reason,
-            remainder: &self.remainder,
+            remaining: &self.remaining,
             input: &self.input,
         };
 
@@ -247,9 +264,9 @@ mod tests {
         assert_eq!(error.matched(), expected);
     }
 
-    fn assert_remainder<T: fmt::Debug>(error: &Result<T, Error>, expected: &str) {
+    fn assert_remaining<T: fmt::Debug>(error: &Result<T, Error>, expected: &str) {
         let error = error.as_ref().expect_err("no error");
-        assert_eq!(error.remainder, expected);
+        assert_eq!(error.remaining, expected);
     }
 
     fn assert_input<T: fmt::Debug>(error: &Result<T, Error>, expected: &str) {
@@ -267,7 +284,7 @@ mod tests {
         let error = "foo".lex("bar");
 
         assert_matched(&error, "");
-        assert_remainder(&error, "bar");
+        assert_remaining(&error, "bar");
         assert_input(&error, "bar");
         // TODO!: update Display impl
         assert_display(&error, "No Match");

@@ -38,7 +38,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_dimensions() -> Result<(), Box<dyn std::error::Error>> {
+    fn parse_dimensions() -> Result<(), parsely::ErrorOwned> {
         assert_eq!(
             "1x2x3".parse::<Dimensions>()?,
             Dimensions {
@@ -57,12 +57,11 @@ mod tests {
             "10x20x30".parse()?
         );
 
-        assert_eq!(
-            Err(parsely::Error::no_match("x40")
-                .offset("10x20x30x40")
-                .to_owned()),
-            "10x20x30x40".parse::<Dimensions>() // too many dimensions! thanks end() :)
-        );
+        // too many dimensions! thanks end() :)
+        let error = "10x20x30x40".parse::<Dimensions>().unwrap_err();
+
+        assert_eq!(error.matched(), "10x20x30");
+        assert_eq!(&error.remaining, "x40");
 
         assert_eq!(
             Dimensions {
@@ -70,20 +69,21 @@ mod tests {
                 width: 20,
                 height: 30
             },
-            "10 x 20 x 30".parse()? // .pad() for the win!
+            // .pad() for the win!
+            "10 x 20 x 30".parse()?
         );
 
-        assert_eq!(
-            Err(parsely::Error::no_match(".2 x 20 x 30")
-                .offset("10.2 x 20 x 30")
-                .to_owned()),
-            "10.2 x 20 x 30".parse::<Dimensions>() // no decimals allowed!
-        );
+        // no decimals allowed!
+        let error = "10.2 x 20 x 30".parse::<Dimensions>().unwrap_err();
 
-        assert_eq!(
-            Err(parsely::Error::no_match("001x002x003").to_owned()),
-            "001x002x003".parse::<Dimensions>()
-        );
+        assert_eq!(error.matched(), "10");
+        assert_eq!(&error.remaining, ".2 x 20 x 30");
+
+        // no leading zeroes allowed!
+        let error = "001x002x003".parse::<Dimensions>().unwrap_err();
+
+        assert_eq!(error.matched(), "0");
+        assert_eq!(&error.remaining, "01x002x003");
 
         Ok(())
     }

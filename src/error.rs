@@ -4,11 +4,14 @@
 
 use std::fmt;
 
-/// The Error type returned by both [`parse`](crate::Parse::parse()) and [`lex`](crate::Lex::lex()) methods.
+/// The [`Error`] type returned by both [`parse`] and [`lex`] methods.
 ///
 /// Errors in parsely don't directly capture a Span like most parsing libraries.
 ///
-/// They simply store two slices of the original &str input: `remainder` and `input`
+/// They simply store two slices of the original [`&str`](str) input: `remainder` and `input`
+///
+/// [`parse`]: crate::Parse::parse()
+/// [`lex`]: crate::Lex::lex()
 #[derive(PartialEq, Debug)]
 pub struct Error<'i> {
     /// The reason for the error
@@ -94,11 +97,15 @@ impl<'i> Error<'i> {
     }
 }
 
-/// This is a simple "all the possible errors while parsing" enum.
+/// A simple "all the possible errors while parsing" enum
+///
+/// It is included as a field in [`Error`].
 #[non_exhaustive]
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum ErrorReason {
     /// A lexer did not see the expected input and has failed to match
+    ///
+    /// You can construct an [`Error`] with this reason using [`Error::no_match()`]
     NoMatch,
 
     /// A parser encountered an error when converting to the output type

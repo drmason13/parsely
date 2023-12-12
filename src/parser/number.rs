@@ -81,44 +81,39 @@ pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// assert_eq!(output, 123.456);
 /// assert_eq!(remaining, "");
 ///
-///
 /// // Scientific notation matches too
 /// let (output, remaining) = float::<f32>().parse("6.78e-9")?;
 /// assert_eq!(output, 6.78e-9);
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-/// Commas are accepted:
+/// Commas are not accepted:
 ///
 /// ```
 /// # use parsely::{number, Parse};
 /// let (output, remaining) = number::<f32>().parse("123,456")?;
-/// assert_eq!(output, 123.456);
-/// assert_eq!(remaining, "");
+/// assert_eq!(output, 123.0);
+/// assert_eq!(remaining, ",456");
 /// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn float<T: FromStr>() -> impl Parse<Output = T> {
-    float_scientific_notation().or(char('-')
+    float_scientific_notation().or('-'
         .optional()
         .then(non_zero_digit())
         .then(digit().many(0..100_000))
-        .then(char('.').or(char(',')))
+        .then('.')
         .then(digit().many(0..100_000))
-        // not every language uses '.' for decimals, but rust float parsing expects it
-        .try_map(|s| {
-            let s = s.replace(',', ".");
-            FromStr::from_str(&s)
-        }))
+        .try_map(FromStr::from_str))
 }
 
 pub fn float_scientific_notation<T: FromStr>() -> impl Parse<Output = T> {
-    (char('-').optional())
+    ('-'.optional())
         .then(non_zero_digit())
         .then(digit().many(0..100_000))
-        .then(char('.'))
+        .then('.')
         .then(digit().many(0..100_000))
-        .then(char('e').or(char('E')))
-        .then(char('-').or(char('+')).optional())
+        .then('e'.or('E'))
+        .then('-'.or('+').optional())
         .then(digit().many(0..100_000))
         .try_map(FromStr::from_str)
 }
@@ -257,19 +252,6 @@ mod tests {
         );
 
         test_parser_batch(
-            "float matches decimals with ,",
-            float::<f32>(),
-            &[
-                ("12,6", Some(12.6), ""),
-                ("12,", Some(12.), ""),
-                ("123", None, "123"),
-                ("12,3A", Some(12.3), "A"),
-                ("12,A3", Some(12.), "A3"),
-                ("12,0.1", Some(12.0), ".1"),
-            ],
-        );
-
-        test_parser_batch(
             "number matches base 10 digits or decimals",
             number::<f32>(),
             &[
@@ -278,7 +260,7 @@ mod tests {
                 ("123", Some(123.), ""),
                 ("12.3A", Some(12.3), "A"),
                 ("12.A3", Some(12.), "A3"),
-                ("12,0.1", Some(12.0), ".1"),
+                ("12.0.1", Some(12.0), ".1"),
             ],
         );
     }

@@ -17,7 +17,7 @@ impl Lex for Take {
         if input.len() >= self.count {
             Ok(input.split_at(self.count))
         } else {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         }
     }
 }

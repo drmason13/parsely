@@ -19,7 +19,7 @@ impl Lex for Char {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(crate::Error::NoMatch),
+            _ => Err(crate::Error::no_match(input)),
         }
     }
 }
@@ -77,10 +77,10 @@ where
             if (self.condition)(c) {
                 Ok(input.split_at(c.len_utf8()))
             } else {
-                Err(crate::Error::NoMatch)
+                Err(crate::Error::no_match(input))
             }
         } else {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         }
     }
 }
@@ -125,7 +125,7 @@ impl Lex for WhiteSpace {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(crate::Error::NoMatch),
+            _ => Err(crate::Error::no_match(input)),
         }
     }
 }
@@ -179,7 +179,7 @@ pub fn uppercase() -> CharIf<fn(char) -> bool> {
 /// assert_eq!(remaining, "har");
 ///
 /// let result = one_of("abc").lex("har");
-/// assert_eq!(result, Err(parsely::Error::NoMatch));
+/// assert!(result.is_err());
 ///
 /// # Ok::<(), parsely::Error>(())
 /// ```
@@ -197,7 +197,7 @@ pub fn one_of(chars: &str) -> impl Lex + '_ {
 /// use parsely::{none_of, Lex};
 ///
 /// let result = none_of("abc").lex("char");
-/// assert_eq!(result, Err(parsely::Error::NoMatch));
+/// assert!(result.is_err());
 ///
 /// let (matched, remaining) = none_of("abc").lex("har")?;
 /// assert_eq!(matched, "h");

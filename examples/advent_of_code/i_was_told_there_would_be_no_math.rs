@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use parsely::{char, end, uint, Lex, Parse};
+use parsely::{char, end, result_ext::*, uint, Lex, Parse};
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
@@ -12,7 +12,7 @@ pub struct Dimensions {
 
 impl FromStr for Dimensions {
     // this is a bit lazy of us, you can map `parsely::Error` to your own error type quite easily - we'll make a proper error handling example soon
-    type Err = parsely::Error;
+    type Err = parsely::ErrorOwned;
 
     // Parsers are defined and used here
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -23,7 +23,7 @@ impl FromStr for Dimensions {
             .then(uint::<usize>());
 
         // parsely isn't fancy enough to provide macros to avoid the nested tuples from repeated `.then()`s
-        let (((length, width), height), _) = dimensions.then(end()).parse(s)?;
+        let (((length, width), height), _) = dimensions.then(end()).parse(s).offset(s)?;
 
         Ok(Dimensions {
             length,
@@ -38,7 +38,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_dimensions() -> Result<(), parsely::Error> {
+    fn parse_dimensions() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             "1x2x3".parse::<Dimensions>()?,
             Dimensions {
@@ -58,7 +58,9 @@ mod tests {
         );
 
         assert_eq!(
-            Err(parsely::Error::NoMatch),
+            Err(parsely::Error::no_match("x40")
+                .offset("10x20x30x40")
+                .to_owned()),
             "10x20x30x40".parse::<Dimensions>() // too many dimensions! thanks end() :)
         );
 
@@ -72,12 +74,14 @@ mod tests {
         );
 
         assert_eq!(
-            Err(parsely::Error::NoMatch),
+            Err(parsely::Error::no_match(".2 x 20 x 30")
+                .offset("10.2 x 20 x 30")
+                .to_owned()),
             "10.2 x 20 x 30".parse::<Dimensions>() // no decimals allowed!
         );
 
         assert_eq!(
-            Err(parsely::Error::NoMatch),
+            Err(parsely::Error::no_match("001x002x003").to_owned()),
             "001x002x003".parse::<Dimensions>()
         );
 

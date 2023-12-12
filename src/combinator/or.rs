@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{Lex, LexResult, Parse, ParseResult};
+use crate::{result_ext::*, Lex, LexResult, Parse, ParseResult};
 
 /// This combinator is returned by [`or()`]. See it's documentation for more details.
 #[derive(Clone)]
@@ -24,7 +24,9 @@ where
     type Output = O;
 
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, O> {
-        self.left.parse(input).or_else(|_| self.right.parse(input))
+        self.left
+            .parse(input)
+            .or_else(|_| self.right.parse(input).offset(input))
     }
 }
 
@@ -34,7 +36,10 @@ where
     R: Lex,
 {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
-        self.left.lex(input).or_else(|_| self.right.lex(input))
+        self.left
+            .lex(input)
+            .offset(input)
+            .or_else(|_| self.right.lex(input).offset(input))
     }
 }
 

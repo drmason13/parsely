@@ -42,7 +42,7 @@ impl<'p> Lex for Token<'p, CaseSensitive> {
         if input.starts_with(self.0) {
             Ok(input.split_at(self.0.len()))
         } else {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         }
     }
 }
@@ -53,7 +53,7 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
         if input.to_uppercase().starts_with(&self.0.to_uppercase()) {
             Ok(input.split_at(self.0.len()))
         } else {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         }
     }
 }

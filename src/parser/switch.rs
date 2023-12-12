@@ -1,4 +1,4 @@
-use crate::{Error, Lex, Parse};
+use crate::{result_ext::*, Lex, Parse};
 
 pub struct Switch<L, T, const N: usize> {
     items: [(L, T); N],
@@ -72,11 +72,14 @@ where
     type Output = T;
 
     fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+        let mut error = None;
+
         for (lexer, output) in self.items.iter() {
-            if let Ok((_, remaining)) = lexer.lex(input) {
-                return Ok((output.clone(), remaining));
+            match lexer.lex(input).offset(input) {
+                Ok((_, remaining)) => return Ok((output.clone(), remaining)),
+                Err(e) => error = Some(e),
             }
         }
-        Err(Error::NoMatch)
+        Err(error.expect("switch will always return error"))
     }
 }

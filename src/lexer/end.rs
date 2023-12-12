@@ -9,7 +9,7 @@ impl Lex for End {
         if input.is_empty() {
             Ok(("", ""))
         } else {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         }
     }
 }
@@ -32,7 +32,7 @@ impl Lex for End {
 ///
 ///
 /// let result = lexer.lex("aaaaaaaaa");
-/// assert_eq!(result, Err(parsely::Error::NoMatch));
+/// assert!(result.is_err());
 ///
 /// # Ok::<(), parsely::Error>(())
 /// ```
@@ -48,7 +48,7 @@ impl Lex for End {
 /// let lexer_multi = lexer.many(2..);
 ///
 /// let result = lexer_multi.lex("aaaaaa");
-/// assert_eq!(result, Err(parsely::Error::NoMatch));
+/// assert!(result.is_err());
 /// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn end() -> End {

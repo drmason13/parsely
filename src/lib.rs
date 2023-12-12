@@ -45,7 +45,7 @@
 //! If our inexact usage of these terms irks you, then I recommend a parser combinator library intended for parsing programming languages such as [Chumsky](https://docs.rs/chumsky/latest/chumsky/).
 
 mod error;
-pub use error::Error;
+pub use error::{result_ext, Error, ErrorOwned, ErrorReason};
 
 mod lex;
 pub mod lexer;
@@ -68,7 +68,7 @@ pub(crate) mod test_utils;
 #[doc(hidden)]
 #[cfg(test)]
 mod test_automation {
-    use crate::{char, token, until, ws, Lex};
+    use crate::{char, error::result_ext::*, token, until, ws, Lex};
 
     #[test]
     fn sync_readme_example() -> Result<(), Box<dyn std::error::Error>> {
@@ -88,9 +88,10 @@ mod test_automation {
                     .then(token("rust"))
                     .then(char('\n')),
             )
-            .lex(&readme)?;
+            .lex(&readme)
+            .own_err()?;
 
-        let (_, end) = until(fence).lex(remaining)?;
+        let (_, end) = until(fence).lex(remaining).own_err()?;
 
         let output = {
             let mut s = start.to_string();

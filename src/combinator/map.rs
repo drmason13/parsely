@@ -1,6 +1,6 @@
 use std::{any::type_name, fmt};
 
-use crate::{Lex, Parse};
+use crate::{error::result_ext::*, Lex, Parse};
 
 /// This combinator is returned by [`map()`]. See it's documentation for more details.
 #[derive(Clone)]
@@ -26,7 +26,7 @@ where
     type Output = O;
 
     fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
-        let (matched, remaining) = self.lexer.lex(input).map_err(|_| crate::Error::NoMatch)?;
+        let (matched, remaining) = self.lexer.lex(input).offset(input)?;
         let output = (self.f)(matched);
 
         Ok((output, remaining))
@@ -59,8 +59,8 @@ where
     type Output = O;
 
     fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
-        let (matched, remaining) = self.lexer.lex(input).map_err(|_| crate::Error::NoMatch)?;
-        let output = (self.f)(matched).map_err(|_| crate::Error::FailedConversion)?;
+        let (matched, remaining) = self.lexer.lex(input).offset(input)?;
+        let output = (self.f)(matched).fail_conversion(input)?;
 
         Ok((output, remaining))
     }

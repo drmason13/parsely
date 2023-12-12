@@ -23,7 +23,7 @@ use crate::{
 ///     # Ok((input, ""))
 /// }
 /// ```
-pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error>;
+pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
 
 /// This trait is implemented by all Parsely lexers.
 ///
@@ -149,7 +149,7 @@ pub trait Lex {
     ///
     /// let result = hex_color.lex("#TEATEA");
     ///
-    /// assert_eq!(result, Err(parsely::Error::NoMatch));
+    /// assert!(result.is_err());
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
@@ -336,65 +336,74 @@ pub trait Lex {
         pad(left, right, self)
     }
 }
-
-/// Functions that take &str and return `Result<(&str, &str), parsely::Error>` are Lexers.
-///
-/// The matched part of the input str is returned on the left hand side.
-///
-/// The remaining part of the input str is returned on the right hand side.
-///
-/// This is the same order that [`str::split_at()`] returns.
-///
-/// ```
-/// use parsely::{digit, Lex};
-///
-/// fn my_lexer(input: &str) -> Result<(&str, &str), parsely::Error> {
-///     let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
-///     let (output, remaining) = input.split_at(boundary + 3);
-///
-///     Ok((output, remaining))
-/// }
-///
-/// // this lexer function matches up to and including the token "abc"
-/// let (output, remaining) = my_lexer("...abc")?;
-/// assert_eq!(output, "...abc");
-///
-/// // because it implements Lex, we can use it to build a more complex lexer chain
-/// let (output, remaining) = my_lexer.then(digit().many(1..=3)).count(3).lex("...abc123.abc123..abc123...")?;
-/// assert_eq!(output, "...abc123.abc123..abc123");
-/// assert_eq!(remaining, "...");
-///
-/// # Ok::<(), parsely::Error>(())
-/// ```
-///
-/// There is a type alias available to make the function signature *slightly* shorter
-/// but it does need lifetime specifiers, we use `i` for input, the lifetime of the input str.
-/// ```
-/// use parsely::{digit, Lex, LexResult};
-///
-/// fn my_lexer<'i>(input: &'i str) -> LexResult<'i> {
-///    // ...
-///    # let boundary = input.find("abc").ok_or(parsely::Error::NoMatch)?;
-///    # let (output, remaining) = input.split_at(boundary + 3);
-///    # Ok((output, remaining))
-/// }
-/// ```
 impl<F> Lex for F
 where
-    F: Fn(&str) -> Result<(&str, &str), crate::Error>,
+    F: Fn(&str) -> LexResult<'_>,
 {
+    /// Functions that take &str and return `Result<(&str, &str), parsely::Error>` are Lexers.
+    ///
+    /// The matched part of the input str is returned on the left hand side.
+    ///
+    /// The remaining part of the input str is returned on the right hand side.
+    ///
+    /// This is the same order that [`str::split_at()`] returns.
+    ///
+    /// > **Note**: To get proper error spans from your functions you must:
+    /// > * call `.offset(input)` on any errors returned by built in lexers
+    /// > * use `parsely::Error::no_match(input)` to create an Error
+    /// >
+    /// > where `input` is the argument to your function that is the input to be lexed
+    ///
+    /// # Examples
+    ///
+    /// This example uses the alias [`LexResult`] for the return type, and [elides] the lifetime parameter.
+    ///
+    /// [elides]: https://doc.rust-lang.org/nomicon/lifetime-elision.html
+    ///
+    /// The equivalent expanded signature is `fn my_lexer(input: &str) -> Result<(&str, &str), parsely::Error<'_>>`
+    /// ```
+    /// use parsely::{digit, Lex, LexResult};
+    ///
+    /// fn my_lexer(input: &str) -> LexResult<'_> {
+    ///     let boundary = input.find("abc").ok_or(parsely::Error::no_match(input))?;
+    ///     let (output, remaining) = input.split_at(boundary + 3);
+    ///
+    ///     Ok((output, remaining))
+    /// }
+    ///
+    /// // this lexer function matches up to and including the token "abc"
+    /// let (output, remaining) = my_lexer("...abc")?;
+    /// assert_eq!(output, "...abc");
+    ///
+    /// // because it implements Lex, we can use it to build a more complex lexer chain
+    /// let (output, remaining) = my_lexer.then(digit().many(1..=3)).count(3).lex("...abc123.abc123..abc123...")?;
+    /// assert_eq!(output, "...abc123.abc123..abc123");
+    /// assert_eq!(remaining, "...");
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    ///
+    /// Note the lack of `()` after `my_lexer` when it is used as part of a chain.
+    /// The function itself is being used, it won't be executed until you call `.lex()`
+    ///
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         self(input)
     }
 }
 
 impl Lex for char {
+    /// [`Lex`] is implemented for [`char`]
+    ///
+    /// It works the same way as the [`char()`](crate::char) lexer.
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         crate::lexer::char(*self).lex(input)
     }
 }
 
 impl Lex for &'static str {
+    /// [`Lex`] is implemented for [`str`]
+    ///
+    /// It works the same way as the [`token()`](crate::token) lexer.
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         crate::lexer::token(self).lex(input)
     }

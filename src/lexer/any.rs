@@ -9,7 +9,7 @@ impl Lex for Any {
         if let Some(c) = input.chars().next() {
             Ok(input.split_at(c.len_utf8()))
         } else {
-            Err(crate::Error::NoMatch)
+            Err(crate::Error::no_match(input))
         }
     }
 }

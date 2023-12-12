@@ -65,6 +65,7 @@ pub fn int<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
     non_zero_digit()
         .then(digit().many(0..100_000))
+        .or("0")
         .try_map(FromStr::from_str)
 }
 

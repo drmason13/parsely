@@ -85,7 +85,10 @@ fn map(input: &str) -> ParseResult<'_, Map<String, Value>> {
     parsely::combinator::pad(
         char('{').then(ws().many(..)),
         ws().many(..).then(char('}')),
-        string().then_skip(char(':').pad()).then(value()).optional(),
+        string()
+            .then_skip(ws().many(..).then(char(':').then(ws().many(..))))
+            .then(value())
+            .optional(),
     )
     .map(|inner| {
         let mut map = BTreeMap::new();

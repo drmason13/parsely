@@ -61,6 +61,9 @@ pub use parser::*;
 
 pub mod combinator;
 
+#[cfg(feature = "laws")]
+pub mod fundamental_law_of_parsely_lexing;
+
 #[doc(hidden)]
 #[cfg(test)]
 pub(crate) mod test_utils;

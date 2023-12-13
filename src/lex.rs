@@ -2,10 +2,10 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        count, many, map, optional, or, pad, sequence::LexMany, skip_then, then, then_skip,
-        try_map, Many, Map, Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
+        count, many, map, optional, or, skip_then, then, then_skip, try_map, Many, Map, Optional,
+        Or, SkipThen, Then, ThenSkip, TryMap,
     },
-    ws, Parse, WhiteSpace,
+    Parse,
 };
 
 /// The type returned by a lex: the order of the tuple is `(matched, remaining)`
@@ -280,60 +280,6 @@ pub trait Lex {
         F: Fn(&str) -> Result<O, E>,
     {
         try_map(self, f)
-    }
-
-    /// Pad this lexer with zero or more whitespace lexers so that leading and/or trailing whitespace in the input is ignored.
-    ///
-    /// This is an opionated default usage of the pad combinator for convenience.
-    ///
-    /// The pad combinator will accept arbitrary lexers for the left and right side. See it's documentation for more details.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use parsely::{int, Parse};
-    ///
-    /// assert_eq!(
-    ///     int::<u32>().pad().parse("   123\n")?,
-    ///     (123, "")
-    /// );
-    ///
-    /// assert_eq!(
-    ///     int::<u32>().pad().many(1..).parse("   123\n\t456\t789\r\n    10")?,
-    ///     (vec![123, 456, 789, 10], "")
-    /// );
-    /// # Ok::<(), parsely::Error>(())
-    /// ```
-    fn pad(self) -> Pad<LexMany<WhiteSpace>, LexMany<WhiteSpace>, Self>
-    where
-        Self: Sized,
-    {
-        pad(ws().many(0..), ws().many(0..), self)
-    }
-
-    /// Pad this lexer with the given left and right lexers.
-    ///
-    /// See also [`pad()`](Parse::pad()) which pads with zero or more whitepsace characters by default.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use parsely::{char, digit, Lex};
-    ///
-    /// let lexer = digit().pad_with(char('['), char(']'));
-    ///
-    /// assert_eq!(lexer.lex("[1]")?, ("1", ""));
-    /// # Ok::<(), parsely::Error>(())
-    /// ```
-    fn pad_with<L: Lex, R: Lex>(self, left: L, right: R) -> Pad<L, R, Self>
-    where
-        Self: Sized,
-    {
-        pad(left, right, self)
     }
 }
 

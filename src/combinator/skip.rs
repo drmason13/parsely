@@ -68,8 +68,22 @@ pub struct ThenSkip<L, T> {
 /// If the lexer fails, it is still a parse failure. Use `.optional()` if the input to be skipped isn't required.
 ///
 /// This combinator can be chained using [`Parse::then_skip()`].
-//
-// TODO: what actually happens if you do a then_skip(lexer_a, lexer_b) ???
+///
+/// What actually happens when you do `then_skip(lexer_a, lexer_b)`:
+///
+/// ```
+/// # use parsely::{Lex, Parse, token};
+/// #
+/// # assert_eq!(
+/// #
+/// token("foo").then_skip(token("bar")).lex("foobar")
+/// #
+/// # .unwrap(),
+/// #
+/// // matched: "foo", remaining: ""
+/// #
+/// # ("foo", ""));
+/// ```
 pub fn then_skip<L: Lex, T>(lexer: L, item: T) -> ThenSkip<L, T> {
     ThenSkip { lexer, item }
 }

@@ -10,3 +10,6 @@ test = true
 [[example]]
 name = "json"
 test = true
+
+[features]
+laws = []

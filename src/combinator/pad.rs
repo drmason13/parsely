@@ -8,19 +8,6 @@ pub struct Pad<L, R, T> {
     item: T,
 }
 
-impl<L: Lex, R: Lex, T> Lex for Pad<L, R, T>
-where
-    T: Lex,
-{
-    fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
-        let (_, remaining) = self.left.lex(input)?;
-        let (output, remaining) = self.item.lex(remaining)?;
-        let (_, remaining) = self.right.lex(remaining)?;
-
-        Ok((output, remaining))
-    }
-}
-
 impl<L, R, T> Parse for Pad<L, R, T>
 where
     L: Lex,
@@ -38,13 +25,17 @@ where
     }
 }
 
-/// Creates a parser that will lex with the left lexer, ignoring the ouput, then parse with the parser, and then lex with the right lexer, ignoring the ouput.
+/// Creates a parser that will lex with the left lexer, skipping the ouput, then parse with the parser, and then lex with the right lexer, skipping the ouput.
 ///
 /// This serves to "pad" a parser allowing it to skip input on either side.
+///
+/// Note: This combinator violates the [Fundamental Law of Parsely Lexing] and has no method in the [`Lex`] trait.
 ///
 /// Both the left and right lexer are required to match for the parse to be successful.
 ///
 /// See [`Parse::pad()`] for more documentation and examples.
+///
+/// [Fundamental Law of Parsely Lexing]: crate::fundamental_law_of_parsely_lexing
 pub fn pad<L: Lex, R: Lex, T>(left: L, right: R, item: T) -> Pad<L, R, T> {
     Pad { left, right, item }
 }
@@ -53,7 +44,7 @@ pub fn pad<L: Lex, R: Lex, T>(left: L, right: R, item: T) -> Pad<L, R, T> {
 mod test {
     use super::*;
     use crate::test_utils::*;
-    use crate::{char, digit, int};
+    use crate::{char, int};
 
     #[test]
     fn parsing() {
@@ -66,21 +57,6 @@ mod test {
                 ("123<", None, "123<"),
                 (">123", None, ">123"),
                 (">>123<<", None, ">>123<<"),
-            ],
-        );
-    }
-
-    #[test]
-    fn lexing() {
-        test_lexer_batch(
-            ">digit()< padding required",
-            pad(char('>'), char('<'), digit()),
-            &[
-                ("", None, ""), //
-                (">1<", Some("1"), ""),
-                ("2<", None, "2<"),
-                (">3", None, ">3"),
-                (">>4<<", None, ">>4<<"),
             ],
         );
     }

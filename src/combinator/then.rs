@@ -56,11 +56,19 @@ where
 
 impl<L: Lex, R: Lex> Lex for Then<L, R> {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
-        let (left, remaining) = self.left.lex(input)?;
-        let (right, _) = self.right.lex(remaining)?;
+        let (left, left_remaining) = self.left.lex(input)?;
+        let (right, right_remaining) = self.right.lex(left_remaining)?;
 
         let boundary = left.len() + right.len();
-        Ok(input.split_at(boundary))
+        let (matched, remaining) = input.split_at(boundary);
+
+        // Enforcing the fundamental law of parsely lexing
+        debug_assert_eq!(
+            right_remaining, remaining,
+            "the fundamental law of parsely lexing has been broken!"
+        );
+
+        Ok((matched, remaining))
     }
 }
 
@@ -80,27 +88,6 @@ mod tests {
     use crate::lexer::{char, token};
     use crate::test_utils::*;
     use crate::{int, Lex, Parse};
-
-    #[test]
-    fn then_lexing_with_pad() -> Result<(), crate::Error> {
-        let lexer = token("foo").pad().then(token("bar"));
-
-        let input = "foobar";
-
-        let (matched, remaining) = lexer.lex(input)?;
-
-        assert_eq!(matched, "foobar");
-        assert_eq!(remaining, "");
-
-        let input = "foo   bar";
-
-        let (matched, remaining) = lexer.lex(input)?;
-
-        assert_eq!(matched, "foobar");
-        assert_eq!(remaining, "");
-
-        Ok(())
-    }
 
     #[test]
     fn parsing() {

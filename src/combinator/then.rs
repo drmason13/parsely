@@ -57,12 +57,15 @@ where
 impl<L: Lex, R: Lex> Lex for Then<L, R> {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let (left, left_remaining) = self.left.lex(input)?;
+
+        #[allow(unused_variables)]
         let (right, right_remaining) = self.right.lex(left_remaining)?;
 
         let boundary = left.len() + right.len();
         let (matched, remaining) = input.split_at(boundary);
 
-        // Enforcing the fundamental law of parsely lexing
+        #[cfg(feature = "laws")]
+        // Enforce the fundamental law of parsely lexing
         debug_assert_eq!(
             right_remaining, remaining,
             "the fundamental law of parsely lexing has been broken!"

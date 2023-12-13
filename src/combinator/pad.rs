@@ -44,6 +44,32 @@ where
 ///
 /// Both the left and right lexer are required to match for the parse to be successful.
 ///
+/// # Combining pad with then
+///
+/// Due to pad() skipping the remainder, when used inside then in a lexer, the skipped remainder **is not skipped**!
+///
+/// ```
+/// use parsely::{digit, Lex};
+///
+/// let lexer = digit().count(2).then(":".pad());
+/// let input = "99:\r\n\r\n";
+///
+/// let (matched, remaining) = lexer.lex(input)?;
+///
+/// assert_eq!(matched, "99:");
+/// // pad didn't skip any whitespace in our lexer!
+/// assert_eq!(remaining, "\r\n\r\n");
+///
+/// // the solution is to reorder our lexer:
+/// let fixed_lexer = digit().count(2).then(":").pad();
+/// //                                         ^^ pad the result of .then()
+///
+/// let (matched, remaining) = fixed_lexer.lex(input)?;
+/// assert_eq!(matched, "99:");
+/// assert_eq!(remaining, "");
+/// # Ok::<(), parsely::Error>(())
+/// ```
+///
 /// See [`Parse::pad()`] for more documentation and examples.
 pub fn pad<L: Lex, R: Lex, T>(left: L, right: R, item: T) -> Pad<L, R, T> {
     Pad { left, right, item }
@@ -54,6 +80,28 @@ mod test {
     use super::*;
     use crate::test_utils::*;
     use crate::{char, digit, int};
+
+    #[test]
+    fn pad_works() -> Result<(), crate::ErrorOwned> {
+        let lexer = ":".pad();
+        let input = ":\r\n\r\n";
+        let (matched, remaining) = lexer.lex(input)?;
+        assert_eq!(matched, ":");
+        assert_eq!(remaining, "");
+        Ok(())
+    }
+
+    #[test]
+    fn pad_sometimes_does_not_work() -> Result<(), crate::ErrorOwned> {
+        let lexer = "foo".then(":".pad());
+        let input = "foo:\r\n\r\n";
+
+        let (matched, remaining) = lexer.lex(input)?;
+        assert_eq!(matched, "foo:");
+        // This is a surprising consequence of how Then implements Lex
+        assert_eq!(remaining, "\r\n\r\n");
+        Ok(())
+    }
 
     #[test]
     fn parsing() {

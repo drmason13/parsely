@@ -334,6 +334,8 @@ pub trait Parse {
     }
 
     /// Pad this parser with zero or more whitespace lexers so that leading and/or trailing whitespace in the input doesn't interfere with parsing
+    /// 
+    /// WARNING: `.pad()` leads to suprising bugs when included inside `.then()`. See the [**Combining pad with then** example](pad).
     ///
     /// This is an opinionated default usage of the pad combinator for convenience.
     ///

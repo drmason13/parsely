@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{End, Lex, LexResult, Parse, ParseResult};
+use crate::{result_ext::*, End, Lex, LexResult, Parse, ParseResult};
 
 /// This combinator is returned by [`then()`]. See it's documentation for more details.
 #[derive(Clone)]
@@ -30,8 +30,8 @@ where
     type Output = (<L as Parse>::Output, <R as Parse>::Output);
 
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
-        let (left, remaining) = self.left.parse(input)?;
-        let (right, remaining) = self.right.parse(remaining)?;
+        let (left, remaining) = self.left.parse(input).offset(input)?;
+        let (right, remaining) = self.right.parse(remaining).offset(input)?;
 
         let boundary = input.len() - remaining.len();
         let (_, remaining) = input.split_at(boundary);
@@ -47,8 +47,8 @@ where
     type Output = <L as Parse>::Output;
 
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
-        let (left, remaining) = self.left.parse(input)?;
-        let (_, remaining) = self.right.lex(remaining)?;
+        let (left, remaining) = self.left.parse(input).offset(input)?;
+        let (_, remaining) = self.right.lex(remaining).offset(input)?;
 
         Ok((left, remaining))
     }
@@ -56,8 +56,8 @@ where
 
 impl<L: Lex, R: Lex> Lex for Then<L, R> {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
-        let (left, remaining) = self.left.lex(input)?;
-        let (right, _) = self.right.lex(remaining)?;
+        let (left, remaining) = self.left.lex(input).offset(input)?;
+        let (right, _) = self.right.lex(remaining).offset(input)?;
 
         let boundary = left.len() + right.len();
         Ok(input.split_at(boundary))

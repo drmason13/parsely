@@ -43,7 +43,38 @@
 //! I believe what we call "lexing", many would call "tokenising"; and what we call "parsing" many would call "lexing".
 //! Parsely doesn't parse into a tree-like structure at any point, that would be up to the user to do.
 //! If our inexact usage of these terms irks you, then I recommend a parser combinator library intended for parsing programming languages such as [Chumsky](https://docs.rs/chumsky/latest/chumsky/).
-
+//!
+//! # Rough edges
+//!
+//! Parsely has some rough edges I've gotten used to, I'm going to try and keep track of them here:
+//!
+//! 1. The obvious approach to implementing [`FromStr`] causes an error like the following:
+//!
+//! ```console
+//! error[E0521]: borrowed data escapes outside of associated function
+//! --> src\expr.rs:212:25
+//!  |
+//! 209 |     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//!  |                 -  - let's call the lifetime of this reference `'1`
+//!  |                 |
+//!  |                 `s` is a reference that is only valid in the associated function body
+//! ...
+//! 212 |         let (expr, _) = expr.then_skip(end()).parse(s)?;
+//!  |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//!  |                         |
+//!  |                         `s` escapes the associated function body here
+//!  |                         argument requires that `'1` must outlive `'static`
+//!
+//! For more information about this error, try `rustc --explain E0521`.
+//! error: could not compile `popvars` (lib) due to previous error
+//! warning: build failed, waiting for other jobs to finish...
+//! error: could not compile `popvars` (lib test) due to previous error
+//! ```
+//!
+//! The solution is to use [`ErrorOwned`] instead, which has no lifetime parameter. `?` will convert between the two just fine.
+//!
+//! [`FromStr`]: std::str::FromStr
+//! [`impl FromStr`]: std::str::FromStr
 mod error;
 pub use error::{result_ext, Error, ErrorOwned, ErrorReason};
 

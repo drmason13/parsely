@@ -82,6 +82,27 @@ mod tests {
     use crate::{int, Lex, Parse};
 
     #[test]
+    fn then_lexing_with_pad() -> Result<(), crate::Error> {
+        let lexer = token("foo").pad().then(token("bar"));
+
+        let input = "foobar";
+
+        let (matched, remaining) = lexer.lex(input)?;
+
+        assert_eq!(matched, "foobar");
+        assert_eq!(remaining, "");
+
+        let input = "foo   bar";
+
+        let (matched, remaining) = lexer.lex(input)?;
+
+        assert_eq!(matched, "foobar");
+        assert_eq!(remaining, "");
+
+        Ok(())
+    }
+
+    #[test]
     fn parsing() {
         test_lexer_batch(
             "token then char",

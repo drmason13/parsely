@@ -27,6 +27,8 @@ impl<'a> Lex for Until<'a> {
 
 /// Creates a lexer that matches all characters up until (but not including) `pattern`.
 ///
+/// If the pattern is not found this lexer will not match!
+///
 /// The pattern can be a [`&str`](prim@str), [`char`], or a slice of [`char`]s.
 ///
 /// # Examples

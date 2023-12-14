@@ -2,8 +2,9 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        count, many, optional, or, pad, sequence::LexMany, then, then_skip, Many, Optional, Or,
-        Pad, Then, ThenSkip,
+        all, count, many, optional, or, pad,
+        sequence::{All, LexMany},
+        then, then_skip, Many, Optional, Or, Pad, Then, ThenSkip,
     },
     end, ws, End, Lex, WhiteSpace,
 };
@@ -65,6 +66,16 @@ pub trait Parse {
         Self: Sized,
     {
         count(n, self)
+    }
+
+    /// Creates a new parser that will attempt to parse with this parser multiple times until end of input.
+    ///
+    /// See [`crate::combinator::all()`] and the [`sequence module`](crate::combinator::sequence) for more details.
+    fn all(self, min: usize) -> All<Self, Vec<<Self as Parse>::Output>>
+    where
+        Self: Sized,
+    {
+        all(min, self)
     }
 
     /// Creates a new parser from this one that will match 0 or 1 times, making it optional.
@@ -312,7 +323,7 @@ pub trait Parse {
     /// let (output, remaining) = int_then_color.swap().many(..).delimiter(char(',')).parse("1 red, 2 blue, 3 green")?;
     /// assert_eq!(&output[2], &(Color::Green, 3));
     ///
-    /// // swap() made collecting into a HashMap convenient :) but wouldn't a alternative or an adaptor for .many() be **even more** convenient?
+    /// // swap() made collecting into a HashMap convenient :)
     /// let hashmap = output.into_iter().collect::<HashMap<_, _>>();
     /// assert_eq!(hashmap.get(&Color::Green), Some(&3));
     ///
@@ -334,7 +345,7 @@ pub trait Parse {
     }
 
     /// Pad this parser with zero or more whitespace lexers so that leading and/or trailing whitespace in the input doesn't interfere with parsing
-    /// 
+    ///
     /// WARNING: `.pad()` leads to suprising bugs when included inside `.then()`. See the [**Combining pad with then** example](pad).
     ///
     /// This is an opinionated default usage of the pad combinator for convenience.
@@ -469,7 +480,7 @@ pub type Swapped<T> =
 
 /// Used to conveniently swap a tuple t'other way round.
 ///
-/// Currently this only really exists to provide a named function in the definition of [`Then`](Then::swap)
+/// Currently this only really exists to provide a named function in the definition of [`Then::swap()`](Then::swap)
 pub trait Swap {
     type Swapped;
 

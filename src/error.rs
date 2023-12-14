@@ -160,7 +160,7 @@ pub mod result_ext {
         }
     }
 
-    /// This trait used to extend [`Result<T, E>`] with methods to convert E into [`Error`].
+    /// This trait used to extend [`Result<T, E>`] with methods to convert `E` into [`Error`].
     pub trait ResultExtGenericError<'i, O> {
         /// Replaces the error inside with a [`FailedConversion`](crate::ErrorReason::FailedConversion) [`Error`]
         fn fail_conversion(self, input: &'i str) -> Result<O, Error<'i>>;

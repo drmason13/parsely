@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use crate::{Lex, Parse, ParseResult};
+use crate::{result_ext::*, Lex, Parse, ParseResult};
 
 /// This combinator is returned by [`optional()`]. See it’s documentation for more details.
 #[derive(Clone)]
@@ -17,7 +17,7 @@ where
     T: Lex,
 {
     fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
-        if let Ok((matched, remaining)) = self.item.lex(input) {
+        if let Ok((matched, remaining)) = self.item.lex(input).offset(input) {
             Ok((matched, remaining))
         } else {
             Ok(("", input))
@@ -32,7 +32,7 @@ where
     type Output = Option<<T as Parse>::Output>;
 
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
-        if let Ok((output, remaining)) = self.item.parse(input) {
+        if let Ok((output, remaining)) = self.item.parse(input).offset(input) {
             Ok((Some(output), remaining))
         } else {
             Ok((None, input))

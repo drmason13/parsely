@@ -40,6 +40,24 @@ impl Lex for Char {
 /// assert_eq!(remaining, "bc");
 /// # Ok::<(), parsely::Error>(())
 /// ```
+///
+/// Note that using the [`char`](prim@char) primitive is equivalent to wrapping that char in [`char()`].
+///
+/// the above example can be shortened to:
+///
+/// ```
+/// use parsely::{char, Lex};
+/// // Note: the Lex trait must be in scope for this to work
+///
+/// let (output, remaining) = 'a'.lex("abc")?;
+/// assert_eq!(output, "a");
+/// assert_eq!(remaining, "bc");
+/// # Ok::<(), parsely::Error>(())
+/// ```
+///
+/// Using chars directly is preferred in the examples throughout this documentation.
+///
+/// See also [`token()`](crate::token) to match strings rather than single chars.
 pub fn char(char: char) -> Char {
     Char(char)
 }

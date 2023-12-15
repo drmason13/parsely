@@ -1,4 +1,4 @@
-use crate::{token, Error, Lex, Parse};
+use crate::{Error, Lex, Parse};
 
 pub struct Switch<L, T, const N: usize> {
     items: [(L, T); N],
@@ -29,16 +29,16 @@ pub struct Switch<L, T, const N: usize> {
 ///     Quux,
 /// }
 ///
-/// let my_token_parser = token("foo").map(|_| MyTokens::Foo)
-///     .or(token("bar").map(|_| MyTokens::Bar))
-///     .or(token("baz").map(|_| MyTokens::Baz))
-///     .or(token("quux").map(|_| MyTokens::Quux));
+/// let my_token_parser = "foo".map(|_| MyTokens::Foo)
+///     .or("bar".map(|_| MyTokens::Bar))
+///     .or("baz".map(|_| MyTokens::Baz))
+///     .or("quux".map(|_| MyTokens::Quux));
 ///
 /// assert_eq!(my_token_parser.parse("foo 123")?, (MyTokens::Foo, " 123"));
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-/// The above is simplified by using `switch()` (note that str literals are accepted without token(), this is a special case for switch for convenience):
+/// The above is simplified by using `switch()`
 /// ```
 /// use parsely::{Lex, Parse, switch};
 ///
@@ -73,23 +73,6 @@ where
 
     fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
         for (lexer, output) in self.items.iter() {
-            if let Ok((_, remaining)) = lexer.lex(input) {
-                return Ok((output.clone(), remaining));
-            }
-        }
-        Err(Error::NoMatch)
-    }
-}
-
-impl<T, const N: usize> Parse for Switch<&'static str, T, N>
-where
-    T: Clone,
-{
-    type Output = T;
-
-    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
-        for (s, output) in self.items.iter() {
-            let lexer = token(s);
             if let Ok((_, remaining)) = lexer.lex(input) {
                 return Ok((output.clone(), remaining));
             }

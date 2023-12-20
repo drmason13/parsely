@@ -1,43 +1,48 @@
-use std::fmt;
 use std::ops::ControlFlow;
+use std::{fmt, ops::RangeBounds};
 
-use crate::{end, Error, Lex, LexResult, Parse, ParseResult};
+use crate::{Error, Lex, LexResult, Parse, ParseResult};
 
 use super::{many, traits::*, Many};
 
-/// This combinator is returned by [`all()`]. See it's documentation for more details.
+/// This combinator is returned by [`or_until()`]. See it's documentation for more details.
 #[derive(Clone)]
-pub struct All<T, C> {
+pub struct OrUntil<L, T, C> {
+    until: L,
     many: Many<T, C>,
 }
 
-impl<T, C> Sequence for All<T, C> {
+impl<L, T, C> Sequence for OrUntil<L, T, C>
+where
+    L: Lex,
+{
     fn while_condition(&self, input: &str, _count: usize) -> bool {
-        end().lex(input).is_err()
+        self.until.lex(input).is_err()
     }
 
     fn error_condition(&self, input: &str, count: usize) -> bool {
-        self.many.error_condition(input, count) || end().lex(input).is_err()
+        self.many.error_condition(input, count)
     }
 }
 
-impl<T, C1> Collect for All<T, C1> {
-    type Output<C> = All<T, C>;
+impl<L, T, C1> Collect for OrUntil<L, T, C1> {
+    type Output<C> = OrUntil<L, T, C>;
 
     fn collect<C2>(self) -> Self::Output<C2>
     where
         Self: Sized,
     {
-        let All { many } = self;
+        let OrUntil { until, many } = self;
 
         let new = many.collect::<C2>();
 
-        All { many: new }
+        OrUntil { until, many: new }
     }
 }
 
-impl<P, C> ParseSequence<C> for All<P, C>
+impl<L, P, C> ParseSequence<C> for OrUntil<L, P, C>
 where
+    L: Lex,
     P: Parse,
     C: Default + Extend<<P as Parse>::Output>,
 {
@@ -57,8 +62,9 @@ where
     }
 }
 
-impl<P, C> Parse for All<P, C>
+impl<L, P, C> Parse for OrUntil<L, P, C>
 where
+    L: Lex,
     P: Parse,
     C: Default + Extend<<P as Parse>::Output>,
 {
@@ -95,8 +101,9 @@ where
     }
 }
 
-impl<L, C> LexSequence for All<L, C>
+impl<U, L, C> LexSequence for OrUntil<U, L, C>
 where
+    U: Lex,
     L: Lex,
 {
     type Lexer = L;
@@ -114,7 +121,7 @@ where
     }
 }
 
-impl<L: Lex, C> Lex for All<L, C> {
+impl<U: Lex, L: Lex, C> Lex for OrUntil<U, L, C> {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut working_input = input;
         let mut count = 0;
@@ -144,35 +151,42 @@ impl<L: Lex, C> Lex for All<L, C> {
     }
 }
 
-/// Creates a combinator that applies a given parser or lexer multiple times until End of Input is seen, or else fails because the end of input was not seen.
-pub fn all<T, O>(min: usize, item: T) -> All<T, Vec<O>> {
-    All {
-        many: many(min.., item),
+/// Creates a combinator that applies a given parser or lexer multiple times until a given lexer matches the remaining input.
+pub fn or_until<L, T, O>(
+    range: impl RangeBounds<usize>,
+    until: L,
+    item: T,
+) -> OrUntil<L, T, Vec<O>> {
+    OrUntil {
+        until,
+        many: many(range, item),
     }
 }
 
-impl<T, C> fmt::Debug for All<T, C>
+impl<L, T, C> OrUntil<L, T, C> {}
+
+impl<L, T, C> fmt::Debug for OrUntil<L, T, C>
 where
     T: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "All({:?})", self.many)
+        write!(f, "OrUntil({:?})", self.many)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{char, int, sequence_traits::*, Parse};
+    use crate::{char, end, int, sequence_traits::*, Parse};
 
     #[test]
-    fn test_all() -> Result<(), crate::ErrorOwned> {
-        let csv_parser = int::<u8>().all(1).delimiter(char(','));
+    fn test_or_until() -> Result<(), crate::ErrorOwned> {
+        let csv_parser = int::<u8>().many(2..=3).or_until(end()).delimiter(char(','));
 
-        let (output, remaining) = csv_parser.parse("1,2,3")?;
-        assert_eq!(output, vec![1, 2, 3]);
+        let (output, remaining) = csv_parser.parse("1,2")?;
+        assert_eq!(output, vec![1, 2]);
         assert_eq!(remaining, "");
 
-        let result = csv_parser.parse("1,2,3foo");
+        let result = csv_parser.parse("1,foo");
         assert_eq!(result.unwrap_err().remaining, "foo");
 
         Ok(())

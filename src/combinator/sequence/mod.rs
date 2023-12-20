@@ -62,6 +62,7 @@
 mod all;
 mod delimited;
 mod many;
+mod or_until;
 
 use std::ops::{Bound, RangeBounds};
 
@@ -69,6 +70,7 @@ pub use all::{all, All};
 pub use delimited::{delimited, Delimited};
 pub(crate) use many::LexMany;
 pub use many::{count, many, Many};
+pub use or_until::{or_until, OrUntil};
 
 /// The maximum number of times to attempt to match a repeated parser and the implicit maximum for an open range.
 pub(crate) const MAX_LIMIT: usize = (isize::MAX / 2) as usize;
@@ -98,6 +100,8 @@ pub mod traits {
     use std::ops::ControlFlow;
 
     use crate::{Error, Lex, Parse};
+
+    use super::Delimited;
 
     /// Describes how a sequence combinator behaves while processing input
     pub trait Sequence: Collect {
@@ -180,6 +184,18 @@ pub mod traits {
             offset: &mut usize,
             error: &mut Option<Error<'i>>,
         ) -> ControlFlow<(), &'i str>;
+
+        /// Creates a new lexer that matches the same sequence, but expects the input to be separated by `delimiter`.
+        ///
+        /// A trailing match is optional, so this is suitable for lexing separated lists.
+        ///
+        /// See also [ParseSequence::delimited]
+        fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, ()>
+        where
+            Self: Sized,
+        {
+            Delimited::new(self, delimiter)
+        }
     }
 
     /// All sequence combinators impl both [`LexSequence`] and [`ParseSequence`]
@@ -200,5 +216,33 @@ pub mod traits {
             error: &mut Option<Error<'i>>,
             outputs: &mut C,
         ) -> ControlFlow<(), &'i str>;
+
+        /// Creates a new parser that matches the same sequence, but expects the input to be separated by `delimiter`.
+        ///
+        /// A trailing match is optional, so this is suitable for parsing separated lists.
+        ///
+        /// # Examples
+        ///
+        /// Basic usage:
+        ///
+        /// ```
+        /// use parsely::{char, int, Parse, sequence_traits::*};
+        ///
+        /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
+        ///
+        /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
+        /// assert_eq!(output, vec![1, 2, 3]);
+        /// assert_eq!(remaining, "");
+        ///
+        /// let result = csv_parser.parse("1,2,3foo");
+        /// assert_eq!(result.unwrap_err().remaining, "foo");
+        /// # Ok::<(), parsely::Error>(())
+        /// ```
+        fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, C>
+        where
+            Self: Sized,
+        {
+            Delimited::new(self, delimiter)
+        }
     }
 }

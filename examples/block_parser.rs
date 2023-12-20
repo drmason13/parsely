@@ -24,7 +24,7 @@ pub struct Block {
 }
 
 fn block_parser(input: &str) -> ParseResult<Vec<Node>> {
-    node.many(1..).then_end().parse(input).offset(input)
+    node.all(1).parse(input).offset(input)
 }
 
 fn node(input: &str) -> ParseResult<Node> {
@@ -38,7 +38,7 @@ fn node(input: &str) -> ParseResult<Node> {
 fn content(input: &str) -> ParseResult<Node> {
     let (output, remaining) = until("{@")
         .map(Node::from_content)
-        .or(any().many(1..).map(Node::from_content).then_end())
+        .or(any().all(1).map(Node::from_content))
         .parse(input)
         .offset(input)?;
 

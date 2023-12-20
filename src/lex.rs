@@ -2,8 +2,8 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        count, many, map, optional, or, pad, sequence::LexMany, skip_then, then, then_skip,
-        try_map, Many, Map, Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
+        all, count, many, map, optional, or, pad, sequence::LexMany, skip_then, then, then_skip,
+        try_map, All, Many, Map, Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
     },
     ws, Parse, WhiteSpace,
 };
@@ -70,6 +70,16 @@ pub trait Lex {
         Self: Sized,
     {
         count(n, self)
+    }
+
+    /// Creates a new lexer that will attempt to parse with this lexer multiple times until end of input.
+    ///
+    /// See [`crate::combinator::all()`] and the [`sequence module`](crate::combinator::sequence) for more details.
+    fn all(self, min: usize) -> All<Self, Vec<()>>
+    where
+        Self: Sized,
+    {
+        all(min, self)
     }
 
     /// Creates a new lexer from this one that will match 0 or 1 times, making it optional.
@@ -263,7 +273,7 @@ pub trait Lex {
     /// ```
     /// use std::{net::Ipv4Addr, str::FromStr};
     ///
-    /// use parsely::{char, digit, Lex, Parse};
+    /// use parsely::{char, digit, sequence_traits::*, Lex, Parse};
     ///
     /// fn bad_ip_parser() -> impl Parse<Output=Ipv4Addr> {
     ///     digit().many(1..=3).count(4).delimiter(char('.')).try_map(FromStr::from_str)

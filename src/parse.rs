@@ -307,7 +307,7 @@ pub trait Parse {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, token, int, switch, Lex, Parse};
+    /// use parsely::{char, token, int, sequence_traits::*, switch, Lex, Parse};
     ///
     /// # use std::collections::HashMap;
     ///

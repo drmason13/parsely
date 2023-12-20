@@ -4,8 +4,7 @@ use std::{fmt, ops::RangeBounds};
 
 use crate::{result_ext::*, Error, Lex, LexResult, Parse, ParseResult};
 
-use super::delimited::Delimited;
-use super::{min_max_from_bounds, traits::*, MAX_LIMIT};
+use super::{min_max_from_bounds, or_until, traits::*, OrUntil, MAX_LIMIT};
 
 /// This type alias is used where [`Many`] requires a generic type to collect into that we can ignore because we're lexing.
 pub(crate) type LexMany<T> = Many<T, Vec<()>>;
@@ -29,6 +28,13 @@ pub struct Many<T, C> {
     max: usize,
 
     collection: PhantomData<C>,
+}
+
+impl<T, O> Many<T, Vec<O>> {
+    /// Returns a new sequence combinator that returns early if the given lexer matches the remaining input
+    pub fn or_until<L: Lex>(self, until: L) -> OrUntil<L, T, Vec<O>> {
+        or_until(self.min..self.max, until, self.item)
+    }
 }
 
 impl<T, C> Sequence for Many<T, C> {
@@ -84,8 +90,8 @@ where
             Ok((output, remaining)) => {
                 *count += 1;
                 *offset = input.len() - remaining.len();
-                outputs.extend(Some(output));
                 *working_input = remaining;
+                outputs.extend(Some(output));
                 ControlFlow::Continue(remaining)
             }
             Err(e) => {
@@ -289,30 +295,6 @@ pub fn count<T, O>(count: usize, item: T) -> Many<T, Vec<O>> {
         min: count,
         max: count,
         collection: PhantomData::<Vec<O>>,
-    }
-}
-
-impl<T, C> Many<T, C> {
-    /// Creates a new parser that matches the same number of times, but expects the input to be separated by `delimiter`.
-    ///
-    /// A trailing match is optional, so this is suitable for parsing separated lists.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use parsely::{char, int, Parse};
-    ///
-    /// let csv_parser = int::<u8>().many(1..).delimiter(char(','));
-    ///
-    /// let (output, remaining) = csv_parser.parse("1,2,3")?;
-    /// assert_eq!(output, vec![1, 2, 3]);
-    /// assert_eq!(remaining, "");
-    /// # Ok::<(), parsely::Error>(())
-    /// ```
-    pub fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, C> {
-        Delimited::new(self, delimiter)
     }
 }
 

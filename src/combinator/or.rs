@@ -24,9 +24,10 @@ where
     type Output = O;
 
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, O> {
-        self.left
-            .parse(input)
-            .or_else(|_| self.right.parse(input).offset(input))
+        match self.left.parse(input) {
+            Err(e) => self.right.parse(input).merge(e).offset(input),
+            ok => ok,
+        }
     }
 }
 
@@ -36,10 +37,10 @@ where
     R: Lex,
 {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
-        self.left
-            .lex(input)
-            .offset(input)
-            .or_else(|_| self.right.lex(input).offset(input))
+        match self.left.lex(input) {
+            Err(e) => self.right.lex(input).merge(e).offset(input),
+            ok => ok,
+        }
     }
 }
 

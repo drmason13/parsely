@@ -23,7 +23,9 @@ pub use self::or::{or, Or};
 #[doc(inline)]
 pub use self::pad::{pad, Pad};
 #[doc(inline)]
-pub use self::sequence::{count, delimited, many, Delimited, Many};
+pub use self::sequence::{
+    all, count, delimited, many, traits as sequence_traits, All, Delimited, Many,
+};
 #[doc(inline)]
 pub use self::skip::{skip_then, then_skip, SkipThen, ThenSkip};
 #[doc(inline)]

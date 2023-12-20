@@ -13,7 +13,7 @@ where
     T: Lex,
 {
     fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
-        let (_, inner) = self.left.lex(input)?;
+        let (_, inner) = self.left.lex(input).offset(input)?;
         let (output, right_pad_and_more) = self.item.lex(inner).offset(input)?;
         let (_, remaining) = self.right.lex(right_pad_and_more).offset(input)?;
 

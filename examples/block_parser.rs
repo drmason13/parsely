@@ -1,4 +1,4 @@
-use parsely::{any, char_if, result_ext::*, until, Lex, Parse, ParseResult};
+use parsely::{any, char_if, result_ext::*, token, until, Lex, Parse, ParseResult};
 
 #[derive(PartialEq, Debug)]
 pub enum Node {
@@ -23,24 +23,8 @@ pub struct Block {
     nodes: Vec<Node>,
 }
 
-#[derive(PartialEq, Debug)]
-pub enum Tag {
-    Open(String),
-    Close(String),
-}
-
-impl Tag {
-    pub fn close(name: &str) -> Tag {
-        Tag::Close(name.to_string())
-    }
-
-    pub fn open(name: &str) -> Tag {
-        Tag::Open(name.to_string())
-    }
-}
-
-fn full_node(input: &str) -> ParseResult<Node> {
-    node.then_end().parse(input).offset(input)
+fn block_parser(input: &str) -> ParseResult<Vec<Node>> {
+    node.many(1..).then_end().parse(input).offset(input)
 }
 
 fn node(input: &str) -> ParseResult<Node> {
@@ -55,7 +39,7 @@ fn content(input: &str) -> ParseResult<Node> {
     let (output, remaining) = until("{@")
         .map(Node::from_content)
         .or(any().many(1..).map(Node::from_content).then_end())
-        .parse(dbg!(input))
+        .parse(input)
         .offset(input)?;
 
     if input == remaining {
@@ -65,70 +49,38 @@ fn content(input: &str) -> ParseResult<Node> {
     }
 }
 
-fn open_tag() -> impl Parse<Output = Tag> {
+fn open_tag(input: &str) -> ParseResult<'_, String> {
     " ".optional()
         .skip_then(
             char_if(|c| !c.is_ascii_whitespace())
                 .many(1..)
-                .map(Tag::open),
+                .map(str::to_string),
         )
         .then_skip(" ".optional())
         .pad_with("{@", "@}")
+        .parse(input)
+        .offset(input)
 }
 
-fn close_tag() -> impl Parse<Output = Tag> {
+fn close_tag(tag: &str) -> impl Lex + '_ {
     " ".optional()
         .then("end ")
-        .skip_then(
-            char_if(|c| !c.is_ascii_whitespace())
-                .many(1..)
-                .map(Tag::close),
-        )
-        .then_skip(" ".optional())
+        .then(token(tag).many(1..))
+        .then(" ".optional())
         .pad_with("{@", "@}")
-}
-
-fn block_inner(input: &str) -> ParseResult<Vec<Node>> {
-    let mut output = Vec::new();
-    let mut working_input = input;
-
-    let mut working_remaining = input;
-
-    while let Ok((matched, remaining)) = node.parse(working_input).offset(input) {
-        output.push(matched);
-        if remaining == working_input {
-            // no more progress can be made!
-            break;
-        } else {
-            working_remaining = remaining;
-            working_input = remaining;
-        }
-    }
-
-    Ok((output, working_remaining))
 }
 
 fn block(input: &str) -> ParseResult<'_, Block> {
-    let (((open_tag, nodes), close_tag), remaining) = open_tag()
-        .then(block_inner)
-        .then(close_tag())
-        .parse(input)
+    let (tag, remaining) = open_tag(input).offset(input)?;
+
+    let (nodes, remaining) = node
+        .many(..)
+        .then_skip(close_tag(tag.as_str()))
+        .parse(remaining)
         .offset(input)?;
 
-    if let Tag::Open(tag) = open_tag {
-        let Tag::Close(closer) = close_tag else {
-            unreachable!()
-        };
-        if tag != closer {
-            println!("tags don't match!");
-            return Err(parsely::Error::no_match(input));
-        }
-
-        let block = Block { tag, nodes };
-        Ok((block, remaining))
-    } else {
-        unreachable!()
-    }
+    let block = Block { tag, nodes };
+    Ok((block, remaining))
 }
 
 #[test]
@@ -168,7 +120,7 @@ fn test_nested() {
 }
 
 #[test]
-fn test_full_node() {
+fn test_node_matches_leading_content() {
     let (matched, remaining) =
         node("pre foo>{@ foo @}these{@ foo @}are{@ foo @}nested{@ end foo @}{@ end foo @}")
             .unwrap();
@@ -177,9 +129,15 @@ fn test_full_node() {
 }
 
 fn main() {
-    println!(
-        "{:#?}",
-        node("content before block {@ empty @}{@ end empty @} content after block")
-    );
-    println!("{:#?}", node("{@ foo @}inside foo{@ end foo @}"));
+    // successful
+    println!("{:#?}", block_parser("content before blocks {@ empty @}{@ end empty @} content between blocks {@ empty @}{@ end empty @} content after blocks"));
+    println!("{:#?}", block_parser("{@ foo @}inside foo{@ end foo @}"));
+    println!("{:#?}", block_parser("{@ foo @}this is the first block's content{@ foo @}this is a nested block inside the first{@ end foo @}{@ end foo @}"));
+    println!("{:#?}", block_parser("content before foo block {@ foo @}this is the first block's content{@ foo @}this is a nested block inside the first{@ end foo @}this is more of the first block's content{@ end foo @}"));
+    println!("{:#?}", block_parser("content before foo block {@ foo @}content before bar block {@ bar @}this is a nested bar block inside the foo block{@ end bar @} content after bar block{@ end foo @} content after foo block"));
+
+    // errors
+    println!("{:#?}", block_parser("content before foo block {@ foo @}content before bar block {@ bar @}this is a nested bar block inside the foo block{@ end bar @} content after bar block{@ end bar @} content after foo block"));
+    println!("{:#?}", block_parser("{@ foo @}{@ end bar @}"));
+    println!("{:#?}", content("{@ foo @}{@ end bar @}"));
 }

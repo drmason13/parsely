@@ -96,7 +96,7 @@ pub(crate) fn min_max_from_bounds(range: impl RangeBounds<usize>) -> (usize, usi
 /// The sequence traits abstract how parsely sequence combinators repeatedly apply a lexer or parser to an input
 ///
 /// These traits should not need to be implemented manually, prefer to use existing combinators such as [`many()`](crate::combinator::many)
-pub(crate) mod traits {
+pub mod traits {
     use std::ops::ControlFlow;
 
     use crate::{Error, Lex, Parse};

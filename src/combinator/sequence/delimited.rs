@@ -141,7 +141,7 @@ where
 /// Creates a parser/lexer that expects a delimiter in between each item.
 ///
 /// Like [`many()`](crate::combinator::many()) this function takes a range to specify a minimum and maximum number of matches.
-/// See the module docs of [`many`](crate::combinator::many) for more details.
+/// See the docs of [`many`](crate::combinator::many()) for more details.
 pub fn delimited<L: Lex, T>(
     delimiter: L,
     range: impl RangeBounds<usize>,

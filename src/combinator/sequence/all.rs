@@ -39,6 +39,15 @@ impl<T, C> All<T, C> {
     {
         Delimited::new(self, delimiter)
     }
+
+    /// This method works the same way as [`Many::collect`](crate::combinator::Many::collect()). See it’s documentation for more details.
+    #[inline(always)]
+    pub fn collect<C2>(self) -> All<T, C2>
+    where
+        Self: Sized,
+    {
+        <Self as Collect>::collect::<C2>(self)
+    }
 }
 
 impl<T, C> Sequence for All<T, C> {
@@ -192,10 +201,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{char, int, Parse};
+    use std::collections::HashSet;
+
+    use crate::{char, int, Lex, Parse};
 
     #[test]
-    fn test_all() -> Result<(), crate::ErrorOwned> {
+    fn test_all_with_delimiter() -> Result<(), crate::ErrorOwned> {
         let csv_parser = int::<u8>().all(1).delimiter(char(','));
 
         let (output, remaining) = csv_parser.parse("1,2,3")?;
@@ -204,6 +215,28 @@ mod tests {
 
         let result = csv_parser.parse("1,2,3foo");
         assert_eq!(result.unwrap_err().remaining, "foo");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_all_collect() -> Result<(), crate::ErrorOwned> {
+        // collecting into a HashSet is weird but perfectly valid!
+        let foo = "foo".map(|_| 7).all(3).collect::<HashSet<u32>>();
+
+        let (matched, remaining) = foo.parse("foofoofoofoofoo")?;
+        assert_eq!(matched, {
+            let mut hs = HashSet::new();
+            hs.insert(7);
+            hs
+        });
+        assert_eq!(remaining, "");
+
+        let result = foo.parse("foo");
+        assert_eq!(result.unwrap_err().remaining, "");
+
+        let result = foo.parse("foofoofoofoofoobar");
+        assert_eq!(result.unwrap_err().remaining, "bar");
 
         Ok(())
     }

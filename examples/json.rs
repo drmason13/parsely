@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, io::BufRead};
 
-use parsely::{float, int, result_ext::*, sequence_traits::*, switch, ws, Lex, Parse, ParseResult};
+use parsely::{float, int, result_ext::*, switch, ws, Lex, Parse, ParseResult};
 
 // first come all the types we parse into...
 

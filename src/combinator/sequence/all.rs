@@ -3,12 +3,42 @@ use std::ops::ControlFlow;
 
 use crate::{end, Error, Lex, LexResult, Parse, ParseResult};
 
-use super::{many, traits::*, Many};
+use super::{many, traits::*, Delimited, Many};
 
 /// This combinator is returned by [`all()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct All<T, C> {
     many: Many<T, C>,
+}
+
+impl<T, C> All<T, C> {
+    /// Creates a new parser that matches the same sequence, but expects the input to be separated by `delimiter`.
+    ///
+    /// A trailing match is optional, so this is suitable for parsing separated lists.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{char, int, Parse};
+    ///
+    /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
+    ///
+    /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
+    /// assert_eq!(output, vec![1, 2, 3]);
+    /// assert_eq!(remaining, "");
+    ///
+    /// let result = csv_parser.parse("1,2,3foo");
+    /// assert_eq!(result.unwrap_err().remaining, "foo");
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    pub fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, C>
+    where
+        Self: Sized,
+    {
+        Delimited::new(self, delimiter)
+    }
 }
 
 impl<T, C> Sequence for All<T, C> {
@@ -162,7 +192,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{char, int, sequence_traits::*, Parse};
+    use crate::{char, int, Parse};
 
     #[test]
     fn test_all() -> Result<(), crate::ErrorOwned> {

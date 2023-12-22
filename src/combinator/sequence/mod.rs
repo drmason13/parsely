@@ -96,12 +96,10 @@ pub(crate) fn min_max_from_bounds(range: impl RangeBounds<usize>) -> (usize, usi
 /// The sequence traits abstract how parsely sequence combinators repeatedly apply a lexer or parser to an input
 ///
 /// These traits should not need to be implemented manually, prefer to use existing combinators such as [`many()`](crate::combinator::many)
-pub mod traits {
+pub(crate) mod traits {
     use std::ops::ControlFlow;
 
     use crate::{Error, Lex, Parse};
-
-    use super::Delimited;
 
     /// Describes how a sequence combinator behaves while processing input
     pub trait Sequence: Collect {
@@ -114,49 +112,9 @@ pub mod traits {
         fn error_condition(&self, input: &str, count: usize) -> bool;
     }
 
-    /// Adapts this [`sequence`](self) parser to use a new collection instead of the default of `Vec<T>`.
-    /// This method is analagous to [`Iterator::collect`].
+    /// All sequence combinators must provide a way to change the collection type they use to store output
     ///
-    /// The new collection type must implement [`Extend`]. This trait is implemented for most [`std::collections`] types.
-    ///
-    /// Specify the collection type to use with a turbofish. Rust is often not able to infer the type you want to collect into.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    /// ```
-    /// use std::collections::LinkedList;
-    /// use parsely::{digit, char, sequence_traits::*, Lex, Parse};
-    ///
-    /// let integers = digit().try_map(str::parse::<u8>).many(1..).collect::<LinkedList<u8>>();
-    ///
-    /// let (output, remaining) = integers.parse("123")?;
-    /// assert_eq!(output, {
-    ///     let mut linked_list = LinkedList::new();
-    ///     linked_list.push_back(1);
-    ///     linked_list.push_back(2);
-    ///     linked_list.push_back(3);
-    ///     linked_list
-    /// });
-    /// # Ok::<(), parsely::Error>(())
-    /// ```
-    ///
-    /// Count to a HashMap during parsing:
-    /// ```
-    /// use std::collections::HashMap;
-    /// use parsely::{any, char, int, sequence_traits::*, Lex, Parse};
-    ///
-    /// let integers = any().map(str::to_string).then_skip(char(':')).then(int::<u8>()).many(1..).delimiter(char(',')).collect::<HashMap<String, u8>>();
-    ///
-    /// let (output, remaining) = integers.parse("a:1,b:2,c:3")?;
-    /// assert_eq!(output, {
-    ///     let mut map = HashMap::new();
-    ///     map.insert("a".to_string(), 1);
-    ///     map.insert("b".to_string(), 2);
-    ///     map.insert("c".to_string(), 3);
-    ///     map
-    /// });
-    /// # Ok::<(), parsely::Error>(())
+    /// The `collect` method should be implemented directly on the type, so that users can use it directly without importing this trait
     pub trait Collect {
         /// The type returned when calling collect, where C is the new Collection type to use
         ///
@@ -184,18 +142,6 @@ pub mod traits {
             offset: &mut usize,
             error: &mut Option<Error<'i>>,
         ) -> ControlFlow<(), &'i str>;
-
-        /// Creates a new lexer that matches the same sequence, but expects the input to be separated by `delimiter`.
-        ///
-        /// A trailing match is optional, so this is suitable for lexing separated lists.
-        ///
-        /// See also [ParseSequence::delimited]
-        fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, ()>
-        where
-            Self: Sized,
-        {
-            Delimited::new(self, delimiter)
-        }
     }
 
     /// All sequence combinators impl both [`LexSequence`] and [`ParseSequence`]
@@ -216,33 +162,5 @@ pub mod traits {
             error: &mut Option<Error<'i>>,
             outputs: &mut C,
         ) -> ControlFlow<(), &'i str>;
-
-        /// Creates a new parser that matches the same sequence, but expects the input to be separated by `delimiter`.
-        ///
-        /// A trailing match is optional, so this is suitable for parsing separated lists.
-        ///
-        /// # Examples
-        ///
-        /// Basic usage:
-        ///
-        /// ```
-        /// use parsely::{char, int, Parse, sequence_traits::*};
-        ///
-        /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
-        ///
-        /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
-        /// assert_eq!(output, vec![1, 2, 3]);
-        /// assert_eq!(remaining, "");
-        ///
-        /// let result = csv_parser.parse("1,2,3foo");
-        /// assert_eq!(result.unwrap_err().remaining, "foo");
-        /// # Ok::<(), parsely::Error>(())
-        /// ```
-        fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, C>
-        where
-            Self: Sized,
-        {
-            Delimited::new(self, delimiter)
-        }
     }
 }

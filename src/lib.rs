@@ -92,8 +92,6 @@ pub use parser::*;
 
 pub mod combinator;
 
-pub use combinator::{sequence, sequence_traits};
-
 #[doc(hidden)]
 #[cfg(test)]
 pub(crate) mod test_utils;

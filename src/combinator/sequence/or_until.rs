@@ -3,13 +3,61 @@ use std::{fmt, ops::RangeBounds};
 
 use crate::{Error, Lex, LexResult, Parse, ParseResult};
 
-use super::{many, traits::*, Many};
+use super::{min_max_from_bounds, traits::*, Delimited, Many};
 
 /// This combinator is returned by [`or_until()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct OrUntil<L, T, C> {
     until: L,
     many: Many<T, C>,
+}
+
+impl<L: Lex, T, C> OrUntil<L, T, C> {
+    /// Creates a new OrUntil combinator, this is a low level method.
+    /// Prefer using [`many(min..=max).or_until()`](crate::combinator::Many::or_until) instead
+    pub fn new(until: L, item: T, min: usize, max: usize) -> Self {
+        OrUntil {
+            until,
+            many: Many::new(item, min, max),
+        }
+    }
+
+    /// Creates a new parser that matches the same sequence, but expects the input to be separated by `delimiter`.
+    ///
+    /// A trailing match is optional, so this is suitable for parsing separated lists.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{char, int, Parse};
+    ///
+    /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
+    ///
+    /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
+    /// assert_eq!(output, vec![1, 2, 3]);
+    /// assert_eq!(remaining, "");
+    ///
+    /// let result = csv_parser.parse("1,2,3foo");
+    /// assert_eq!(result.unwrap_err().remaining, "foo");
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    pub fn delimiter<D: Lex>(self, delimiter: D) -> Delimited<D, Self, C>
+    where
+        Self: Sized,
+    {
+        Delimited::new(self, delimiter)
+    }
+
+    /// This method works the same way as [`Many::collect`](crate::combinator::Many::collect()). See it’s documentation for more details.
+    #[inline(always)]
+    pub fn collect<C2>(self) -> OrUntil<L, T, C2>
+    where
+        Self: Sized,
+    {
+        <Self as Collect>::collect::<C2>(self)
+    }
 }
 
 impl<L, T, C> Sequence for OrUntil<L, T, C>
@@ -152,14 +200,11 @@ impl<U: Lex, L: Lex, C> Lex for OrUntil<U, L, C> {
 }
 
 /// Creates a combinator that applies a given parser or lexer multiple times until a given lexer matches the remaining input.
-pub fn or_until<L, T, O>(
-    range: impl RangeBounds<usize>,
-    until: L,
-    item: T,
-) -> OrUntil<L, T, Vec<O>> {
+pub fn or_until<L, T, C>(range: impl RangeBounds<usize>, until: L, item: T) -> OrUntil<L, T, C> {
+    let (min, max) = min_max_from_bounds(range);
     OrUntil {
         until,
-        many: many(range, item),
+        many: Many::new(item, min, max),
     }
 }
 
@@ -176,7 +221,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{char, end, int, sequence_traits::*, Parse};
+    use crate::{char, end, int, Parse};
 
     #[test]
     fn test_or_until() -> Result<(), crate::ErrorOwned> {

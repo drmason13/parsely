@@ -17,13 +17,36 @@ pub struct Delimited<L, S, C> {
     collection: PhantomData<C>,
 }
 
-impl<L: Lex, S, C> Delimited<L, S, C> {
+impl<L: Lex, S, C> Delimited<L, S, C>
+where
+    S: Sequence,
+{
     /// Returns a new Delimited combinator. See also [`delimited()`]
     pub fn new(sequencer: S, delimiter: L) -> Self {
         Delimited {
             sequencer,
             delimiter,
             collection: PhantomData::<C>,
+        }
+    }
+
+    /// This method works the same way as [`Many::collect`](crate::combinator::Many::collect()). See it’s documentation for more details.
+    pub fn collect<C2>(self) -> Delimited<L, <S as Collect>::Output<C2>, C2>
+    where
+        Self: Sized,
+    {
+        let sequencer = self.sequencer.collect::<C2>();
+
+        let Delimited {
+            delimiter,
+            sequencer: _,
+            collection: _,
+        } = self;
+
+        Delimited {
+            delimiter,
+            sequencer,
+            collection: PhantomData::<C2>,
         }
     }
 }
@@ -111,32 +134,6 @@ where
                 .offset(input))
         } else {
             Ok((&input[..offset], &input[offset..]))
-        }
-    }
-}
-
-impl<L, S, O> Delimited<L, S, Vec<O>>
-where
-    S: Sequence,
-{
-    /// This method works the same way as [`Many::collect`](crate::combinator::Many::collect()). See it’s documentation for more details.
-    pub fn collect<C>(self) -> Delimited<L, <S as Collect>::Output<C>, C>
-    where
-        Self: Sized,
-        C: Extend<O>,
-    {
-        let sequencer = self.sequencer.collect::<C>();
-
-        let Delimited {
-            delimiter,
-            sequencer: _,
-            collection: _,
-        } = self;
-
-        Delimited {
-            delimiter,
-            sequencer,
-            collection: PhantomData::<C>,
         }
     }
 }

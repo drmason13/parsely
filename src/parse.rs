@@ -307,7 +307,7 @@ pub trait Parse {
     /// Basic usage:
     ///
     /// ```
-    /// use parsely::{char, token, int, sequence_traits::*, switch, Lex, Parse};
+    /// use parsely::{char, token, int, switch, Lex, Parse};
     ///
     /// # use std::collections::HashMap;
     ///
@@ -323,7 +323,7 @@ pub trait Parse {
     /// let (output, remaining) = int_then_color.swap().many(..).delimiter(char(',')).parse("1 red, 2 blue, 3 green")?;
     /// assert_eq!(&output[2], &(Color::Green, 3));
     ///
-    /// // swap() made collecting into a HashMap convenient :) but wouldn't a alternative or an adaptor for .many() be **even more** convenient?
+    /// // swap() made collecting into a HashMap convenient :)
     /// let hashmap = output.into_iter().collect::<HashMap<_, _>>();
     /// assert_eq!(hashmap.get(&Color::Green), Some(&3));
     ///

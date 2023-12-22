@@ -273,7 +273,7 @@ pub trait Lex {
     /// ```
     /// use std::{net::Ipv4Addr, str::FromStr};
     ///
-    /// use parsely::{char, digit, sequence_traits::*, Lex, Parse};
+    /// use parsely::{char, digit, Lex, Parse};
     ///
     /// fn bad_ip_parser() -> impl Parse<Output=Ipv4Addr> {
     ///     digit().many(1..=3).count(4).delimiter(char('.')).try_map(FromStr::from_str)

@@ -1,8 +1,5 @@
 //! The built in combinators provided by parsely
 
-// Combinator TODO list:
-// * then_with -> <https://docs.rs/chumsky/latest/chumsky/trait.Parser.html#method.then_with>
-
 mod crawl;
 mod map;
 mod optional;
@@ -23,9 +20,7 @@ pub use self::or::{or, Or};
 #[doc(inline)]
 pub use self::pad::{pad, Pad};
 #[doc(inline)]
-pub use self::sequence::{
-    all, count, delimited, many, traits as sequence_traits, All, Delimited, Many,
-};
+pub use self::sequence::{all, count, delimited, many, traits::Collect, All, Delimited, Many};
 #[doc(inline)]
 pub use self::skip::{skip_then, then_skip, SkipThen, ThenSkip};
 #[doc(inline)]

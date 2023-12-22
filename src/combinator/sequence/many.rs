@@ -4,7 +4,7 @@ use std::{fmt, ops::RangeBounds};
 
 use crate::{result_ext::*, Error, Lex, LexResult, Parse, ParseResult};
 
-use super::{min_max_from_bounds, or_until, traits::*, OrUntil, MAX_LIMIT};
+use super::{min_max_from_bounds, or_until, traits::*, Delimited, OrUntil, MAX_LIMIT};
 
 /// This type alias is used where [`Many`] requires a generic type to collect into that we can ignore because we're lexing.
 pub(crate) type LexMany<T> = Many<T, Vec<()>>;
@@ -30,10 +30,109 @@ pub struct Many<T, C> {
     collection: PhantomData<C>,
 }
 
-impl<T, O> Many<T, Vec<O>> {
+impl<T, C> Many<T, C> {
+    /// Creates a new Many combinator, this is a low level method.
+    /// Prefer using [`many(min..=max, item)`](many) instead
+    pub fn new(item: T, min: usize, max: usize) -> Self {
+        Many {
+            item,
+            min,
+            max,
+            collection: PhantomData::<C>,
+        }
+    }
+
     /// Returns a new sequence combinator that returns early if the given lexer matches the remaining input
-    pub fn or_until<L: Lex>(self, until: L) -> OrUntil<L, T, Vec<O>> {
+    pub fn or_until<L: Lex>(self, until: L) -> OrUntil<L, T, C> {
         or_until(self.min..self.max, until, self.item)
+    }
+
+    /// Creates a new parser that matches the same sequence, but expects the input to be separated by `delimiter`.
+    ///
+    /// A trailing match is optional, so this is suitable for parsing separated lists.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use parsely::{char, int, Parse};
+    ///
+    /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
+    ///
+    /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
+    /// assert_eq!(output, vec![1, 2, 3]);
+    /// assert_eq!(remaining, "");
+    ///
+    /// let result = csv_parser.parse("1,2,3foo");
+    /// assert_eq!(result.unwrap_err().remaining, "foo");
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    pub fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, C>
+    where
+        Self: Sized,
+    {
+        Delimited::new(self, delimiter)
+    }
+
+    /// By default Many collects output into a [`Vec<T>`]. Use this method to tell [`Many`] to instead collect into a different type when parsing.
+    ///
+    /// The new collection type must implement [`Extend`]. This trait is implemented for most [`std::collections`] types.
+    ///
+    /// Specify the collection type to use with a turbofish. Rust is often not able to infer the type you want to collect into.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    /// ```
+    /// use std::collections::LinkedList;
+    /// use parsely::{char, digit, Lex, Parse};
+    ///
+    /// let integers = digit().try_map(str::parse::<u8>).many(1..).collect::<LinkedList<u8>>();
+    /// #
+    /// # let (output, remaining) = integers.parse("123")?;
+    /// # assert_eq!(output, {
+    /// #    let mut linked_list = LinkedList::new();
+    /// #    linked_list.push_back(1);
+    /// #    linked_list.push_back(2);
+    /// #    linked_list.push_back(3);
+    /// #    linked_list
+    /// # });
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    ///
+    /// Collect into a HashMap:
+    /// ```
+    /// use std::collections::HashMap;
+    /// use parsely::{any, char, int, Lex, Parse};
+    ///
+    /// let integers = any()
+    ///     .map(str::to_string)
+    ///     .then_skip(char(':'))
+    ///     .then(int::<u8>())
+    ///     .many(1..)
+    ///     .delimiter(char(','))
+    ///     .collect::<HashMap<String, u8>>();
+    ///
+    /// let (output, remaining) = integers.parse("a:1,b:2,c:3")?;
+    ///
+    /// assert_eq!(output.get("a"), Some(&1));
+    /// assert_eq!(output.get("b"), Some(&2));
+    /// assert_eq!(output.get("c"), Some(&3));
+    /// # assert_eq!(output, {
+    /// #     let mut map = HashMap::new();
+    /// #     map.insert("a".to_string(), 1);
+    /// #     map.insert("b".to_string(), 2);
+    /// #     map.insert("c".to_string(), 3);
+    /// #     map
+    /// # });
+    /// # Ok::<(), parsely::Error>(())
+    #[inline(always)]
+    pub fn collect<C2>(self) -> Many<T, C2>
+    where
+        Self: Sized,
+    {
+        <Self as Collect>::collect::<C2>(self)
     }
 }
 

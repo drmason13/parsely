@@ -27,9 +27,9 @@ where
     R: Lex,
     T: Parse,
 {
-    type Output = <T as Parse>::Output;
+    type Output<'o> = <T as Parse>::Output<'o>;
 
-    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output<'i>> {
         let (_, inner) = self.left.lex(input)?;
         let (output, right_pad_and_more) = self.item.parse(inner).offset(input)?;
         let (_, remaining) = self.right.lex(right_pad_and_more).offset(input)?;

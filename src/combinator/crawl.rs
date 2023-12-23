@@ -9,9 +9,9 @@ impl<P> Parse for Crawl<P>
 where
     P: Parse,
 {
-    type Output = <P as Parse>::Output;
+    type Output<'o> = <P as Parse>::Output<'o>;
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         let mut char_indices = input.char_indices();
         let Some((mut boundary, _)) = char_indices.next() else {
             return Err(Error::no_match(input));

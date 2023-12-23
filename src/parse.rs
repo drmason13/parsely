@@ -33,7 +33,7 @@ pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error<'i>>;
 /// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
 pub trait Parse {
     /// The output type produced by a successful parse.
-    type Output;
+    type Output<'o>;
 
     /// Parse a string input into the output type (`Self::Output`) and return any remaining input.
     ///
@@ -43,12 +43,15 @@ pub trait Parse {
     /// * Second is the remaining part of the input that was not matched.
     ///
     /// This order reads left to right as the parser reads the input, and matches the return order of [`str::split_at`].
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output>;
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>>;
 
     /// Creates a new parser that will attempt to parse with this parser multiple times.
     ///
     /// See [`crate::combinator::many()`] and the [`sequence module`](crate::combinator::sequence) for more details.
-    fn many(self, range: impl RangeBounds<usize>) -> Many<Self, Vec<<Self as Parse>::Output>>
+    fn many<'o>(
+        self,
+        range: impl RangeBounds<usize>,
+    ) -> Many<Self, Vec<<Self as Parse>::Output<'o>>>
     where
         Self: Sized,
     {
@@ -60,7 +63,7 @@ pub trait Parse {
     /// This is equivalent to `.many(n..=n)`.
     ///
     /// See [`crate::combinator::Many`] for more details.
-    fn count(self, n: usize) -> Many<Self, Vec<<Self as Parse>::Output>>
+    fn count<'o>(self, n: usize) -> Many<Self, Vec<<Self as Parse>::Output<'o>>>
     where
         Self: Sized,
     {
@@ -278,63 +281,14 @@ pub trait Parse {
     /// Map the output of this parser to some other type.
     fn map<F, O>(self, f: F) -> Mapped<Self, F>
     where
-        F: Fn(<Self as Parse>::Output) -> O,
+        F: for<'o> Fn(<Self as Parse>::Output<'o>) -> O,
         Self: Sized,
     {
         Mapped { f, parser: self }
     }
 
-    /// Swaps around the tuple output by the [`then()`] parser.
-    ///
-    /// * `a.then(b)` outputs `(a, b)`
-    /// * `a.then(b).swap()` outputs `(b, a)`.
-    ///
-    /// This is simply a convenience method for doing `.map(|(a, b)| (b, a))`.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use parsely::{char, token, int, switch, Lex, Parse};
-    ///
-    /// # use std::collections::HashMap;
-    ///
-    /// let int_then_color = int::<u8>().pad().then(switch([
-    ///     ("red", Color::Red),
-    ///     ("green", Color::Green),
-    ///     ("blue", Color::Blue),
-    /// ]));
-    ///
-    /// let (output, remaining) = int_then_color.parse("1 red")?;
-    /// assert_eq!(output, (1, Color::Red));
-    ///
-    /// let (output, remaining) = int_then_color.swap().many(..).delimiter(char(',')).parse("1 red, 2 blue, 3 green")?;
-    /// assert_eq!(&output[2], &(Color::Green, 3));
-    ///
-    /// // swap() made collecting into a HashMap convenient :) but wouldn't a alternative or an adaptor for .many() be **even more** convenient?
-    /// let hashmap = output.into_iter().collect::<HashMap<_, _>>();
-    /// assert_eq!(hashmap.get(&Color::Green), Some(&3));
-    ///
-    /// // note that Clone is required to use `switch`, and Eq + Hash is required to collect into a HashMap.
-    /// #[derive(Clone, Copy, Debug, PartialEq, Hash, Eq)]
-    /// pub enum Color {
-    ///     Red,
-    ///     Green,
-    ///     Blue,
-    /// }
-    /// # Ok::<(), parsely::Error>(())
-    /// ```
-    fn swap(self) -> Swapped<Self>
-    where
-        <Self as Parse>::Output: Swap,
-        Self: Sized,
-    {
-        Mapped::new(<<Self as Parse>::Output as Swap>::swap, self)
-    }
-
     /// Pad this parser with zero or more whitespace lexers so that leading and/or trailing whitespace in the input doesn't interfere with parsing
-    /// 
+    ///
     /// WARNING: `.pad()` leads to suprising bugs when included inside `.then()`. See the [**Combining pad with then** example](pad).
     ///
     /// This is an opinionated default usage of the pad combinator for convenience.
@@ -402,14 +356,14 @@ impl<P, F> Mapped<P, F> {
     }
 }
 
-impl<P, F, O1, O2> Parse for Mapped<P, F>
+impl<P, F, O2> Parse for Mapped<P, F>
 where
-    P: Parse<Output = O1>,
-    F: Fn(O1) -> O2,
+    P: Parse,
+    F: for<'o> Fn(<P as Parse>::Output<'o>) -> O2,
 {
-    type Output = O2;
+    type Output<'o> = O2;
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         let (output, remaining) = self.parser.parse(input)?;
         let mapped = (self.f)(output);
         Ok((mapped, remaining))
@@ -456,31 +410,9 @@ impl<F, O> Parse for F
 where
     F: Fn(&str) -> Result<(O, &str), crate::Error>,
 {
-    type Output = O;
+    type Output<'o> = O;
 
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, O> {
         self(input)
-    }
-}
-
-/// swapped type
-pub type Swapped<T> =
-    Mapped<T, fn(<T as Parse>::Output) -> <<T as Parse>::Output as Swap>::Swapped>;
-
-/// Used to conveniently swap a tuple t'other way round.
-///
-/// Currently this only really exists to provide a named function in the definition of [`Then`](Then::swap)
-pub trait Swap {
-    type Swapped;
-
-    fn swap(self) -> Self::Swapped;
-}
-
-impl<A, B> Swap for (A, B) {
-    type Swapped = (B, A);
-
-    fn swap(self) -> Self::Swapped {
-        let (a, b) = self;
-        (b, a)
     }
 }

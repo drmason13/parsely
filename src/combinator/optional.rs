@@ -29,9 +29,9 @@ impl<T> Parse for Optional<T>
 where
     T: Parse,
 {
-    type Output = Option<<T as Parse>::Output>;
+    type Output<'o> = Option<<T as Parse>::Output<'o>>;
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         if let Ok((output, remaining)) = self.item.parse(input) {
             Ok((Some(output), remaining))
         } else {

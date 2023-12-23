@@ -15,7 +15,7 @@ fn is_hex_digit(c: char) -> bool {
     c.is_ascii_hexdigit()
 }
 
-fn hex_primary() -> impl Parse<Output = u8> {
+fn hex_primary() -> impl for<'o> Parse<Output<'o> = u8> {
     char_if(is_hex_digit).count(2).try_map(from_hex)
 }
 

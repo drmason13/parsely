@@ -33,11 +33,11 @@ impl<L, T, C> Parse for Delimited<L, T, C>
 where
     T: Parse,
     L: Lex,
-    C: Default + Extend<<T as Parse>::Output>,
+    for<'o> C: Default + Extend<<T as Parse>::Output<'o>>,
 {
-    type Output = C;
+    type Output<'o> = C;
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;

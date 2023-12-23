@@ -34,21 +34,21 @@ pub enum N {
     Float(f64),
 }
 
-fn number() -> impl Parse<Output = Number> {
+fn number() -> impl for<'o> Parse<Output<'o> = Number> {
     float::<f64>()
         .map(|n| Number(N::Float(n)))
         .or(int::<i64>().map(|n| Number(N::Int(n))))
 }
 
-fn bool() -> impl Parse<Output = bool> {
+fn bool() -> impl for<'o> Parse<Output<'o> = bool> {
     "true".map(|_| true).or("false".map(|_| false))
 }
 
-fn null() -> impl Parse<Output = Value> {
+fn null() -> impl for<'o> Parse<Output<'o> = Value> {
     "null".map(|_| Value::Null)
 }
 
-fn string() -> impl Parse<Output = String> {
+fn string() -> impl for<'o> Parse<Output<'o> = String> {
     let str_char = parsely::none_of("\"\\").map(|s| s.chars().next().unwrap());
 
     let str_inner = escape().or(str_char).many(..);
@@ -58,7 +58,7 @@ fn string() -> impl Parse<Output = String> {
         .pad_with('"', '"')
 }
 
-fn escape() -> impl Parse<Output = char> {
+fn escape() -> impl for<'o> Parse<Output<'o> = char> {
     '\\'.skip_then(switch([
         ('\\', '\\'),
         ('t', '\t'),

@@ -83,9 +83,9 @@ impl<L: Lex, T: Lex> Lex for ThenSkip<L, T> {
 }
 
 impl<L: Lex, T: Parse> Parse for ThenSkip<L, T> {
-    type Output = <T as Parse>::Output;
+    type Output<'o> = <T as Parse>::Output<'o>;
 
-    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output<'i>> {
         let (output, remaining) = self.item.parse(input).offset(input)?;
         let (_, remaining) = self.lexer.lex(remaining).offset(input)?;
 
@@ -118,9 +118,9 @@ impl<L: Lex, T: Lex> Lex for SkipThen<L, T> {
 }
 
 impl<L: Lex, T: Parse> Parse for SkipThen<L, T> {
-    type Output = <T as Parse>::Output;
+    type Output<'o> = <T as Parse>::Output<'o>;
 
-    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output<'i>> {
         let (_, remaining) = self.lexer.lex(input).offset(input)?;
         let (output, remaining) = self.item.parse(remaining).offset(input)?;
 

@@ -54,10 +54,10 @@ pub(crate) fn test_lexer_batch(
     }
 }
 
-pub(crate) fn test_parser<T: PartialEq + fmt::Debug>(
+pub(crate) fn test_parser<'o, T: PartialEq + fmt::Debug>(
     test_index: usize,
     test_name: &str,
-    parser: &mut impl Parse<Output = T>,
+    parser: &mut impl Parse<Output<'o> = T>,
     input: &str,
     expected_output: T,
     expected_remaining: &str,
@@ -71,10 +71,10 @@ pub(crate) fn test_parser<T: PartialEq + fmt::Debug>(
     );
 }
 
-pub(crate) fn test_parser_error<T>(
+pub(crate) fn test_parser_error<'o, T>(
     test_index: usize,
     test_name: &str,
-    parser: &mut impl Parse<Output = T>,
+    parser: &mut impl Parse<Output<'o> = T>,
     input: &str,
 ) {
     assert!(
@@ -83,9 +83,9 @@ pub(crate) fn test_parser_error<T>(
     );
 }
 
-pub(crate) fn test_parser_batch<T: PartialEq + Clone + fmt::Debug>(
+pub(crate) fn test_parser_batch<'o, T: PartialEq + Clone + fmt::Debug>(
     test_name: &str,
-    mut parser: impl Parse<Output = T>,
+    mut parser: impl Parse<Output<'o> = T>,
     cases: &[(&str, Option<T>, &str)],
 ) {
     for (i, (input, expected_output, expected_remaining)) in cases.iter().enumerate() {

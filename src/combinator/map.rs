@@ -23,9 +23,9 @@ impl<L: Lex, F, O> Parse for Map<L, F>
 where
     F: Fn(&str) -> O,
 {
-    type Output = O;
+    type Output<'o> = O;
 
-    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output<'i>> {
         let (matched, remaining) = self.lexer.lex(input).offset(input)?;
         let output = (self.f)(matched);
 
@@ -56,9 +56,9 @@ impl<L: Lex, F, O, E> Parse for TryMap<L, F>
 where
     F: Fn(&str) -> Result<O, E>,
 {
-    type Output = O;
+    type Output<'o> = O;
 
-    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output<'i>> {
         let (matched, remaining) = self.lexer.lex(input).offset(input)?;
         let output = (self.f)(matched).fail_conversion(input)?;
 

@@ -69,9 +69,9 @@ where
     L: Lex,
     T: Clone,
 {
-    type Output = T;
+    type Output<'o> = T;
 
-    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output<'i>> {
         let mut error = None;
 
         for (lexer, output) in self.items.iter() {

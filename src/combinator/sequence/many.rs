@@ -33,11 +33,11 @@ pub struct Many<T, C> {
 impl<P, C> Parse for Many<P, C>
 where
     P: Parse,
-    C: Default + Extend<<P as Parse>::Output>,
+    for<'o> C: Default + Extend<<P as Parse>::Output<'o>>,
 {
-    type Output = C;
+    type Output<'o> = C;
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         let mut count = 0;
         let mut offset = 0;
         let mut working_input = input;

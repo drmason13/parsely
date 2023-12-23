@@ -45,7 +45,7 @@ use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-pub fn int<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
+pub fn int<'o, T: FromStr>() -> impl Parse<Output<'o> = T> {
     char('-')
         .optional()
         .then(char_if(|c| c.is_ascii_digit() && c != '0'))
@@ -62,7 +62,7 @@ pub fn int<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// * [`float()`] which will parse only decimals
 /// * [`number()`] which will parse integers or decimals
 ///
-pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
+pub fn uint<'o, T: FromStr>() -> impl Parse<Output<'o> = T> {
     non_zero_digit()
         .then(digit().many(0..100_000))
         .or("0")
@@ -97,7 +97,7 @@ pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// assert_eq!(remaining, ",456");
 /// # Ok::<(), parsely::Error>(())
 /// ```
-pub fn float<T: FromStr>() -> impl Parse<Output = T> {
+pub fn float<T: FromStr>() -> impl for<'o> Parse<Output<'o> = T> {
     float_scientific_notation().or('-'
         .optional()
         .then(non_zero_digit())
@@ -107,7 +107,7 @@ pub fn float<T: FromStr>() -> impl Parse<Output = T> {
         .try_map(FromStr::from_str))
 }
 
-pub fn float_scientific_notation<T: FromStr>() -> impl Parse<Output = T> {
+pub fn float_scientific_notation<T: FromStr>() -> impl for<'o> Parse<Output<'o> = T> {
     ('-'.optional())
         .then(non_zero_digit())
         .then(digit().many(0..100_000))
@@ -151,9 +151,9 @@ pub fn float_scientific_notation<T: FromStr>() -> impl Parse<Output = T> {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-/// This happens because
-pub fn number<T: FromStr + Clone>() -> impl Parse<Output = T> {
-    float::<T>().or(int::<T>())
+pub fn number<T: FromStr>() -> impl for<'o> Parse<Output<'o> = T> {
+    // float::<T>().or(int::<T>())
+    float::<T>()
 }
 
 #[cfg(test)]

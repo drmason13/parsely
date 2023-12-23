@@ -18,12 +18,12 @@ pub fn or<L, R>(left: L, right: R) -> Or<L, R> {
 
 impl<L, R, O> Parse for Or<L, R>
 where
-    L: Parse<Output = O>,
-    R: Parse<Output = O>,
+    for<'o> L: Parse<Output<'o> = O>,
+    for<'o> R: Parse<Output<'o> = O>,
 {
-    type Output = O;
+    type Output<'o> = O;
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, O> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         self.left
             .parse(input)
             .or_else(|_| self.right.parse(input).offset(input))

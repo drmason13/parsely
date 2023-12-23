@@ -27,9 +27,9 @@ where
     L: Parse,
     R: Parse,
 {
-    type Output = (<L as Parse>::Output, <R as Parse>::Output);
+    type Output<'o> = (<L as Parse>::Output<'o>, <R as Parse>::Output<'o>);
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         let (left, remaining) = self.left.parse(input).offset(input)?;
         let (right, remaining) = self.right.parse(remaining).offset(input)?;
 
@@ -44,9 +44,9 @@ impl<L> Parse for Then<L, End>
 where
     L: Parse,
 {
-    type Output = <L as Parse>::Output;
+    type Output<'o> = <L as Parse>::Output<'o>;
 
-    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
+    fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output<'i>> {
         let (left, remaining) = self.left.parse(input).offset(input)?;
         let (_, remaining) = self.right.lex(remaining).offset(input)?;
 
@@ -105,7 +105,11 @@ mod tests {
     #[test]
     fn then_swap() -> Result<(), crate::Error<'static>> {
         let red = token("red").map(|_| Color::Red);
-        let (output, _) = int::<u8>().pad().then(red).swap().parse("4 red")?;
+        let (output, _) = int::<u8>()
+            .pad()
+            .then(red)
+            .map(|(a, b)| (b, a))
+            .parse("4 red")?;
 
         assert_eq!(output, (Color::Red, 4));
 

@@ -1,4 +1,4 @@
-use parsely::{any, char_if, result_ext::*, token, until, Lex, Parse, ParseResult};
+use parsely::{any, char_if, result_ext::*, token, Lex, Parse, ParseResult};
 
 #[derive(PartialEq, Debug)]
 pub enum Node {
@@ -30,23 +30,13 @@ fn block_parser(input: &str) -> ParseResult<Vec<Node>> {
 fn node(input: &str) -> ParseResult<Node> {
     block
         .map(Node::Block)
-        .or(content)
+        .or(content())
         .parse(input)
         .offset(input)
 }
 
-fn content(input: &str) -> ParseResult<Node> {
-    let (output, remaining) = until("{@")
-        .map(Node::from_content)
-        .or(any().all(1).map(Node::from_content))
-        .parse(input)
-        .offset(input)?;
-
-    if input == remaining {
-        return Err(parsely::Error::no_match(input));
-    } else {
-        Ok((output, remaining))
-    }
+fn content() -> impl Parse<Output = Node> {
+    any().many(1..).or_until("{@").map(Node::from_content)
 }
 
 fn open_tag(input: &str) -> ParseResult<'_, String> {
@@ -139,5 +129,5 @@ fn main() {
     // errors
     println!("{:#?}", block_parser("content before foo block {@ foo @}content before bar block {@ bar @}this is a nested bar block inside the foo block{@ end bar @} content after bar block{@ end bar @} content after foo block"));
     println!("{:#?}", block_parser("{@ foo @}{@ end bar @}"));
-    println!("{:#?}", content("{@ foo @}{@ end bar @}"));
+    println!("{:#?}", content().parse("{@ foo @}{@ end bar @}"));
 }

@@ -83,12 +83,12 @@ pub trait Parse {
     /// ```
     /// use parsely::{int, token, Lex, Parse};
     ///
-    /// let parser = int::<u32>().optional();
+    /// let parser = || int::<u32>().optional();
     ///
-    /// let (output, remaining) = parser.clone().then(token("abc").map(|_| 7)).parse("123abc")?;
+    /// let (output, remaining) = parser().then(token("abc").map(|_| 7)).parse("123abc")?;
     /// assert_eq!(output, (Some(123), 7));
     ///
-    /// let (output, remaining) = parser.parse("abc")?;
+    /// let (output, remaining) = parser().parse("abc")?;
     /// assert_eq!(output, None);
     ///
     /// # Ok::<(), parsely::Error>(())
@@ -387,7 +387,7 @@ where
 /// # struct Rgb(u8, u8, u8);
 ///
 /// // Sometimes its easiest to just return some type that implements Parse outputting u8
-/// fn hex_byte() -> impl Parse<Output=u8> {
+/// fn hex_byte() -> impl for<'o> Parse<Output<'o> = u8> {
 ///     hex().many(1..=2).try_map(|s| u8::from_str_radix(s, 16))
 /// }
 ///

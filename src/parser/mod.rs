@@ -33,11 +33,11 @@
 //!     Float(f64),
 //! }
 //!
-//! fn number() -> impl Parse<Output = Number> {
+//! fn number() -> impl for<'o> Parse<Output<'o> = Number> {
 //!     (float::<f64>().map(|n| Number(N::Float(n)))).or(int::<i64>().map(|n| Number(N::Int(n))))
 //! }
 //!
-//! fn bool() -> impl Parse<Output = bool> {
+//! fn bool() -> impl for<'o> Parse<Output<'o> = bool> {
 //!     "true".map(|_| true).or("false".map(|_| false))
 //! }
 //!

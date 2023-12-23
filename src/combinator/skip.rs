@@ -29,7 +29,7 @@
 //!     blue: u8,
 //! }
 //!
-//! fn hex_u8() -> impl Parse<Output = u8> {
+//! fn hex_u8() -> impl for<'o> Parse<Output<'o> = u8> {
 //!     hex()           // match a hex digit...
 //!         .count(2)   // ...2 of them
 //!         .try_map(|s| u8::from_str_radix(s, 16))  // and try to map that string (e.g. "AA") a u8!
@@ -131,7 +131,7 @@ impl<L: Lex, T: Parse> Parse for SkipThen<L, T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{char, int, token, Error, Lex, Parse};
+    use crate::{char, int, token, uint, Error, Lex, Parse};
 
     #[test]
     fn lexer_then_skip_lexer() -> Result<(), Error<'static>> {
@@ -252,7 +252,7 @@ mod test {
             Err(Error::no_match(".123").offset("....123"))
         );
 
-        let test = skip_then(token("..."), char('>').skip_then(int::<u8>()).many(1..=3));
+        let test = skip_then(token("..."), char('>').skip_then(uint::<u8>()).many(1..=3));
 
         assert_eq!(test.parse(">123"), Err(Error::no_match(">123")));
         assert_eq!(test.parse("...>123")?, (vec![123], ""));

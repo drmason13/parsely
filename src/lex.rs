@@ -265,7 +265,7 @@ pub trait Lex {
     ///
     /// use parsely::{char, digit, Lex, Parse};
     ///
-    /// fn bad_ip_parser() -> impl Parse<Output=Ipv4Addr> {
+    /// fn bad_ip_parser() -> impl for<'o> Parse<Output<'o> = Ipv4Addr> {
     ///     digit().many(1..=3).count(4).delimiter(char('.')).try_map(FromStr::from_str)
     /// }
     ///

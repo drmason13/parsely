@@ -45,11 +45,11 @@ use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-pub fn int<'o, T: FromStr>() -> impl Parse<Output<'o> = T> {
-    char('-')
-        .optional()
+pub fn int<T: FromStr>() -> impl for<'o> Parse<Output<'o> = T> {
+    (char('-').optional())
         .then(char_if(|c| c.is_ascii_digit() && c != '0'))
         .then(digit().many(0..=100_000))
+        .or("0")
         .try_map(FromStr::from_str)
 }
 
@@ -62,9 +62,8 @@ pub fn int<'o, T: FromStr>() -> impl Parse<Output<'o> = T> {
 /// * [`float()`] which will parse only decimals
 /// * [`number()`] which will parse integers or decimals
 ///
-pub fn uint<'o, T: FromStr>() -> impl Parse<Output<'o> = T> {
-    non_zero_digit()
-        .then(digit().many(0..100_000))
+pub fn uint<T: FromStr>() -> impl for<'o> Parse<Output<'o> = T> {
+    (non_zero_digit().then(digit().many(0..100_000)))
         .or("0")
         .try_map(FromStr::from_str)
 }
@@ -152,8 +151,7 @@ pub fn float_scientific_notation<T: FromStr>() -> impl for<'o> Parse<Output<'o> 
 /// ```
 ///
 pub fn number<T: FromStr>() -> impl for<'o> Parse<Output<'o> = T> {
-    // float::<T>().or(int::<T>())
-    float::<T>()
+    float::<T>().or(int::<T>())
 }
 
 #[cfg(test)]

@@ -400,11 +400,15 @@ impl Lex for char {
     }
 }
 
-impl Lex for &'static str {
+impl<'a> Lex for &'a str {
     /// [`Lex`] is implemented for [`str`]
     ///
     /// It works the same way as the [`token()`](crate::token) lexer.
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
-        crate::lexer::token(self).lex(input)
+        if input.starts_with(self) {
+            Ok(input.split_at(self.len()))
+        } else {
+            Err(crate::Error::no_match(input))
+        }
     }
 }

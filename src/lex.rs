@@ -396,7 +396,19 @@ impl Lex for char {
     ///
     /// It works the same way as the [`char()`](crate::char) lexer.
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
-        crate::lexer::char(*self).lex(input)
+        let mut chars = input.char_indices();
+
+        match chars.next() {
+            Some((_, c)) if c == *self => {
+                let boundary = match chars.next() {
+                    Some((n, _)) => n,
+                    None => input.len(),
+                };
+
+                Ok(input.split_at(boundary))
+            }
+            _ => Err(crate::Error::no_match(input)),
+        }
     }
 }
 

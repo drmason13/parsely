@@ -20,3 +20,30 @@ impl Lex for Any {
 pub fn any() -> Any {
     Any
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn any_works() {
+        assert_eq!(any().lex("abc").unwrap(), ("a", "bc"));
+    }
+
+    #[test]
+    fn any_works_with_unicode() {
+        assert_eq!(any().lex("s❤️🧡💛💚💙💜").unwrap(), ("s", "❤️🧡💛💚💙💜"));
+
+        // unicode is hard! unicode-segmentation would be needed to fix this.
+        // note: \u{fe0f} is Unicode Variation selector 1 (i.e. the Red Heart emoji is the first variation of ❤)
+
+        assert_eq!(
+            any().lex("❤️🧡💛💚💙💜").unwrap(),
+            ("❤", "\u{fe0f}🧡💛💚💙💜")
+        );
+        assert_eq!(
+            any().lex("❤️t🧡💛💚💙💜").unwrap(),
+            ("❤", "\u{fe0f}t🧡💛💚💙💜")
+        );
+    }
+}

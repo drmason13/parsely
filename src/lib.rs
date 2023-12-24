@@ -92,6 +92,25 @@ pub use parser::*;
 
 pub mod combinator;
 
+/// Whether the combinator is being used to do [`Parsing`] or [`Lexing`].
+///
+/// [`Behavior`] is a bound for generic parameters of flexible combinators that implement both [`Parse`] and [`Lex`].
+/// The generic Parameter is a ore ergonomic way of disambiguating the usage.
+///
+/// Note: This trait is [sealed](private::Sealed).
+pub trait Behavior: private::Sealed {}
+
+impl Behavior for Parsing {}
+impl private::Sealed for Parsing {}
+
+impl Behavior for Lexing {}
+impl private::Sealed for Lexing {}
+
+mod private {
+    /// Sealed trait pattern: https://predr.ag/blog/definitive-guide-to-sealed-traits-in-rust/#sealing-traits-with-a-supertrait
+    pub trait Sealed {}
+}
+
 #[doc(hidden)]
 #[cfg(test)]
 pub(crate) mod test_utils;

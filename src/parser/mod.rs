@@ -55,8 +55,13 @@
 //! [`Lex`]: crate::Lex
 //! [`lexer`]: crate::lexer
 //! [json example]: https://github.com/drmason13/parsely/blob/main/examples/json.rs
+mod escape;
 mod number;
 mod switch;
 
 pub use self::number::{float, int, number, uint};
 pub use self::switch::switch;
+pub use escape::{escape, escape_lex, EscapeSequence};
+
+/// Used as a generic parameter to combinators that can either [`Parse`] or [`Lex`] and need disambiguating
+pub struct Parsing;

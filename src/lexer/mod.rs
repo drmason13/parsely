@@ -83,3 +83,6 @@ pub use self::number::{digit, hex, non_zero_digit, Digit};
 pub use self::take::{take, take_while, Take, TakeWhile};
 pub use self::token::{token, token_ci, Token};
 pub use self::until::{until, Until};
+
+/// Used as a generic parameter to combinators that can either [`Parse`] or [`Lex`] and need disambiguating
+pub struct Lexing;

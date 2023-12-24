@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, io::BufRead};
 
-use parsely::{float, int, result_ext::*, switch, ws, Lex, Parse, ParseResult};
+use parsely::{float, int, result_ext::*, ws, Lex, Parse, ParseResult};
 
 // first come all the types we parse into...
 
@@ -49,25 +49,24 @@ fn null() -> impl Parse<Output = Value> {
 }
 
 fn string() -> impl Parse<Output = String> {
-    let str_char = parsely::none_of("\"\\").map(|s| s.chars().next().unwrap());
+    let str_inner = escape().many(..).or_until('"');
 
-    let str_inner = escape().or(str_char).many(..);
-
-    str_inner
-        .map(|chars| chars.into_iter().collect::<String>())
-        .pad_with('"', '"')
+    str_inner.collect::<String>().pad_with('"', '"')
 }
 
 fn escape() -> impl Parse<Output = char> {
-    '\\'.skip_then(switch([
-        ('\\', '\\'),
-        ('t', '\t'),
-        ('n', '\n'),
-        ('r', '\r'),
-        ('b', '\x08'),
-        ('f', '\x0c'),
-        ('"', '"'),
-    ]))
+    parsely::escape(
+        '\\',
+        [
+            ('\\', '\\'),
+            ('t', '\t'),
+            ('n', '\n'),
+            ('r', '\r'),
+            ('b', '\x08'),
+            ('f', '\x0c'),
+            ('"', '"'),
+        ],
+    )
 }
 
 // note that fn as parser is used here (and for map) because returning `impl Parse<Output = Vec<Value>>` would create a "recursive opaque type"
@@ -94,75 +93,14 @@ fn map(input: &str) -> ParseResult<'_, Map<String, Value>> {
 }
 
 fn value(input: &str) -> ParseResult<Value> {
-    // the simplest implementation uses `or()`
-    // but has the downside that all error information is lost if the error happens inside `bool`, `null`, `string` or `array`
-    /*
-        null()
-            .or(bool().map(Value::Bool))
-            .or(number().map(Value::Number))
-            .or(string().map(Value::String))
-            .or(array.map(Value::Array))
-            .or(map.map(Value::Object))
-            .pad()
-    */
-
-    // unless parsely grows a tuple based choose / switch combinator then
-    // this boilerplate is the only way to preserve errors from previous parsers - which is *very useful* for nested syntaxes like JSON
-    let mut error = match null()
+    null()
         .or(bool().map(Value::Bool))
+        .or(number().map(Value::Number))
+        .or(string().map(Value::String))
+        .or(array.map(Value::Array))
+        .or(map.map(Value::Object))
         .pad()
         .parse(input)
-        .offset(input)
-    {
-        Ok(ok) => return Ok(ok),
-        Err(e) => Some(e),
-    };
-
-    match number().map(Value::Number).pad().parse(input).offset(input) {
-        Ok(value) => return Ok(value),
-        Err(e) => {
-            if let Some(previous) = error {
-                error = Some(e.merge(previous));
-            } else {
-                error = Some(e);
-            }
-        }
-    };
-
-    match string().map(Value::String).pad().parse(input).offset(input) {
-        Ok(value) => return Ok(value),
-        Err(e) => {
-            if let Some(previous) = error {
-                error = Some(e.merge(previous));
-            } else {
-                error = Some(e);
-            }
-        }
-    };
-
-    match array.map(Value::Array).pad().parse(input).offset(input) {
-        Ok(value) => return Ok(value),
-        Err(e) => {
-            if let Some(previous) = error {
-                error = Some(e.merge(previous));
-            } else {
-                error = Some(e);
-            }
-        }
-    };
-
-    match map.map(Value::Object).pad().parse(input).offset(input) {
-        Ok(value) => return Ok(value),
-        Err(e) => {
-            if let Some(previous) = error {
-                error = Some(e.merge(previous));
-            } else {
-                error = Some(e);
-            }
-        }
-    };
-
-    Err(error.expect("Value is exhaustive"))
 }
 
 fn json(input: &str) -> ParseResult<'_, Value> {
@@ -275,7 +213,7 @@ mod json_tests {
     fn escapes() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             escape().parse(r#"\z"#),
-            Err(parsely::Error::no_match("z").offset(r"\z"))
+            Err(parsely::Error::failed_conversion(r"\z"))
         );
         assert_eq!(escape().parse(r#"\""#)?, ('"', ""));
         assert_eq!(escape().parse(r#"\t"#)?, ('\t', ""));

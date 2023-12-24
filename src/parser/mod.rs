@@ -55,6 +55,7 @@
 //! [`Lex`]: crate::Lex
 //! [`lexer`]: crate::lexer
 //! [json example]: https://github.com/drmason13/parsely/blob/main/examples/json.rs
+mod escape;
 mod number;
 mod switch;
 

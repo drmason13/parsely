@@ -83,9 +83,3 @@ pub use self::number::{digit, hex, non_zero_digit, Digit};
 pub use self::take::{take, take_while, Take, TakeWhile};
 pub use self::token::{token, token_ci, Token};
 pub use self::until::{until, Until};
-
-/// Shamelessly stolen from u8's private method
-pub(crate) const fn is_utf8_char_boundary(ch: u8) -> bool {
-    // This is bit magic equivalent to: b < 128 || b >= 192
-    (ch as i8) >= -0x40
-}

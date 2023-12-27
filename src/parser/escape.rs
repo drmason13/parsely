@@ -9,6 +9,26 @@ pub struct EscapeSequence<const N: usize, B: Behavior> {
     behavior: PhantomData<B>,
 }
 
+impl<const N: usize, B: Behavior> EscapeSequence<N, B> {
+    /// Switches the behavior of this combinator to [`Lexing`]
+    pub fn lexing(self) -> EscapeSequence<N, Lexing> {
+        EscapeSequence {
+            escape_char: self.escape_char,
+            sequences: self.sequences,
+            behavior: PhantomData::<Lexing>,
+        }
+    }
+
+    /// Switches the behavior of this combinator to [`Parsing`]
+    pub fn parsing(self) -> EscapeSequence<N, Parsing> {
+        EscapeSequence {
+            escape_char: self.escape_char,
+            sequences: self.sequences,
+            behavior: PhantomData::<Parsing>,
+        }
+    }
+}
+
 impl<const N: usize> Parse for EscapeSequence<N, Parsing> {
     type Output = char;
 

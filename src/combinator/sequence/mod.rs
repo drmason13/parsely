@@ -33,7 +33,7 @@
 //!
 //! let (output, _) = numbers_parser.parse("123,456,789")?;
 //! assert_eq!(output, vec![123, 456, 789]);
-//!
+//! #
 //! # Ok::<(), parsely::Error>(())
 //! ```
 //!
@@ -59,6 +59,14 @@
 //! This reflects the way [`std::ops::Range`] works with inclusive and exclusive bounds.
 //!
 //! [^max]: open-ended ranges limit themselves to matching `isize::MAX / 2` times, which for most purposes is more than plenty!
+//!
+//! ## A more hands-on example:
+//!
+//! This example is included from `examples/sequence.rs`.
+//!
+//! ```
+#![doc = include_str!("../../../examples/sequence.rs")]
+//! ```
 mod all;
 mod delimited;
 mod many;

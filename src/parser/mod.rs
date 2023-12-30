@@ -64,4 +64,7 @@ pub use self::switch::switch;
 pub use escape::{escape, escape_lex, EscapeSequence};
 
 /// Used as a generic parameter to combinators that can either [`Parse`] or [`Lex`] and need disambiguating
+///
+/// [`Parse`]: crate::Parse
+/// [`Lex`]: crate::Lex
 pub struct Parsing;

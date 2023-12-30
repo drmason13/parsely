@@ -1,10 +1,19 @@
 use parsely::{char_if, Lex, Parse, ParseResult};
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 pub struct Color {
     pub red: u8,
     pub green: u8,
     pub blue: u8,
+}
+
+impl FromStr for Color {
+    type Err = parsely::ErrorOwned;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(hex_color(s)?.0)
+    }
 }
 
 fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
@@ -29,14 +38,11 @@ fn hex_color(input: &str) -> ParseResult<Color> {
 
 fn main() {
     assert_eq!(
-        hex_color("#2F14DF"),
-        Ok((
-            Color {
-                red: 47,
-                green: 20,
-                blue: 223,
-            },
-            ""
-        ))
+        "#2F14DF".parse::<Color>(),
+        Ok(Color {
+            red: 47,
+            green: 20,
+            blue: 223,
+        })
     );
 }

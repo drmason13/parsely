@@ -85,4 +85,7 @@ pub use self::token::{token, token_ci, Token};
 pub use self::until::{until, Until};
 
 /// Used as a generic parameter to combinators that can either [`Parse`] or [`Lex`] and need disambiguating
+///
+/// [`Parse`]: crate::Parse
+/// [`Lex`]: crate::Lex
 pub struct Lexing;

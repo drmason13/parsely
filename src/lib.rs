@@ -71,7 +71,7 @@
 //! error: could not compile `popvars` (lib test) due to previous error
 //! ```
 //!
-//! The solution is to use [`ErrorOwned`] instead, which has no lifetime parameter. `?` will convert between the two just fine.
+//! The solution is to use [`ErrorOwned`] instead of [`Error`], which has no lifetime parameter. `?` will convert between the two just fine.
 //!
 //! [`FromStr`]: std::str::FromStr
 //! [`impl FromStr`]: std::str::FromStr
@@ -97,7 +97,7 @@ pub mod combinator;
 /// [`Behavior`] is a bound for generic parameters of flexible combinators that implement both [`Parse`] and [`Lex`].
 /// The generic Parameter is a ore ergonomic way of disambiguating the usage.
 ///
-/// Note: This trait is [sealed](private::Sealed).
+/// Note: This trait is [sealed](https://predr.ag/blog/definitive-guide-to-sealed-traits-in-rust/#sealing-traits-with-a-supertrait).
 pub trait Behavior: private::Sealed {}
 
 impl Behavior for Parsing {}

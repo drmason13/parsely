@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use parsely::{char, end, result_ext::*, uint, Lex, Parse};
+use parsely::{end, result_ext::*, uint, Lex, Parse};
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug)]
@@ -17,9 +17,9 @@ impl FromStr for Dimensions {
     // Parsers are defined and used here
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let dimensions = uint::<usize>()
-            .then_skip(char('x').pad()) // note: .pad() isn't needed here since the input is never padded - that's AoC being kind, but we can handle whitespace easily!
+            .then_skip('x'.pad()) // note: .pad() isn't needed here since the input is never padded - that's AoC being kind, but we can handle whitespace easily!
             .then(uint::<usize>())
-            .then_skip(char('x').pad())
+            .then_skip('x'.pad())
             .then(uint::<usize>());
 
         // parsely isn't fancy enough to provide macros to avoid the nested tuples from repeated `.then()`s

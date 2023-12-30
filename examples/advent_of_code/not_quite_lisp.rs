@@ -1,9 +1,9 @@
-use parsely::{char, Lex, Parse};
+use parsely::{Lex, Parse};
 
 // Parsers are defined and used inline in this function, it's quite concise!
 pub fn find_floor(input: &str) -> Result<i32, parsely::Error> {
-    let up = char('(').map(|_| 1);
-    let down = char(')').map(|_| -1);
+    let up = '('.map(|_| 1);
+    let down = ')'.map(|_| -1);
 
     let (steps, _) = up.or(down).many(1..).parse(input)?;
 

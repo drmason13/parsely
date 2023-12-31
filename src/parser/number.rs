@@ -42,7 +42,7 @@ use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
 /// use parsely::{int, Parse};
 ///
 /// assert_eq!(int().parse("123")?, (123, ""));
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 pub fn int<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
@@ -85,7 +85,7 @@ pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// // Scientific notation matches too
 /// let (output, remaining) = float::<f32>().parse("6.78e-9")?;
 /// assert_eq!(output, 6.78e-9);
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Commas are not accepted:
@@ -95,7 +95,7 @@ pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// let (output, remaining) = number::<f32>().parse("123,456")?;
 /// assert_eq!(output, 123.0);
 /// assert_eq!(remaining, ",456");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn float<T: FromStr>() -> impl Parse<Output = T> {
     float_scientific_notation().or('-'
@@ -136,7 +136,7 @@ pub fn float_scientific_notation<T: FromStr>() -> impl Parse<Output = T> {
 /// let (output, remaining) = number::<f64>().parse("123")?;
 /// assert_eq!(output, 123.0);
 /// assert_eq!(remaining, "");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Use f32 or f64 if you want to parse and store either floats or integers
@@ -148,7 +148,7 @@ pub fn float_scientific_notation<T: FromStr>() -> impl Parse<Output = T> {
 /// // only the integer is matched because the float failed to convert to a u8
 /// assert_eq!(output, 123);
 /// assert_eq!(remaining, ".456");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// This happens because

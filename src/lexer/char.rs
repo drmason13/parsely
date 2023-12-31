@@ -19,7 +19,7 @@ impl Lex for Char {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(crate::Error::no_match(input)),
+            _ => Err(crate::InProgressError::no_match(input)),
         }
     }
 }
@@ -38,7 +38,7 @@ impl Lex for Char {
 /// let (output, remaining) = matches_a.lex("abc")?;
 /// assert_eq!(output, "a");
 /// assert_eq!(remaining, "bc");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Note that using the [`char`](prim@char) primitive is equivalent to wrapping that char in [`char()`].
@@ -52,7 +52,7 @@ impl Lex for Char {
 /// let (output, remaining) = 'a'.lex("abc")?;
 /// assert_eq!(output, "a");
 /// assert_eq!(remaining, "bc");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Using chars directly is preferred in the examples throughout this documentation.
@@ -77,10 +77,10 @@ where
             if (self.condition)(c) {
                 Ok(input.split_at(c.len_utf8()))
             } else {
-                Err(crate::Error::no_match(input))
+                Err(crate::InProgressError::no_match(input))
             }
         } else {
-            Err(crate::Error::no_match(input))
+            Err(crate::InProgressError::no_match(input))
         }
     }
 }
@@ -99,7 +99,7 @@ where
 /// let (output, remaining) = uppercase.lex("ABC")?;
 /// assert_eq!(output, "A");
 /// assert_eq!(remaining, "BC");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn char_if<F>(condition: F) -> CharIf<F>
 where
@@ -125,7 +125,7 @@ impl Lex for WhiteSpace {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(crate::Error::no_match(input)),
+            _ => Err(crate::InProgressError::no_match(input)),
         }
     }
 }
@@ -181,7 +181,7 @@ pub fn uppercase() -> CharIf<fn(char) -> bool> {
 /// let result = one_of("abc").lex("har");
 /// assert!(result.is_err());
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn one_of(chars: &str) -> impl Lex + '_ {
     char_if(|c| chars.contains(c))
@@ -203,7 +203,7 @@ pub fn one_of(chars: &str) -> impl Lex + '_ {
 /// assert_eq!(matched, "h");
 /// assert_eq!(remaining, "ar");
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn none_of(chars: &str) -> impl Lex + '_ {
     char_if(|c| !chars.contains(c))

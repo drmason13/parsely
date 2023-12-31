@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Behavior, Error, Lex, Lexing, Parse, Parsing};
+use crate::{Behavior, InProgressError, Lex, Lexing, Parse, Parsing};
 
 /// This parser/lexer is returned by [`escape()`]/[`escape_lex()`], see their documentation for more details
 pub struct EscapeSequence<const N: usize, B: Behavior> {
@@ -34,10 +34,14 @@ impl<const N: usize> Parse for EscapeSequence<N, Parsing> {
 
     fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
         let mut chars = input.chars();
-        let next_char = chars.next().ok_or_else(|| Error::no_match(input))?;
+        let next_char = chars
+            .next()
+            .ok_or_else(|| InProgressError::no_match(input))?;
 
         if next_char == self.escape_char {
-            let char_after_next = chars.next().ok_or_else(|| Error::no_match(input))?;
+            let char_after_next = chars
+                .next()
+                .ok_or_else(|| InProgressError::no_match(input))?;
 
             for (escaped_char, output) in self.sequences.iter() {
                 if char_after_next == *escaped_char {
@@ -48,7 +52,7 @@ impl<const N: usize> Parse for EscapeSequence<N, Parsing> {
                 }
             }
             // invalid escape sequence
-            Err(Error::failed_conversion(input))
+            Err(InProgressError::failed_conversion(input))
         } else {
             Ok((next_char, input.split_at(next_char.len_utf8()).1))
         }
@@ -58,10 +62,14 @@ impl<const N: usize> Parse for EscapeSequence<N, Parsing> {
 impl<const N: usize> Lex for EscapeSequence<N, Lexing> {
     fn lex<'i>(&self, input: &'i str) -> crate::LexResult<'i> {
         let mut chars = input.chars();
-        let next_char = chars.next().ok_or_else(|| Error::no_match(input))?;
+        let next_char = chars
+            .next()
+            .ok_or_else(|| InProgressError::no_match(input))?;
 
         if next_char == self.escape_char {
-            let char_after_next = chars.next().ok_or_else(|| Error::no_match(input))?;
+            let char_after_next = chars
+                .next()
+                .ok_or_else(|| InProgressError::no_match(input))?;
 
             for (escaped_char, _) in self.sequences.iter() {
                 if char_after_next == *escaped_char {
@@ -69,7 +77,7 @@ impl<const N: usize> Lex for EscapeSequence<N, Lexing> {
                 }
             }
             // invalid escape sequence
-            Err(Error::failed_conversion(input))
+            Err(InProgressError::failed_conversion(input))
         } else {
             Ok(input.split_at(next_char.len_utf8()))
         }

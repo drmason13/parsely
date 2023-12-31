@@ -1,7 +1,7 @@
 use std::ops::ControlFlow;
 use std::{fmt, ops::RangeBounds};
 
-use crate::{Error, Lex, LexResult, Parse, ParseResult};
+use crate::{InProgressError, Lex, LexResult, Parse, ParseResult};
 
 use super::{min_max_from_bounds, traits::*, Delimited, Many};
 
@@ -41,7 +41,7 @@ impl<L: Lex, T, C> OrUntil<L, T, C> {
     ///
     /// let result = csv_parser.parse("1,2,3foo");
     /// assert_eq!(result.unwrap_err().remaining, "foo");
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     pub fn delimiter<D: Lex>(self, delimiter: D) -> Delimited<D, Self, C>
     where
@@ -102,7 +102,7 @@ where
         working_input: &mut &'i str,
         count: &mut usize,
         offset: &mut usize,
-        error: &mut Option<Error<'i>>,
+        error: &mut Option<InProgressError<'i>>,
         outputs: &mut C,
     ) -> ControlFlow<(), &'i str> {
         self.many
@@ -141,7 +141,7 @@ where
 
         if self.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok((outputs, &input[offset..]))
@@ -162,7 +162,7 @@ where
         working_input: &mut &'i str,
         count: &mut usize,
         offset: &mut usize,
-        error: &mut Option<Error<'i>>,
+        error: &mut Option<InProgressError<'i>>,
     ) -> ControlFlow<(), &'i str> {
         self.many
             .lex_one(input, working_input, count, offset, error)
@@ -191,7 +191,7 @@ impl<U: Lex, L: Lex, C> Lex for OrUntil<U, L, C> {
 
         if self.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok(input.split_at(offset))
@@ -224,7 +224,7 @@ mod tests {
     use crate::{char, end, int, Parse};
 
     #[test]
-    fn test_or_until() -> Result<(), crate::ErrorOwned> {
+    fn test_or_until() -> Result<(), crate::Error> {
         let csv_parser = int::<u8>().many(2..=3).or_until(end()).delimiter(char(','));
 
         let (output, remaining) = csv_parser.parse("1,2")?;

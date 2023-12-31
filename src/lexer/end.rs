@@ -9,7 +9,7 @@ impl Lex for End {
         if input.is_empty() {
             Ok(("", ""))
         } else {
-            Err(crate::Error::no_match(input))
+            Err(crate::InProgressError::no_match(input))
         }
     }
 }
@@ -34,7 +34,7 @@ impl Lex for End {
 /// let result = lexer.lex("aaaaaaaaa");
 /// assert!(result.is_err());
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// You should be careful using this lexer because it can cause matching to fail when it is reused:
@@ -49,7 +49,7 @@ impl Lex for End {
 ///
 /// let result = lexer_multi.lex("aaaaaa");
 /// assert!(result.is_err());
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn end() -> End {
     End

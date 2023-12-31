@@ -89,7 +89,7 @@ where
 
         if self.sequencer.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok((outputs, &input[offset..]))
@@ -130,7 +130,7 @@ where
 
         if self.sequencer.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok((&input[..offset], &input[offset..]))

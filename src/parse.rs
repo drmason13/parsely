@@ -25,7 +25,7 @@ use crate::{
 ///     # Ok((Foo, ""))
 /// }
 /// ```
-pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error<'i>>;
+pub type ParseResult<'i, O> = Result<(O, &'i str), crate::InProgressError<'i>>;
 
 /// This trait is implemented by all Parsely parsers.
 ///
@@ -99,7 +99,7 @@ pub trait Parse {
     /// let (output, remaining) = parser.parse("abc")?;
     /// assert_eq!(output, None);
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn optional(self) -> Optional<Self>
     where
@@ -127,7 +127,7 @@ pub trait Parse {
     ///     Bar,
     /// }
     ///
-    /// fn parse_foo_bar(input: &str) -> Result<(FooBar, &str), parsely::Error> {
+    /// fn parse_foo_bar(input: &str) -> Result<(FooBar, &str), parsely::InProgressError> {
     ///     token("foo").map(|_| FooBar::Foo)
     ///         .or(token("bar").map(|_| FooBar::Bar)).parse(input)
     /// }
@@ -141,7 +141,7 @@ pub trait Parse {
     ///
     /// assert_eq!(output, FooBar::Bar);
     /// assert_eq!(remaining, "baz");
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     ///
     /// Chained and nested or:
@@ -178,7 +178,7 @@ pub trait Parse {
     /// assert_eq!(output, FooBar::Foo);
     /// assert_eq!(remaining, " is a Foo too");
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn or<P: Parse>(self, parser: P) -> Or<Self, P>
     where
@@ -230,7 +230,7 @@ pub trait Parse {
     /// assert_eq!(output, ((((Homer, Marge), Lisa), Maggie), Bart));
     /// assert_eq!(remaining, "Milhouse");
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn then<P>(self, parser: P) -> Then<Self, P>
     where
@@ -265,7 +265,7 @@ pub trait Parse {
     /// assert_eq!(output, 123);
     /// assert_eq!(remaining, "");
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn then_skip<L: Lex>(self, lexer: L) -> ThenSkip<L, Self>
     where
@@ -334,7 +334,7 @@ pub trait Parse {
     ///     Green,
     ///     Blue,
     /// }
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn swap(self) -> Swapped<Self>
     where
@@ -368,7 +368,7 @@ pub trait Parse {
     ///     int::<u32>().pad().many(1..).parse("   123\n\t456\t789\r\n    10")?,
     ///     (vec![123, 456, 789, 10], "")
     /// );
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn pad(self) -> Pad<LexMany<WhiteSpace>, LexMany<WhiteSpace>, Self>
     where
@@ -391,7 +391,7 @@ pub trait Parse {
     /// let parser = int::<u8>().pad_with(char('['), char(']'));
     ///
     /// assert_eq!(parser.parse("[123]")?, (123, ""));
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn pad_with<L: Lex, R: Lex>(self, left: L, right: R) -> Pad<L, R, Self>
     where
@@ -427,7 +427,7 @@ where
     }
 }
 
-/// Functions that take &str and return `Result<(O, &str), parsely::Error>` impl Parse and can be used with Parsely combinators.
+/// Functions that take &str and return `Result<(O, &str), parsely::InProgressError>` impl Parse and can be used with Parsely combinators.
 ///
 /// The output of the parser is returned on the left hand side.
 ///
@@ -458,14 +458,14 @@ where
 /// let (output, remaining) = char('#').skip_then(hex_rgb).parse("#AABBCC")?;
 /// assert_eq!(output, Rgb(170, 187, 204));
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// The type alias has a lifetime parameter but it can usually be elided: ```_``.
 /// It's the lifetime `'i` of the input string:  `&'i str`
 impl<F, O> Parse for F
 where
-    F: Fn(&str) -> Result<(O, &str), crate::Error>,
+    F: Fn(&str) -> Result<(O, &str), crate::InProgressError>,
 {
     type Output = O;
 

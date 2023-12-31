@@ -23,7 +23,7 @@ use crate::{
 ///     # Ok((input, ""))
 /// }
 /// ```
-pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
+pub type LexResult<'i> = Result<(&'i str, &'i str), crate::InProgressError<'i>>;
 
 /// This trait is implemented by all Parsely lexers.
 ///
@@ -33,7 +33,7 @@ pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
 ///
 /// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
 ///
-/// Most Parsely parser combinators will be built up from primitives that implement Lex such as [`char()`], [`token()`] and [`digit()`].
+/// Most Parsely parser combinators will be built up from primitives that implement Lex such as [`char`], [`str`], [`any`] and [`char_if()`].
 ///
 /// We'll refer to types that implement [`Lex`] as Lexers.
 ///
@@ -42,9 +42,8 @@ pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
 /// The [`combinator`] module defines the concrete types that these methods return.
 ///
 /// [`lex`]: Lex::lex
-/// [`char()`]: crate::char
-/// [`token()`]: crate::token
-/// [`digit()`]: crate::digit
+/// [`any`]: crate::any
+/// [`char_if()`]: crate::char_if
 /// [`combinator`]: crate::combinator
 pub trait Lex {
     /// Match part or all of an input str, breaking it down into smaller pieces to make parsing easier.
@@ -124,7 +123,7 @@ pub trait Lex {
     ///     .or(char('\n'))
     ///     .or(char('\r'));
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     ///
     /// Note that there is a whitespace lexer available, see [`crate::lexer::ws`]
@@ -161,7 +160,7 @@ pub trait Lex {
     ///
     /// assert!(result.is_err());
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn then<L: Lex>(self, lexer: L) -> Then<Self, L>
     where
@@ -191,7 +190,7 @@ pub trait Lex {
     /// assert_eq!(output, "123");
     /// assert_eq!(remaining, "");
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn then_skip<L: Lex>(self, lexer: L) -> ThenSkip<L, Self>
     where
@@ -223,7 +222,7 @@ pub trait Lex {
     /// assert_eq!(output, 123);
     /// assert_eq!(remaining, "");
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn skip_then<P: Parse>(self, parser: P) -> SkipThen<Self, P>
     where
@@ -250,7 +249,7 @@ pub trait Lex {
     /// let (output, remaining) = parser.parse("localhost")?;
     /// assert_eq!(output, Ipv4Addr::LOCALHOST);
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn map<F, O>(self, f: F) -> Map<Self, F>
     where
@@ -262,7 +261,7 @@ pub trait Lex {
 
     /// Creates a parser by mapping the matched part of this lexer to an output type.
     ///
-    /// Unlike [`map()`], this returns a `Result<T, parsely::Error>` in case of failed conversions.
+    /// Unlike [`map()`], this returns a `Result<T, parsely::InProgressError>` in case of failed conversions.
     ///
     /// This is needed to map matches using [`std::str::FromStr`].
     ///
@@ -282,7 +281,7 @@ pub trait Lex {
     /// let (output, remaining) = bad_ip_parser().parse("127.0.0.1")?;
     /// assert_eq!(output, Ipv4Addr::LOCALHOST);
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn try_map<F, O, E>(self, f: F) -> TryMap<Self, F>
     where
@@ -314,7 +313,7 @@ pub trait Lex {
     ///     int::<u32>().pad().many(1..).parse("   123\n\t456\t789\r\n    10")?,
     ///     (vec![123, 456, 789, 10], "")
     /// );
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn pad(self) -> Pad<LexMany<WhiteSpace>, LexMany<WhiteSpace>, Self>
     where
@@ -337,7 +336,7 @@ pub trait Lex {
     /// let lexer = digit().pad_with(char('['), char(']'));
     ///
     /// assert_eq!(lexer.lex("[1]")?, ("1", ""));
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     fn pad_with<L: Lex, R: Lex>(self, left: L, right: R) -> Pad<L, R, Self>
     where
@@ -350,7 +349,7 @@ impl<F> Lex for F
 where
     F: Fn(&str) -> LexResult<'_>,
 {
-    /// Functions that take &str and return `Result<(&str, &str), parsely::Error>` are Lexers.
+    /// Functions that take &str and return `Result<(&str, &str), parsely::InProgressError>` are Lexers.
     ///
     /// The matched part of the input str is returned on the left hand side.
     ///
@@ -360,7 +359,7 @@ where
     ///
     /// > **Note**: To get proper error spans from your functions you must:
     /// > * call `.offset(input)` on any errors returned by built in lexers
-    /// > * use `parsely::Error::no_match(input)` to create an Error
+    /// > * use `parsely::InProgressError::no_match(input)` to create an Error
     /// >
     /// > where `input` is the argument to your function that is the input to be lexed
     ///
@@ -370,12 +369,12 @@ where
     ///
     /// [elides]: https://doc.rust-lang.org/nomicon/lifetime-elision.html
     ///
-    /// The equivalent expanded signature is `fn my_lexer(input: &str) -> Result<(&str, &str), parsely::Error<'_>>`
+    /// The equivalent expanded signature is `fn my_lexer(input: &str) -> Result<(&str, &str), parsely::InProgressError<'_>>`
     /// ```
     /// use parsely::{digit, Lex, LexResult};
     ///
     /// fn my_lexer(input: &str) -> LexResult<'_> {
-    ///     let boundary = input.find("abc").ok_or(parsely::Error::no_match(input))?;
+    ///     let boundary = input.find("abc").ok_or(parsely::InProgressError::no_match(input))?;
     ///     let (output, remaining) = input.split_at(boundary + 3);
     ///
     ///     Ok((output, remaining))
@@ -390,7 +389,7 @@ where
     /// assert_eq!(output, "...abc123.abc123..abc123");
     /// assert_eq!(remaining, "...");
     ///
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     ///
     /// Note the lack of `()` after `my_lexer` when it is used as part of a chain.
@@ -417,7 +416,7 @@ impl Lex for char {
 
                 Ok(input.split_at(boundary))
             }
-            _ => Err(crate::Error::no_match(input)),
+            _ => Err(crate::InProgressError::no_match(input)),
         }
     }
 }
@@ -430,7 +429,7 @@ impl<'a> Lex for &'a str {
         if input.starts_with(self) {
             Ok(input.split_at(self.len()))
         } else {
-            Err(crate::Error::no_match(input))
+            Err(crate::InProgressError::no_match(input))
         }
     }
 }

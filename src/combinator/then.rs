@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn then_swap() -> Result<(), crate::Error<'static>> {
+    fn then_swap() -> Result<(), crate::InProgressError<'static>> {
         let red = token("red").map(|_| Color::Red);
         let (output, _) = int::<u8>().pad().then(red).swap().parse("4 red")?;
 

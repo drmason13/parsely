@@ -51,7 +51,7 @@
 //! let hex_rgb = hex_color.map(|((red, green), blue)| Rgb { red, green, blue });
 //!
 //! assert_eq!(hex_rgb.parse("#AABBCC")?, (Rgb { red: 170, green: 187, blue: 204 }, ""));
-//! # Ok::<(), parsely::Error>(())
+//! # Ok::<(), parsely::InProgressError>(())
 //! ```
 
 use crate::{result_ext::*, Lex, Parse};
@@ -131,37 +131,40 @@ impl<L: Lex, T: Parse> Parse for SkipThen<L, T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{char, int, token, Error, Lex, Parse};
+    use crate::{char, int, token, InProgressError, Lex, Parse};
 
     #[test]
-    fn lexer_then_skip_lexer() -> Result<(), Error<'static>> {
+    fn lexer_then_skip_lexer() -> Result<(), InProgressError<'static>> {
         let test = then_skip(token("..."), token("abc"));
 
         assert_eq!(test.lex("abc...")?, ("abc", ""));
 
         let test = then_skip(char('.').many(1..=3), token("abc"));
 
-        assert_eq!(test.lex("abc"), Err(Error::no_match("").offset("abc")));
+        assert_eq!(
+            test.lex("abc"),
+            Err(InProgressError::no_match("").offset("abc"))
+        );
         assert_eq!(test.lex("abc.")?, ("abc", ""));
         assert_eq!(test.lex("abc..")?, ("abc", ""));
         assert_eq!(test.lex("abc...")?, ("abc", ""));
         assert_eq!(test.lex("abc....")?, ("abc", "."));
-        assert_eq!(test.lex("xyz.."), Err(Error::no_match("xyz..")));
-        assert_eq!(test.lex("..xyz"), Err(Error::no_match("..xyz")));
+        assert_eq!(test.lex("xyz.."), Err(InProgressError::no_match("xyz..")));
+        assert_eq!(test.lex("..xyz"), Err(InProgressError::no_match("..xyz")));
 
         let test = then_skip(token("abc"), char('.').many(1..=3));
 
-        assert_eq!(test.lex("abc"), Err(Error::no_match("abc")));
+        assert_eq!(test.lex("abc"), Err(InProgressError::no_match("abc")));
         assert_eq!(test.lex(".abc")?, (".", ""));
         assert_eq!(test.lex("..abc")?, ("..", ""));
         assert_eq!(test.lex("...abc")?, ("...", ""));
         assert_eq!(
             test.lex("....abc"),
-            Err(Error::no_match(".abc").offset("....abc"))
+            Err(InProgressError::no_match(".abc").offset("....abc"))
         );
         assert_eq!(
             test.lex("...xyz"),
-            Err(Error::no_match("xyz").offset("...xyz"))
+            Err(InProgressError::no_match("xyz").offset("...xyz"))
         );
         assert_eq!(test.lex("..abcd")?, ("..", "d"));
 
@@ -169,14 +172,17 @@ mod test {
     }
 
     #[test]
-    fn parser_then_skip_lexer() -> Result<(), Error<'static>> {
+    fn parser_then_skip_lexer() -> Result<(), InProgressError<'static>> {
         let test = then_skip(token("..."), int::<u8>());
 
         assert_eq!(test.parse("123...")?, (123, ""));
 
         let test = then_skip(char('.').many(1..=3), int::<u8>());
 
-        assert_eq!(test.parse("123"), Err(Error::no_match("").offset("123")));
+        assert_eq!(
+            test.parse("123"),
+            Err(InProgressError::no_match("").offset("123"))
+        );
         assert_eq!(test.parse("123.")?, (123, ""));
         assert_eq!(test.parse("123..")?, (123, ""));
         assert_eq!(test.parse("123...")?, (123, ""));
@@ -184,7 +190,10 @@ mod test {
 
         let test = then_skip(token("..."), int::<u8>().then_skip(char(',')).many(1..=3));
 
-        assert_eq!(test.parse("123,"), Err(Error::no_match("").offset("123,")));
+        assert_eq!(
+            test.parse("123,"),
+            Err(InProgressError::no_match("").offset("123,"))
+        );
         assert_eq!(test.parse("123,...")?, (vec![123], ""));
         assert_eq!(test.parse("123,....")?, (vec![123], "."));
         assert_eq!(test.parse("123,123,...")?, (vec![123, 123], ""));
@@ -193,86 +202,89 @@ mod test {
         assert_eq!(test.parse("123,123,123,....")?, (vec![123, 123, 123], "."));
         assert_eq!(
             test.parse("123..."),
-            Err(Error::no_match("...").offset("123..."))
+            Err(InProgressError::no_match("...").offset("123..."))
         );
         Ok(())
     }
 
     #[test]
-    fn lexer_skip_then_lexer() -> Result<(), Error<'static>> {
+    fn lexer_skip_then_lexer() -> Result<(), InProgressError<'static>> {
         let test = skip_then(token("..."), token("abc"));
 
         assert_eq!(test.lex("...abc")?, ("abc", ""));
 
         let test = skip_then(char('.').many(1..=3), token("abc"));
 
-        assert_eq!(test.lex("abc"), Err(Error::no_match("abc")));
+        assert_eq!(test.lex("abc"), Err(InProgressError::no_match("abc")));
         assert_eq!(test.lex(".abc")?, ("abc", ""));
         assert_eq!(test.lex("..abc")?, ("abc", ""));
         assert_eq!(test.lex("...abc")?, ("abc", ""));
         assert_eq!(
             test.lex("....abc"),
-            Err(Error::no_match(".abc").offset("....abc"))
+            Err(InProgressError::no_match(".abc").offset("....abc"))
         );
-        assert_eq!(test.lex("xyz.."), Err(Error::no_match("xyz..")));
+        assert_eq!(test.lex("xyz.."), Err(InProgressError::no_match("xyz..")));
         assert_eq!(
             test.lex("..xyz"),
-            Err(Error::no_match("xyz").offset("..xyz"))
+            Err(InProgressError::no_match("xyz").offset("..xyz"))
         );
 
         let test = skip_then(token("abc"), char('.').many(1..=3));
 
-        assert_eq!(test.lex("abc"), Err(Error::no_match("").offset("abc")));
+        assert_eq!(
+            test.lex("abc"),
+            Err(InProgressError::no_match("").offset("abc"))
+        );
         assert_eq!(test.lex("abc.")?, (".", ""));
         assert_eq!(test.lex("abc..")?, ("..", ""));
         assert_eq!(test.lex("abc...")?, ("...", ""));
         assert_eq!(test.lex("abc....")?, ("...", "."));
         assert_eq!(
             test.lex("abcd.."),
-            Err(Error::no_match("d..").offset("abcd.."))
+            Err(InProgressError::no_match("d..").offset("abcd.."))
         );
 
         Ok(())
     }
 
     #[test]
-    fn parser_skip_then_lexer() -> Result<(), Error<'static>> {
+    fn parser_skip_then_lexer() -> Result<(), InProgressError<'static>> {
         let test = skip_then(token("..."), int::<u8>());
 
         assert_eq!(test.parse("...123")?, (123, ""));
 
         let test = skip_then(char('.').many(1..=3), int::<u8>());
 
-        assert_eq!(test.parse("123"), Err(Error::no_match("123")));
+        assert_eq!(test.parse("123"), Err(InProgressError::no_match("123")));
         assert_eq!(test.parse(".123")?, (123, ""));
         assert_eq!(test.parse("..123")?, (123, ""));
         assert_eq!(test.parse("...123")?, (123, ""));
         assert_eq!(
             test.parse("....123"),
-            Err(Error::no_match(".123").offset("....123"))
+            Err(InProgressError::no_match(".123").offset("....123"))
         );
 
         let test = skip_then(token("..."), char('>').skip_then(int::<u8>()).many(1..=3));
 
-        assert_eq!(test.parse(">123"), Err(Error::no_match(">123")));
+        assert_eq!(test.parse(">123"), Err(InProgressError::no_match(">123")));
         assert_eq!(test.parse("...>123")?, (vec![123], ""));
         assert_eq!(
             test.parse("....>123"),
-            Err(Error::no_match(".>123").offset("....>123"))
+            Err(InProgressError::no_match(".>123").offset("....>123"))
         );
         assert_eq!(test.parse("...>123>123")?, (vec![123, 123], ""));
         assert_eq!(
             test.parse("....>123>123"),
-            Err(Error::no_match(".>123>123").offset("....>123>123"))
+            Err(InProgressError::no_match(".>123>123").offset("....>123>123"))
         );
         assert_eq!(test.parse("...>123>123>123")?, (vec![123, 123, 123], ""));
         assert_eq!(
             test.parse("....>123>123>123"),
-            Err(Error::no_match(".>123>123>123").offset("....>123>123>123"))
+            Err(InProgressError::no_match(".>123>123>123").offset("....>123>123>123"))
         );
         assert_eq!(
             test.parse("...123"),
-            Err(Error::no_match("123").offset("...123"))
+            Err(InProgressError::no_match("123").offset("...123"))
         );
         Ok(())
     }

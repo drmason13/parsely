@@ -107,7 +107,7 @@ fn json(input: &str) -> ParseResult<'_, Value> {
     value.parse(input).offset(input)
 }
 
-fn main() -> Result<(), parsely::ErrorOwned> {
+fn main() -> Result<(), parsely::Error> {
     println!("Please enter some JSON to be parsed:");
 
     let stdin = std::io::stdin();
@@ -213,7 +213,7 @@ mod json_tests {
     fn escapes() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(
             escape().parse(r#"\z"#),
-            Err(parsely::Error::failed_conversion(r"\z"))
+            Err(parsely::InProgressError::failed_conversion(r"\z"))
         );
         assert_eq!(escape().parse(r#"\""#)?, ('"', ""));
         assert_eq!(escape().parse(r#"\t"#)?, ('\t', ""));
@@ -225,7 +225,7 @@ mod json_tests {
 
         assert_eq!(
             json(r#""\z""#),
-            Err(parsely::Error::no_match(r#"\z""#).offset(r#""\z""#))
+            Err(parsely::InProgressError::no_match(r#"\z""#).offset(r#""\z""#))
         );
         assert_eq!(json(r#""\"""#)?.0, Value::String(String::from("\"")));
         assert_eq!(json(r#""\n""#)?.0, Value::String(String::from("\n")));

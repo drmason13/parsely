@@ -35,7 +35,7 @@ pub struct Switch<L, T, const N: usize> {
 ///     .or("quux".map(|_| MyTokens::Quux));
 ///
 /// assert_eq!(my_token_parser.parse("foo 123")?, (MyTokens::Foo, " 123"));
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// The above is simplified by using `switch()`
@@ -58,7 +58,7 @@ pub struct Switch<L, T, const N: usize> {
 /// ]);
 ///
 /// assert_eq!(my_token_parser.parse("foo 123")?, (MyTokens::Foo, " 123"));
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn switch<L, T, const N: usize>(items: [(L, T); N]) -> Switch<L, T, N> {
     Switch { items }

@@ -23,7 +23,7 @@
 //! // lexing split the string into two - first the part that matched, then the remaining part
 //! assert_eq!(matched, "match this");
 //! assert_eq!(remaining, ", but not this");
-//! # Ok::<(), parsely::Error>(())
+//! # Ok::<(), parsely::InProgressError>(())
 //! ```
 //!
 //! Combine two lexers with [`then`](crate::combinator::then):
@@ -51,7 +51,7 @@
 //! let (matched, remaining) = combined.lex("match this, then this")?;
 //! assert_eq!(matched, "match this, then this");
 //! assert_eq!(remaining, "");
-//! # Ok::<(), parsely::Error>(())
+//! # Ok::<(), parsely::InProgressError>(())
 //! ```
 //!
 //! ##How do I make a parser from my lexer?

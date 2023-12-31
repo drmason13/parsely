@@ -14,10 +14,10 @@ impl Lex for Digit {
             if c.is_digit(self.radix) {
                 Ok(input.split_at(c.len_utf8()))
             } else {
-                Err(crate::Error::no_match(input))
+                Err(crate::InProgressError::no_match(input))
             }
         } else {
-            Err(crate::Error::no_match(input))
+            Err(crate::InProgressError::no_match(input))
         }
     }
 }
@@ -67,7 +67,7 @@ pub fn non_zero_digit() -> impl Lex + Clone {
 /// assert_eq!(("a", "bc"), hex().lex("abc")?);
 ///
 /// assert_eq!(("0123456789abcdef", "g"), hex().many(1..).lex("0123456789abcdefg")?);
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Convert to u8:
@@ -77,7 +77,7 @@ pub fn non_zero_digit() -> impl Lex + Clone {
 ///
 /// assert_eq!((171, "c"), hex().count(2).try_map(|s| u8::from_str_radix(s, 16)).parse("abc")?);
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Convert to `Vec<u8>`:
@@ -89,7 +89,7 @@ pub fn non_zero_digit() -> impl Lex + Clone {
 ///
 /// assert_eq!((vec![9, 10, 11, 12, 7], ""), hex_bytes.parse("090A0B0C7")?);
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn hex() -> Digit {
     Digit { radix: 16 }

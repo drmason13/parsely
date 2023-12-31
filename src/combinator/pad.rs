@@ -67,7 +67,7 @@ where
 /// let (matched, remaining) = fixed_lexer.lex(input)?;
 /// assert_eq!(matched, "99:");
 /// assert_eq!(remaining, "");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// See [`Parse::pad()`] for more documentation and examples.
@@ -82,7 +82,7 @@ mod test {
     use crate::{char, digit, int};
 
     #[test]
-    fn pad_works() -> Result<(), crate::ErrorOwned> {
+    fn pad_works() -> Result<(), crate::Error> {
         let lexer = ":".pad();
         let input = ":\r\n\r\n";
         let (matched, remaining) = lexer.lex(input)?;
@@ -92,7 +92,7 @@ mod test {
     }
 
     #[test]
-    fn pad_sometimes_does_not_work() -> Result<(), crate::ErrorOwned> {
+    fn pad_sometimes_does_not_work() -> Result<(), crate::Error> {
         let lexer = "foo".then(":".pad());
         let input = "foo:\r\n\r\n";
 

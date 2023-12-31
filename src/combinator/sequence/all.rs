@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::ControlFlow;
 
-use crate::{end, Error, Lex, LexResult, Parse, ParseResult};
+use crate::{end, InProgressError, Lex, LexResult, Parse, ParseResult};
 
 use super::{many, traits::*, Delimited, Many};
 
@@ -31,7 +31,7 @@ impl<T, C> All<T, C> {
     ///
     /// let result = csv_parser.parse("1,2,3foo");
     /// assert_eq!(result.unwrap_err().remaining, "foo");
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     pub fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, C>
     where
@@ -88,7 +88,7 @@ where
         working_input: &mut &'i str,
         count: &mut usize,
         offset: &mut usize,
-        error: &mut Option<Error<'i>>,
+        error: &mut Option<InProgressError<'i>>,
         outputs: &mut C,
     ) -> ControlFlow<(), &'i str> {
         self.many
@@ -126,7 +126,7 @@ where
 
         if self.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok((outputs, &input[offset..]))
@@ -146,7 +146,7 @@ where
         working_input: &mut &'i str,
         count: &mut usize,
         offset: &mut usize,
-        error: &mut Option<Error<'i>>,
+        error: &mut Option<InProgressError<'i>>,
     ) -> ControlFlow<(), &'i str> {
         self.many
             .lex_one(input, working_input, count, offset, error)
@@ -175,7 +175,7 @@ impl<L: Lex, C> Lex for All<L, C> {
 
         if self.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok(input.split_at(offset))
@@ -206,7 +206,7 @@ mod tests {
     use crate::{char, int, Lex, Parse};
 
     #[test]
-    fn test_all_with_delimiter() -> Result<(), crate::ErrorOwned> {
+    fn test_all_with_delimiter() -> Result<(), crate::Error> {
         let csv_parser = int::<u8>().all(1).delimiter(char(','));
 
         let (output, remaining) = csv_parser.parse("1,2,3")?;
@@ -220,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    fn test_all_collect() -> Result<(), crate::ErrorOwned> {
+    fn test_all_collect() -> Result<(), crate::Error> {
         // collecting into a HashSet is weird but perfectly valid!
         let foo = "foo".map(|_| 7).all(3).collect::<HashSet<u32>>();
 

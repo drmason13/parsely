@@ -34,7 +34,7 @@
 //! let (output, _) = numbers_parser.parse("123,456,789")?;
 //! assert_eq!(output, vec![123, 456, 789]);
 //! #
-//! # Ok::<(), parsely::Error>(())
+//! # Ok::<(), parsely::InProgressError>(())
 //! ```
 //!
 //! The range argument to [`many()`] declares how many times the inner item must match.
@@ -107,7 +107,7 @@ pub(crate) fn min_max_from_bounds(range: impl RangeBounds<usize>) -> (usize, usi
 pub mod traits {
     use std::ops::ControlFlow;
 
-    use crate::{Error, Lex, Parse};
+    use crate::{InProgressError, Lex, Parse};
 
     /// Describes how a sequence combinator behaves while processing input
     pub trait Sequence: Collect {
@@ -148,7 +148,7 @@ pub mod traits {
             working_input: &mut &'i str,
             count: &mut usize,
             offset: &mut usize,
-            error: &mut Option<Error<'i>>,
+            error: &mut Option<InProgressError<'i>>,
         ) -> ControlFlow<(), &'i str>;
     }
 
@@ -167,7 +167,7 @@ pub mod traits {
             working_input: &mut &'i str,
             count: &mut usize,
             offset: &mut usize,
-            error: &mut Option<Error<'i>>,
+            error: &mut Option<InProgressError<'i>>,
             outputs: &mut C,
         ) -> ControlFlow<(), &'i str>;
     }

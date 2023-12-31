@@ -22,7 +22,7 @@ pub struct Color {
 }
 
 impl FromStr for Color {
-    type Err = parsely::ErrorOwned;
+    type Err = parsely::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(hex_color(s)?.0)

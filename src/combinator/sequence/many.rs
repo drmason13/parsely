@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::ops::ControlFlow;
 use std::{fmt, ops::RangeBounds};
 
-use crate::{result_ext::*, Error, Lex, LexResult, Parse, ParseResult};
+use crate::{result_ext::*, InProgressError, Lex, LexResult, Parse, ParseResult};
 
 use super::{min_max_from_bounds, or_until, traits::*, Delimited, OrUntil, MAX_LIMIT};
 
@@ -66,7 +66,7 @@ impl<T, C> Many<T, C> {
     ///
     /// let result = csv_parser.parse("1,2,3foo");
     /// assert_eq!(result.unwrap_err().remaining, "foo");
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     pub fn delimiter<L: Lex>(self, delimiter: L) -> Delimited<L, Self, C>
     where
@@ -98,7 +98,7 @@ impl<T, C> Many<T, C> {
     /// #    linked_list.push_back(3);
     /// #    linked_list
     /// # });
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     ///
     /// Collect into a HashMap:
@@ -126,7 +126,7 @@ impl<T, C> Many<T, C> {
     /// #     map.insert("c".to_string(), 3);
     /// #     map
     /// # });
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     #[inline(always)]
     pub fn collect<C2>(self) -> Many<T, C2>
     where
@@ -182,7 +182,7 @@ where
         working_input: &mut &'i str,
         count: &mut usize,
         offset: &mut usize,
-        error: &mut Option<Error<'i>>,
+        error: &mut Option<InProgressError<'i>>,
         outputs: &mut C,
     ) -> ControlFlow<(), &'i str> {
         match self.item.parse(working_input).offset(input) {
@@ -231,7 +231,7 @@ where
 
         if self.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok((outputs, &input[offset..]))
@@ -251,7 +251,7 @@ where
         working_input: &mut &'i str,
         count: &mut usize,
         offset: &mut usize,
-        error: &mut Option<Error<'i>>,
+        error: &mut Option<InProgressError<'i>>,
     ) -> ControlFlow<(), &'i str> {
         match self.item.lex(working_input).offset(input) {
             Ok((_, remaining)) => {
@@ -290,7 +290,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 
         if self.error_condition(working_input, count) {
             Err(error
-                .unwrap_or_else(|| crate::Error::no_match(working_input))
+                .unwrap_or_else(|| crate::InProgressError::no_match(working_input))
                 .offset(input))
         } else {
             Ok(input.split_at(offset))
@@ -332,7 +332,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 ///
 /// let result = one_or_more_digits.lex("abc");
 /// assert!(result.is_err());
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Chain with [`Lex::many()`]:
@@ -349,7 +349,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 /// # let (output, remaining) = zero_or_more_digits.lex("abc")?;
 /// # assert_eq!(output, "");
 /// # assert_eq!(remaining, "abc");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Min and Max:
@@ -369,7 +369,7 @@ impl<L: Lex, C> Lex for Many<L, C> {
 /// let (output, remaining) = three_or_four_digits.lex("12345")?;
 /// assert_eq!(output, "1234");
 /// assert_eq!(remaining, "5");
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn many<T, O>(range: impl RangeBounds<usize>, item: T) -> Many<T, Vec<O>> {
     let (min, max) = min_max_from_bounds(range);
@@ -421,13 +421,13 @@ mod tests {
     #[derive(PartialEq, Debug, Clone)]
     struct A;
     impl FromStr for A {
-        type Err = crate::ErrorOwned;
+        type Err = crate::Error;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             if s == "a" {
                 Ok(A)
             } else {
-                Err(crate::Error::no_match(s))?
+                Err(crate::InProgressError::no_match(s))?
             }
         }
     }

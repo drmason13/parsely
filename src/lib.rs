@@ -76,7 +76,7 @@
 //! [`FromStr`]: std::str::FromStr
 //! [`impl FromStr`]: std::str::FromStr
 mod error;
-pub use error::{result_ext, Error, ErrorOwned, ErrorReason};
+pub use error::{result_ext, Error, ErrorReason, InProgressError};
 
 mod lex;
 pub mod lexer;
@@ -139,9 +139,9 @@ mod test_automation {
                     .then(char('\n')),
             )
             .lex(&readme)
-            .own_err()?;
+            .complete()?;
 
-        let (_, end) = until(fence).lex(remaining).own_err()?;
+        let (_, end) = until(fence).lex(remaining).complete()?;
 
         let output = {
             let mut s = start.to_string();

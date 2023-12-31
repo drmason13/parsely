@@ -30,7 +30,7 @@ impl<'p> Token<'p, CaseSensitive> {
     /// assert!(case_sensitive.lex("aBc").is_err());
     ///
     /// assert_eq!(case_insensitive.lex("aBc")?, ("aBc", ""));
-    /// # Ok::<(), parsely::Error>(())
+    /// # Ok::<(), parsely::InProgressError>(())
     /// ```
     pub fn any_case(self) -> Token<'p, CaseInsensitive> {
         Token(self.0, PhantomData)
@@ -42,7 +42,7 @@ impl<'p> Lex for Token<'p, CaseSensitive> {
         if input.starts_with(self.0) {
             Ok(input.split_at(self.0.len()))
         } else {
-            Err(crate::Error::no_match(input))
+            Err(crate::InProgressError::no_match(input))
         }
     }
 }
@@ -53,7 +53,7 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
         if input.to_uppercase().starts_with(&self.0.to_uppercase()) {
             Ok(input.split_at(self.0.len()))
         } else {
-            Err(crate::Error::no_match(input))
+            Err(crate::InProgressError::no_match(input))
         }
     }
 }
@@ -82,7 +82,7 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 /// assert_eq!(output, "FOO");
 /// assert_eq!(remaining, " 123");
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// [`&'static str`](prim@str) literals impl [`Lex`] directly by wraping them in `token()`.
@@ -121,7 +121,7 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 /// assert_eq!(output, Foo);
 /// assert_eq!(result, " 123");
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn token(token: &str) -> Token<CaseSensitive> {
     Token(token, PhantomData)

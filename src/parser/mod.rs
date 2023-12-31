@@ -15,7 +15,7 @@
 //!
 //! assert_eq!(output, 123);
 //! assert_eq!(remaining, "abc");
-//! # Ok::<(), parsely::Error>(())
+//! # Ok::<(), parsely::InProgressError>(())
 //! ```
 //!
 //! Custom types can be parsed using map and switch. Here's a snippet from the [json example]
@@ -46,7 +46,7 @@
 //!
 //! assert_eq!(bool().parse(r"true")?.0, true);
 //! assert_eq!(bool().parse(r"false")?.0, false);
-//! # Ok::<(), parsely::Error>(())
+//! # Ok::<(), parsely::InProgressError>(())
 //! ```
 //!
 //! See also [`lexer`] for types implementing [`Lex`].

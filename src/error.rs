@@ -10,10 +10,13 @@ use std::fmt;
 ///
 /// They simply store two slices of the original [`&str`](str) input: `remaining` and `input`
 ///
+/// This means it is cheap to create and clone, once the parsing is finished you will often want to convert this error type into a [`parsely::InProgressError`] by [`complete()`]-ing it.
+///
 /// [`parse`]: crate::Parse::parse()
 /// [`lex`]: crate::Lex::lex()
+/// [`complete()`]: crate::InProgressError::complete
 #[derive(PartialEq, Debug)]
-pub struct Error<'i> {
+pub struct InProgressError<'i> {
     /// The reason for the error
     pub reason: ErrorReason,
 
@@ -24,12 +27,49 @@ pub struct Error<'i> {
     pub input: &'i str,
 }
 
-impl<'i> Error<'i> {
+pub enum AnyError<'i> {
+    Cheap(InProgressError<'i>),
+    Annotated {
+        error: InProgressError<'i>,
+        message: Vec<String>,
+    },
+    Complete(Error),
+}
+
+impl<'i> From<InProgressError<'i>> for AnyError<'i> {
+    fn from(value: InProgressError<'i>) -> Self {
+        AnyError::Cheap(value)
+    }
+}
+
+impl<'i> From<Error> for AnyError<'i> {
+    fn from(value: Error) -> Self {
+        AnyError::Complete(value)
+    }
+}
+
+pub fn no_match(input: &str) -> InProgressError<'_> {
+    InProgressError {
+        input,
+        remaining: input,
+        reason: ErrorReason::NoMatch,
+    }
+}
+
+pub fn failed_conversion(input: &str) -> InProgressError<'_> {
+    InProgressError {
+        input,
+        remaining: input,
+        reason: ErrorReason::FailedConversion,
+    }
+}
+
+impl<'i> InProgressError<'i> {
     /// Create a new error at the point that a lexer failed to match the input
     ///
     /// See [`ErrorReason::NoMatch`]
     pub fn no_match(input: &'i str) -> Self {
-        Error {
+        InProgressError {
             input,
             remaining: input,
             reason: ErrorReason::NoMatch,
@@ -40,7 +80,7 @@ impl<'i> Error<'i> {
     ///
     /// See [`ErrorReason::FailedConversion`]
     pub fn failed_conversion(input: &'i str) -> Self {
-        Error {
+        InProgressError {
             input,
             remaining: input,
             reason: ErrorReason::FailedConversion,
@@ -75,7 +115,7 @@ impl<'i> Error<'i> {
     /// [`.many(0..)`]: crate::combinator::many
     /// [`.optional()`]: crate::combinator::optional
     /// [`.or()`]: crate::combinator::or
-    pub fn merge(self, other: Error<'i>) -> Error<'i> {
+    pub fn merge(self, other: InProgressError<'i>) -> InProgressError<'i> {
         let mine = self.remaining.len();
         let theirs = other.remaining.len();
 
@@ -88,8 +128,8 @@ impl<'i> Error<'i> {
     }
 
     /// This returns an ErrorOwned built from this Error
-    pub fn own_err(&self) -> ErrorOwned {
-        ErrorOwned {
+    pub fn complete(&self) -> Error {
+        Error {
             reason: self.reason,
             remaining: self.remaining.to_string(),
             input: self.input.to_string(),
@@ -112,8 +152,8 @@ pub enum ErrorReason {
     FailedConversion,
 }
 
-impl<'i> std::error::Error for Error<'i> {}
-impl<'i> fmt::Display for Error<'i> {
+impl<'i> std::error::Error for InProgressError<'i> {}
+impl<'i> fmt::Display for InProgressError<'i> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.reason {
             ErrorReason::NoMatch => write!(f, "No Match"),
@@ -126,24 +166,24 @@ impl<'i> fmt::Display for Error<'i> {
 ///
 /// They provide methods on [`Result`]s directly to reduce the need to pepper your parsers with `.map_err(|e| ...)`
 pub mod result_ext {
-    use crate::{Error, ErrorOwned, ParseResult};
+    use crate::{Error, InProgressError, ParseResult};
 
-    /// This trait is used to extend [`Result<T, parsely::Error>`]
+    /// This trait is used to extend [`Result<T, parsely::InProgressError>`]
     pub trait ResultExtParselyError<'i, O> {
-        /// Calls [`.offset()`] on the parsely::Error inside
+        /// Calls [`.offset()`] on the parsely::InProgressError inside
         ///
         /// [`.offset()`]: Error::offset()
         fn offset(self, input: &'i str) -> Self;
 
-        /// Calls [`.own_err()`] on the parsely::Error inside
+        /// Calls [`.complete()`] on the parsely::InProgressError inside
         ///
-        /// [`.own_err()`]: Error::own_err()
-        fn own_err(self) -> Result<(O, &'i str), ErrorOwned>;
+        /// [`.complete()`]: Error::complete()
+        fn complete(self) -> Result<(O, &'i str), Error>;
 
-        /// Calls [`.merge()`] on the parsely::Error inside
+        /// Calls [`.merge()`] on the parsely::InProgressError inside
         ///
         /// [`.merge()`]: Error::merge()
-        fn merge(self, other: Error<'i>) -> Result<(O, &'i str), Error<'i>>;
+        fn merge(self, other: InProgressError<'i>) -> Result<(O, &'i str), InProgressError<'i>>;
     }
 
     impl<'i, O> ResultExtParselyError<'i, O> for ParseResult<'i, O> {
@@ -151,11 +191,11 @@ pub mod result_ext {
             self.map_err(|e| e.offset(input))
         }
 
-        fn own_err(self) -> Result<(O, &'i str), ErrorOwned> {
-            self.map_err(|e| e.own_err())
+        fn complete(self) -> Result<(O, &'i str), Error> {
+            self.map_err(|e| e.complete())
         }
 
-        fn merge(self, other: Error<'i>) -> Result<(O, &'i str), Error<'i>> {
+        fn merge(self, other: InProgressError<'i>) -> Result<(O, &'i str), InProgressError<'i>> {
             self.map_err(|e| e.merge(other))
         }
     }
@@ -163,28 +203,33 @@ pub mod result_ext {
     /// This trait used to extend [`Result<T, E>`] with methods to convert `E` into [`Error`].
     pub trait ResultExtGenericError<'i, O> {
         /// Replaces the error inside with a [`FailedConversion`](crate::ErrorReason::FailedConversion) [`Error`]
-        fn fail_conversion(self, input: &'i str) -> Result<O, Error<'i>>;
+        fn fail_conversion(self, input: &'i str) -> Result<O, InProgressError<'i>>;
     }
 
     impl<'i, O, E> ResultExtGenericError<'i, O> for Result<O, E> {
-        fn fail_conversion(self, input: &'i str) -> Result<O, Error<'i>> {
-            self.map_err(|_| Error::failed_conversion(input))
+        fn fail_conversion(self, input: &'i str) -> Result<O, InProgressError<'i>> {
+            self.map_err(|_| InProgressError::failed_conversion(input))
         }
     }
 }
 
-/// An owned version of [`Error`].
+/// The output of a *complete*, but failed, parsing attempt. Where *complete* is determined by the end user.
 ///
-/// This is useful when a trait does not allow specifying lifetime parameters in an assocaiated Error type.
-/// For example, this error is needed when implementing [`FromStr`]!
+/// All Parsely traits return [`InProgressError`]s since as a library, we cannot know which parsers will be at the top level.
+///
+/// You can call [`.complete()`] on an in progress error to convert it into [`Error`].
 ///
 /// # Example
 ///
-/// Impl [`FromStr`] using a parsely Parser
+/// Impl [`FromStr`] using a parsely Parser.
+///
+/// When implementing the [`FromStr`] trait, the associated Error type has no lifetime parameter (this is very common!).
+///
+/// It is only possible to impl [`FromStr`] by using [`Error`] as the associated Error type because [`InProgressError`] requires a lifetime parameter.
 ///
 /// ```
 /// # use std::str::FromStr;
-/// use parsely::{ErrorOwned, Lex, Parse, ParseResult};
+/// use parsely::{Lex, Parse, ParseResult};
 ///
 /// # const _: &str = stringify! {
 /// struct Foo {
@@ -204,10 +249,10 @@ pub mod result_ext {
 /// }
 ///
 /// impl FromStr for Foo {
-///     type Err = parsely::ErrorOwned;
+///     type Err = parsely::Error;
 ///
 ///     fn from_str(s: &str) -> Result<Self, Self::Err> {
-///         // ? converts the Error into an ErrorOwned for us
+///         // ? converts the InProgressError into an Error for us
 ///         let (foo, _) = parser.parse(s)?;
 ///         Ok(foo)
 ///     }
@@ -215,36 +260,66 @@ pub mod result_ext {
 /// ```
 ///
 /// [`FromStr`]: std::str::FromStr
+/// [`.complete()`]: InProgressError::complete()
 #[derive(PartialEq, Debug)]
-pub struct ErrorOwned {
+pub struct Error {
     /// The reason for the error
     pub reason: ErrorReason,
 
-    /// The remaining unparsed input
-    pub remaining: String,
+    /// The start and end of the input that was matched before erroring
+    ///
+    /// this should start at line 0, column 0 - the start of the input
+    pub matched: Span,
 
-    /// The input to the first parser to run, the *original* input
-    pub input: String,
+    /// The start and end of the remaining unparsed input
+    ///
+    /// this should end at the end of the input
+    pub remaining: Span,
+
+    /// Where in the input the error occurred
+    ///
+    /// This should be equal to the start position of remaining
+    pub failed_at: Position,
 }
 
-impl ErrorOwned {
+/// Describes the start and end of a &str slice of some input
+#[derive(Clone, PartialEq, Debug)]
+pub struct Span {
+    pub start: Position,
+    pub end: Position,
+}
+
+/// Describes a position in a piece of text by line and column count, columns are counted using grapheme clusters
+#[derive(Clone, PartialEq, Debug)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
+}
+
+impl Position {
+    /// Calculates the [`Position`] at the *end* of the given input text
+    pub fn end(input: &str) -> Self {
+        input.graphemes().fold(todo!())
+    }
+}
+
+impl Error {
     /// Returns the part of the input that was matched overall before failure
-    pub fn matched(&self) -> &str {
-        let byte_offset = self.input.len() - self.remaining.len();
+    pub fn matched(&self, input: &str) -> &str {
         &self.input[..byte_offset]
     }
 }
 
-impl<'i> From<Error<'i>> for ErrorOwned {
-    fn from(value: Error<'i>) -> Self {
-        value.own_err()
+impl<'i> From<InProgressError<'i>> for Error {
+    fn from(value: InProgressError<'i>) -> Self {
+        value.complete()
     }
 }
 
-impl std::error::Error for ErrorOwned {}
-impl fmt::Display for ErrorOwned {
+impl std::error::Error for Error {}
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let error = Error {
+        let error = InProgressError {
             reason: self.reason,
             remaining: &self.remaining,
             input: &self.input,
@@ -259,22 +334,22 @@ mod tests {
     use super::*;
     use crate::*;
 
-    fn assert_matched<T: fmt::Debug>(error: &Result<T, Error>, expected: &str) {
+    fn assert_matched<T: fmt::Debug>(error: &Result<T, InProgressError>, expected: &str) {
         let error = error.as_ref().expect_err("no error");
         assert_eq!(error.matched(), expected);
     }
 
-    fn assert_remaining<T: fmt::Debug>(error: &Result<T, Error>, expected: &str) {
+    fn assert_remaining<T: fmt::Debug>(error: &Result<T, InProgressError>, expected: &str) {
         let error = error.as_ref().expect_err("no error");
         assert_eq!(error.remaining, expected);
     }
 
-    fn assert_input<T: fmt::Debug>(error: &Result<T, Error>, expected: &str) {
+    fn assert_input<T: fmt::Debug>(error: &Result<T, InProgressError>, expected: &str) {
         let error = error.as_ref().expect_err("no error");
         assert_eq!(error.input, expected);
     }
 
-    fn assert_display<T: fmt::Debug>(error: &Result<T, Error>, expected: &str) {
+    fn assert_display<T: fmt::Debug>(error: &Result<T, InProgressError>, expected: &str) {
         let error = error.as_ref().expect_err("no error");
         assert_eq!(error.to_string(), expected.to_string());
     }

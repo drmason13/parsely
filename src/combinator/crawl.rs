@@ -1,4 +1,4 @@
-use crate::{Error, Lex, LexResult, Parse, ParseResult};
+use crate::{InProgressError, Lex, LexResult, Parse, ParseResult};
 
 /// This combinator is returned by [`crawl()`]. See it’s documentation for more details
 pub struct Crawl<T> {
@@ -14,7 +14,7 @@ where
     fn parse<'i>(&self, input: &'i str) -> ParseResult<'i, Self::Output> {
         let mut char_indices = input.char_indices();
         let Some((mut boundary, _)) = char_indices.next() else {
-            return Err(Error::no_match(input));
+            return Err(InProgressError::no_match(input));
         };
 
         loop {
@@ -25,7 +25,7 @@ where
                 };
                 return Ok((matched, &input[boundary..]));
             } else if boundary == input.len() {
-                return Err(Error::no_match(input));
+                return Err(InProgressError::no_match(input));
             } else {
                 boundary = match char_indices.next() {
                     Some((n, _)) => n,
@@ -43,7 +43,7 @@ where
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut char_indices = input.char_indices();
         let Some((mut boundary, _)) = char_indices.next() else {
-            return Err(Error::no_match(input));
+            return Err(InProgressError::no_match(input));
         };
 
         loop {
@@ -54,7 +54,7 @@ where
                 };
                 return Ok((matched, &input[boundary..]));
             } else if boundary == input.len() {
-                return Err(Error::no_match(input));
+                return Err(InProgressError::no_match(input));
             } else {
                 boundary = match char_indices.next() {
                     Some((n, _)) => n,
@@ -99,7 +99,7 @@ where
 /// assert_eq!(matched, "");
 /// assert_eq!(remaining, input);
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// Crawl is often combined with [`Many`](crate::combinator::many) to find all **overlapping** matches.
@@ -125,7 +125,7 @@ where
 /// assert_eq!(&matched, &[2, 1, 1][..]);
 /// assert_eq!(remaining, "ne* pilots!");
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn crawl<T>(item: T) -> Crawl<T> {
     Crawl { item }

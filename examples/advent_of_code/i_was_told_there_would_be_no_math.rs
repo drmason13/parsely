@@ -12,7 +12,7 @@ pub struct Dimensions {
 
 impl FromStr for Dimensions {
     // this is a bit lazy of us, you can map `parsely::Error` to your own error type quite easily - we'll make a proper error handling example soon
-    type Err = parsely::ErrorOwned;
+    type Err = parsely::Error;
 
     // Parsers are defined and used here
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -38,7 +38,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_dimensions() -> Result<(), parsely::ErrorOwned> {
+    fn parse_dimensions() -> Result<(), parsely::Error> {
         assert_eq!(
             "1x2x3".parse::<Dimensions>()?,
             Dimensions {

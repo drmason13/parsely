@@ -17,7 +17,7 @@ impl Lex for Take {
         if input.len() >= self.count {
             Ok(input.split_at(self.count))
         } else {
-            Err(crate::Error::no_match(input))
+            Err(crate::InProgressError::no_match(input))
         }
     }
 }
@@ -66,7 +66,7 @@ pub fn take(count: usize) -> Take {
 /// assert_eq!(ascii_lexer.lex("abc 123 $%^ ẞ")?, ("abc 123 $%^ ", "ẞ"));
 /// assert_eq!(ascii_lexer.lex("abc 123 $%^ ❤️")?, ("abc 123 $%^ ", "❤️"));
 ///
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 ///
 /// A more complex example:
@@ -79,7 +79,7 @@ pub fn take(count: usize) -> Take {
 /// let example = until(&['?', '!'][..]).then_skip(bang_or_question_mark);
 ///
 /// assert_eq!(example.lex("what did you say?!?!?")?, ("what did you say", ""));
-/// # Ok::<(), parsely::Error>(())
+/// # Ok::<(), parsely::InProgressError>(())
 /// ```
 pub fn take_while<F>(condition: F) -> TakeWhile<F>
 where

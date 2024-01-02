@@ -1,4 +1,4 @@
-use parsely::{char_if, Lex, Parse, ParseResult};
+use parsely::{ch_if, Lex, Parse, ParseResult};
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
@@ -25,7 +25,7 @@ fn is_hex_digit(c: char) -> bool {
 }
 
 fn hex_primary() -> impl Parse<Output = u8> {
-    char_if(is_hex_digit).count(2).try_map(from_hex)
+    ch_if(is_hex_digit).count(2).try_map(from_hex)
 }
 
 fn hex_color(input: &str) -> ParseResult<Color> {

@@ -1,5 +1,49 @@
 use crate::Lex;
 
+/// This lexer matches `count` characters if that many are available in the input.
+///
+/// If there are fewer than `count` characters in the input then this lexer fails.
+pub fn take(count: usize) -> Take {
+    Take { count }
+}
+
+/// This lexer matches all characters that satisfy the condition.
+///
+/// If no characters satisfy the condition, the lex is still successful.
+///
+/// # Examples
+///
+/// ```
+/// use parsely::{take_while, Lex};
+///
+/// let ascii_lexer = take_while(|c| c.is_ascii());
+///
+/// assert_eq!(ascii_lexer.lex("abc 123 $%^ â")?, ("abc 123 $%^ ", "â"));
+/// assert_eq!(ascii_lexer.lex("abc 123 $%^ ẞ")?, ("abc 123 $%^ ", "ẞ"));
+/// assert_eq!(ascii_lexer.lex("abc 123 $%^ ❤️")?, ("abc 123 $%^ ", "❤️"));
+///
+/// # Ok::<(), parsely::Error>(())
+/// ```
+///
+/// A more complex example:
+///
+/// ```
+/// use parsely::{take_while, until, Lex};
+///
+/// let bang_or_question_mark = take_while(|c| c == '?' || c == '!');
+///
+/// let example = until(&['?', '!'][..]).then_skip(bang_or_question_mark);
+///
+/// assert_eq!(example.lex("what did you say?!?!?")?, ("what did you say", ""));
+/// # Ok::<(), parsely::Error>(())
+/// ```
+pub fn take_while<F>(condition: F) -> TakeWhile<F>
+where
+    F: Fn(char) -> bool,
+{
+    TakeWhile { condition }
+}
+
 /// This lexer is returned by [`take()`]. See it's documentation for more details.
 #[derive(Clone, Debug)]
 pub struct Take {
@@ -40,52 +84,6 @@ where
 
         Ok(input.split_at(boundary))
     }
-}
-
-/// This lexer matches `count` characters if that many are available in the input.
-///
-/// If there are fewer than `count` characters in the input then this lexer fails.
-pub fn take(count: usize) -> Take {
-    Take { count }
-}
-
-/// This lexer matches all characters that satisfy the condition.
-///
-/// If no characters satisfy the condition, the lex is still successful.
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```
-/// use parsely::{take_while, Lex};
-///
-/// let ascii_lexer = take_while(|c| c.is_ascii());
-///
-/// assert_eq!(ascii_lexer.lex("abc 123 $%^ â")?, ("abc 123 $%^ ", "â"));
-/// assert_eq!(ascii_lexer.lex("abc 123 $%^ ẞ")?, ("abc 123 $%^ ", "ẞ"));
-/// assert_eq!(ascii_lexer.lex("abc 123 $%^ ❤️")?, ("abc 123 $%^ ", "❤️"));
-///
-/// # Ok::<(), parsely::Error>(())
-/// ```
-///
-/// A more complex example:
-///
-/// ```
-/// use parsely::{take_while, until, Lex};
-///
-/// let bang_or_question_mark = take_while(|c| c == '?' || c == '!');
-///
-/// let example = until(&['?', '!'][..]).then_skip(bang_or_question_mark);
-///
-/// assert_eq!(example.lex("what did you say?!?!?")?, ("what did you say", ""));
-/// # Ok::<(), parsely::Error>(())
-/// ```
-pub fn take_while<F>(condition: F) -> TakeWhile<F>
-where
-    F: Fn(char) -> bool,
-{
-    TakeWhile { condition }
 }
 
 #[cfg(test)]

@@ -57,14 +57,14 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lexer::{char, token};
+    use crate::lexer::token;
     use crate::test_utils::*;
 
     #[test]
     fn parsing() {
         test_lexer_batch(
             "token or char",
-            or(token("foo"), char('X')),
+            or(token("foo"), 'X'),
             &[
                 ("foob", Some("foo"), "b"), //
                 ("foobcd", Some("foo"), "bcd"),

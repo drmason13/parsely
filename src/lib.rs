@@ -1,5 +1,6 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(missing_docs)]
+#![doc(test(attr(deny(unused_imports))))]
 
 //! # Parsely 🌿
 //!
@@ -118,7 +119,7 @@ pub(crate) mod test_utils;
 #[doc(hidden)]
 #[cfg(test)]
 mod test_automation {
-    use crate::{char, error::result_ext::*, token, until, ws, Lex};
+    use crate::{error::result_ext::*, token, until, ws, Lex};
 
     #[test]
     fn sync_readme_example() -> Result<(), Box<dyn std::error::Error>> {
@@ -136,7 +137,7 @@ mod test_automation {
                     .then(ws().many(..))
                     .then(token(fence))
                     .then(token("rust"))
-                    .then(char('\n')),
+                    .then('\n'),
             )
             .lex(&readme)
             .own_err()?;

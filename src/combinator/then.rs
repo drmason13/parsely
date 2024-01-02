@@ -77,7 +77,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lexer::{char, token};
+    use crate::lexer::token;
     use crate::test_utils::*;
     use crate::{int, Lex, Parse};
 
@@ -85,7 +85,7 @@ mod tests {
     fn parsing() {
         test_lexer_batch(
             "token then char",
-            then(token("foo"), char('X')),
+            then(token("foo"), 'X'),
             &[
                 ("foo123", None, "foo123"), //
                 ("fooX123", Some("fooX"), "123"),

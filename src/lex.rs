@@ -33,9 +33,7 @@ pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
 ///
 /// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
 ///
-/// Most Parsely parser combinators will be built up from primitives that implement Lex such as [`char()`], [`token()`] and [`digit()`].
-///
-/// We'll refer to types that implement [`Lex`] as Lexers.
+/// We'll refer to types that implement [`Lex`] as lexers. See the [`lexer`] module for a list of Parsley's built in lexers.
 ///
 /// Lexers can be combined using combinators. That's what the majority of the methods in this trait provide: convenient ways to combine different lexers and parsers together.
 ///
@@ -46,6 +44,8 @@ pub type LexResult<'i> = Result<(&'i str, &'i str), crate::Error<'i>>;
 /// [`token()`]: crate::token
 /// [`digit()`]: crate::digit
 /// [`combinator`]: crate::combinator
+/// [`mapped`]: Lex::map
+/// [`lexer`]: crate::lexer
 pub trait Lex {
     /// Match part or all of an input str, breaking it down into smaller pieces to make parsing easier.
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i>;
@@ -100,10 +100,8 @@ pub trait Lex {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, token, Lex};
+    /// use parsely::{token, Lex};
     ///
     /// let for_or_bar = token("foo").or(token("bar"));
     ///
@@ -119,10 +117,10 @@ pub trait Lex {
     ///
     /// // `or` can be chained multiple times:
     ///
-    /// let whitespace = char(' ')
-    ///     .or(char('\t'))
-    ///     .or(char('\n'))
-    ///     .or(char('\r'));
+    /// let whitespace = ' '
+    ///     .or('\t')
+    ///     .or('\n')
+    ///     .or('\r');
     ///
     /// # Ok::<(), parsely::Error>(())
     /// ```
@@ -145,12 +143,10 @@ pub trait Lex {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, hex, Lex};
+    /// use parsely::{hex, Lex};
     ///
-    /// let hex_color = char('#').then(hex().many(1..));
+    /// let hex_color = '#'.then(hex().many(1..));
     ///
     /// let (output, remaining) = hex_color.lex("#C0FFEE")?;
     ///
@@ -182,8 +178,6 @@ pub trait Lex {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
     /// use parsely::{digit, token, Lex};
     ///
@@ -210,8 +204,6 @@ pub trait Lex {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
     /// use parsely::{int, token, Lex, Parse, ParseResult};
     ///
@@ -237,8 +229,6 @@ pub trait Lex {
     /// This is best for mapping specific known tokens. If the conversion might fail you must use [`Lex::try_map()`] instead.
     ///
     /// # Examples
-    ///
-    /// Basic usage:
     ///
     /// ```
     /// use std::net::Ipv4Addr;
@@ -268,15 +258,13 @@ pub trait Lex {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
     /// use std::{net::Ipv4Addr, str::FromStr};
     ///
-    /// use parsely::{char, digit, Lex, Parse};
+    /// use parsely::{digit, Lex, Parse};
     ///
     /// fn bad_ip_parser() -> impl Parse<Output=Ipv4Addr> {
-    ///     digit().many(1..=3).count(4).delimiter(char('.')).try_map(FromStr::from_str)
+    ///     digit().many(1..=3).count(4).delimiter('.').try_map(FromStr::from_str)
     /// }
     ///
     /// let (output, remaining) = bad_ip_parser().parse("127.0.0.1")?;
@@ -299,8 +287,6 @@ pub trait Lex {
     /// The pad combinator will accept arbitrary lexers for the left and right side. See it's documentation for more details.
     ///
     /// # Examples
-    ///
-    /// Basic usage:
     ///
     /// ```
     /// use parsely::{int, Parse};
@@ -329,12 +315,10 @@ pub trait Lex {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, digit, Lex};
+    /// use parsely::{digit, Lex};
     ///
-    /// let lexer = digit().pad_with(char('['), char(']'));
+    /// let lexer = digit().pad_with('[', ']');
     ///
     /// assert_eq!(lexer.lex("[1]")?, ("1", ""));
     /// # Ok::<(), parsely::Error>(())

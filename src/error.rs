@@ -184,7 +184,7 @@ pub mod result_ext {
 ///
 /// ```
 /// # use std::str::FromStr;
-/// use parsely::{ErrorOwned, Lex, Parse, ParseResult};
+/// use parsely::{Lex, Parse, ParseResult};
 ///
 /// # const _: &str = stringify! {
 /// struct Foo {

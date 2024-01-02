@@ -23,7 +23,7 @@
 
 use std::str::FromStr;
 
-use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
+use crate::{ch_if, digit, non_zero_digit, Lex, Parse};
 
 /// Parses a signed integer, i.e. one or more base 10 digits with or without a leading '-' indicating the sign.
 ///
@@ -36,8 +36,6 @@ use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
 ///
 /// # Examples
 ///
-/// Basic usage:
-///
 /// ```
 /// use parsely::{int, Parse};
 ///
@@ -46,9 +44,8 @@ use crate::{char, char_if, digit, non_zero_digit, Lex, Parse};
 /// ```
 ///
 pub fn int<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
-    char('-')
-        .optional()
-        .then(char_if(|c| c.is_ascii_digit() && c != '0'))
+    '-'.optional()
+        .then(ch_if(|c| c.is_ascii_digit() && c != '0'))
         .then(digit().many(0..=100_000))
         .try_map(FromStr::from_str)
 }
@@ -72,8 +69,6 @@ pub fn uint<T: FromStr + Clone>() -> impl Parse<Output = T> + Clone {
 /// Parses a floating point decimal in standard notation (not scientific notation)
 ///
 /// # Examples
-///
-/// Basic usage:
 ///
 /// ```
 /// use parsely::{float, Parse};
@@ -122,8 +117,6 @@ pub fn float_scientific_notation<T: FromStr>() -> impl Parse<Output = T> {
 /// Parses a float or an int.
 ///
 /// # Examples
-///
-/// Basic usage:
 ///
 /// ```
 /// use parsely::{number, Parse};

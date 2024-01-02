@@ -1,4 +1,4 @@
-use parsely::{any, char_if, result_ext::*, token, Lex, Parse, ParseResult};
+use parsely::{any, ch_if, result_ext::*, Lex, Parse, ParseResult};
 
 #[derive(PartialEq, Debug)]
 pub enum Node {
@@ -42,7 +42,7 @@ fn content() -> impl Parse<Output = Node> {
 fn open_tag(input: &str) -> ParseResult<'_, String> {
     " ".optional()
         .skip_then(
-            char_if(|c| !c.is_ascii_whitespace())
+            ch_if(|c| !c.is_ascii_whitespace())
                 .many(1..)
                 .map(str::to_string),
         )
@@ -55,7 +55,7 @@ fn open_tag(input: &str) -> ParseResult<'_, String> {
 fn close_tag(tag: &str) -> impl Lex + '_ {
     " ".optional()
         .then("end ")
-        .then(token(tag).many(1..))
+        .then(tag.many(1..))
         .then(" ".optional())
         .pad_with("{@", "@}")
 }

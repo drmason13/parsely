@@ -18,12 +18,10 @@ impl<T, C> All<T, C> {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, int, Parse};
+    /// use parsely::{int, Parse};
     ///
-    /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
+    /// let csv_parser = int::<u8>().all(1).delimiter(',');
     ///
     /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
     /// assert_eq!(output, vec![1, 2, 3]);
@@ -203,11 +201,11 @@ where
 mod tests {
     use std::collections::HashSet;
 
-    use crate::{char, int, Lex, Parse};
+    use crate::{int, Lex, Parse};
 
     #[test]
     fn test_all_with_delimiter() -> Result<(), crate::ErrorOwned> {
-        let csv_parser = int::<u8>().all(1).delimiter(char(','));
+        let csv_parser = int::<u8>().all(1).delimiter(',');
 
         let (output, remaining) = csv_parser.parse("1,2,3")?;
         assert_eq!(output, vec![1, 2, 3]);

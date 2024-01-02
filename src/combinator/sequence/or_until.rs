@@ -28,12 +28,10 @@ impl<L: Lex, T, C> OrUntil<L, T, C> {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, int, Parse};
+    /// use parsely::{int, Parse};
     ///
-    /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
+    /// let csv_parser = int::<u8>().all(1).delimiter(',');
     ///
     /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
     /// assert_eq!(output, vec![1, 2, 3]);
@@ -221,11 +219,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{char, end, int, Parse};
+    use crate::{end, int, Parse};
 
     #[test]
     fn test_or_until() -> Result<(), crate::ErrorOwned> {
-        let csv_parser = int::<u8>().many(2..=3).or_until(end()).delimiter(char(','));
+        let csv_parser = int::<u8>().many(2..=3).or_until(end()).delimiter(',');
 
         let (output, remaining) = csv_parser.parse("1,2")?;
         assert_eq!(output, vec![1, 2]);

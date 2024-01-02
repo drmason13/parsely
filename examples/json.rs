@@ -4,7 +4,7 @@
 
 use std::{collections::BTreeMap, io::BufRead};
 
-use parsely::{float, int, result_ext::*, ws, Lex, Parse, ParseResult};
+use parsely::{float, int, result_ext::*, switch, Lex, Parse, ParseResult};
 
 // first come all the types we parse into...
 
@@ -34,6 +34,8 @@ pub enum N {
     Float(f64),
 }
 
+// now come all the parsers - most are made in the "function that returns a parser style"
+
 fn number() -> impl Parse<Output = Number> {
     float::<f64>()
         .map(|n| Number(N::Float(n)))
@@ -41,11 +43,7 @@ fn number() -> impl Parse<Output = Number> {
 }
 
 fn bool() -> impl Parse<Output = bool> {
-    "true".map(|_| true).or("false".map(|_| false))
-}
-
-fn null() -> impl Parse<Output = Value> {
-    "null".map(|_| Value::Null)
+    switch([("true", true), ("false", false)])
 }
 
 fn string() -> impl Parse<Output = String> {
@@ -69,42 +67,39 @@ fn escape() -> impl Parse<Output = char> {
     )
 }
 
-// note that fn as parser is used here (and for map) because returning `impl Parse<Output = Vec<Value>>` would create a "recursive opaque type"
-fn array(input: &str) -> ParseResult<'_, Vec<Value>> {
-    parsely::combinator::pad('[', ']', value.many(..).delimiter(','.then(ws().many(..))))
+fn array() -> impl Parse<Output = Vec<Value>> {
+    value.many(..).delimiter(','.pad()).pad_with('[', ']')
+}
+
+fn map() -> impl Parse<Output = Map<String, Value>> {
+    string()
+        .then_skip(':'.pad())
+        .then(value)
+        .many(..)
+        .delimiter(','.pad())
+        .collect::<BTreeMap<String, Value>>()
+        .map(Map)
+        .pad()
+        .pad_with('{', '}')
+}
+
+// note that fn as parser is used for value because returning `impl Parse<Output = Value>` would create a "recursive opaque type"
+// fn value() -> impl Parse<Output = Value> {
+fn value(input: &str) -> ParseResult<Value> {
+    ("null".map(|_| Value::Null))
+        .or(bool().map(Value::Bool))
+        .or(number().map(Value::Number))
+        .or(string().map(Value::String))
+        .or(array().map(Value::Array))
+        .or(map().map(Value::Object))
+        .pad()
         .parse(input)
         .offset(input)
 }
 
-fn map(input: &str) -> ParseResult<'_, Map<String, Value>> {
-    parsely::combinator::pad(
-        '{'.then(ws().many(..)),
-        ws().many(..).then('}'),
-        string()
-            .then_skip(':'.pad())
-            .then(value)
-            .many(..)
-            .delimiter(','.pad())
-            .collect::<BTreeMap<String, Value>>(),
-    )
-    .map(Map)
-    .parse(input)
-    .offset(input)
-}
-
-fn value(input: &str) -> ParseResult<Value> {
-    null()
-        .or(bool().map(Value::Bool))
-        .or(number().map(Value::Number))
-        .or(string().map(Value::String))
-        .or(array.map(Value::Array))
-        .or(map.map(Value::Object))
-        .pad()
-        .parse(input)
-}
-
-fn json(input: &str) -> ParseResult<'_, Value> {
-    value.parse(input).offset(input)
+// this is just an alias for value
+fn json(input: &str) -> ParseResult<Value> {
+    value(input)
 }
 
 fn main() -> Result<(), parsely::ErrorOwned> {

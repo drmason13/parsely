@@ -85,17 +85,17 @@ where
 /// Match a token anywhere inside a string.
 ///
 /// ```
-/// use parsely::{combinator::crawl, token, Lex};
+/// use parsely::{combinator::crawl, Lex};
 ///
 /// let input = "bla bla bla >>>abc<<< and so on...";
 ///
-/// let (matched, remaining) = crawl(token("abc")).lex(input)?;
+/// let (matched, remaining) = crawl("abc").lex(input)?;
 /// assert_eq!(matched, "abc");
 ///
 /// // NOTE: only one char is consumed even though 3 chars were matched!
 /// assert_eq!(remaining, "bc<<< and so on...");
 ///
-/// let (matched, remaining) = token("abc").optional().lex(input)?;
+/// let (matched, remaining) = "abc".optional().lex(input)?;
 /// assert_eq!(matched, "");
 /// assert_eq!(remaining, input);
 ///
@@ -108,18 +108,17 @@ where
 /// ```
 /// use parsely::{combinator::crawl, token, Lex, Parse};
 ///
-/// // we'd like to match both "two" and "one", even though `o` is part of both matches
-/// let input = "twone";
-///
 /// let one_or_two = || token("one").map(|_| 1)
 ///     .or(token("two").map(|_| 2));
 ///
-/// let (matched, remaining) = crawl(one_or_two()).many(..).parse(input)?;
+/// // we match both "two" and "one", even though `o` is part of both matches
+/// let (matched, remaining) = crawl(one_or_two()).many(..).parse("twone")?;
 /// assert_eq!(&matched, &[2, 1][..]);
 /// assert_eq!(remaining, "ne");
 ///
 /// // Helpfully or not, intervening input is ignored!
 /// let input = "twone pilots ➔ uh, I mean *twentyone* pilots!";
+/// //           ^^^^^   all  this  is  skipped    ^^^
 ///
 /// let (matched, remaining) = crawl(one_or_two()).many(..).parse(input)?;
 /// assert_eq!(&matched, &[2, 1, 1][..]);

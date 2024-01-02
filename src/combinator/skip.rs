@@ -19,7 +19,7 @@
 //! Let's demonstrate `lexer.then_skip(parser)` with a simple hex color code parser
 //!
 //! ```
-//! use parsely::{char, hex, Lex, Parse};
+//! use parsely::{hex, Lex, Parse};
 //!
 //! // we want to parse input like #AABBCC into 3 u8 representing an RGB color
 //! #[derive(Debug, PartialEq)]
@@ -36,7 +36,7 @@
 //! }
 //!
 //! let hex_color =
-//!     char('#')        // `#` is part of the input we want to match, but we don't want it when converting to u8
+//!     '#'        // `#` is part of the input we want to match, but we don't want it when converting to u8
 //!         .skip_then(  // so we'll skip it, and then run a parser that convders hex to u8
 //!             hex_u8()
 //!                 .then(hex_u8())
@@ -131,7 +131,7 @@ impl<L: Lex, T: Parse> Parse for SkipThen<L, T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{char, int, token, Error, Lex, Parse};
+    use crate::{int, token, Error, Lex, Parse};
 
     #[test]
     fn lexer_then_skip_lexer() -> Result<(), Error<'static>> {
@@ -139,7 +139,7 @@ mod test {
 
         assert_eq!(test.lex("abc...")?, ("abc", ""));
 
-        let test = then_skip(char('.').many(1..=3), token("abc"));
+        let test = then_skip('.'.many(1..=3), token("abc"));
 
         assert_eq!(test.lex("abc"), Err(Error::no_match("").offset("abc")));
         assert_eq!(test.lex("abc.")?, ("abc", ""));
@@ -149,7 +149,7 @@ mod test {
         assert_eq!(test.lex("xyz.."), Err(Error::no_match("xyz..")));
         assert_eq!(test.lex("..xyz"), Err(Error::no_match("..xyz")));
 
-        let test = then_skip(token("abc"), char('.').many(1..=3));
+        let test = then_skip(token("abc"), '.'.many(1..=3));
 
         assert_eq!(test.lex("abc"), Err(Error::no_match("abc")));
         assert_eq!(test.lex(".abc")?, (".", ""));
@@ -174,7 +174,7 @@ mod test {
 
         assert_eq!(test.parse("123...")?, (123, ""));
 
-        let test = then_skip(char('.').many(1..=3), int::<u8>());
+        let test = then_skip('.'.many(1..=3), int::<u8>());
 
         assert_eq!(test.parse("123"), Err(Error::no_match("").offset("123")));
         assert_eq!(test.parse("123.")?, (123, ""));
@@ -182,7 +182,7 @@ mod test {
         assert_eq!(test.parse("123...")?, (123, ""));
         assert_eq!(test.parse("123....")?, (123, "."));
 
-        let test = then_skip(token("..."), int::<u8>().then_skip(char(',')).many(1..=3));
+        let test = then_skip(token("..."), int::<u8>().then_skip(',').many(1..=3));
 
         assert_eq!(test.parse("123,"), Err(Error::no_match("").offset("123,")));
         assert_eq!(test.parse("123,...")?, (vec![123], ""));
@@ -204,7 +204,7 @@ mod test {
 
         assert_eq!(test.lex("...abc")?, ("abc", ""));
 
-        let test = skip_then(char('.').many(1..=3), token("abc"));
+        let test = skip_then('.'.many(1..=3), token("abc"));
 
         assert_eq!(test.lex("abc"), Err(Error::no_match("abc")));
         assert_eq!(test.lex(".abc")?, ("abc", ""));
@@ -220,7 +220,7 @@ mod test {
             Err(Error::no_match("xyz").offset("..xyz"))
         );
 
-        let test = skip_then(token("abc"), char('.').many(1..=3));
+        let test = skip_then(token("abc"), '.'.many(1..=3));
 
         assert_eq!(test.lex("abc"), Err(Error::no_match("").offset("abc")));
         assert_eq!(test.lex("abc.")?, (".", ""));
@@ -241,7 +241,7 @@ mod test {
 
         assert_eq!(test.parse("...123")?, (123, ""));
 
-        let test = skip_then(char('.').many(1..=3), int::<u8>());
+        let test = skip_then('.'.many(1..=3), int::<u8>());
 
         assert_eq!(test.parse("123"), Err(Error::no_match("123")));
         assert_eq!(test.parse(".123")?, (123, ""));
@@ -252,7 +252,7 @@ mod test {
             Err(Error::no_match(".123").offset("....123"))
         );
 
-        let test = skip_then(token("..."), char('>').skip_then(int::<u8>()).many(1..=3));
+        let test = skip_then(token("..."), '>'.skip_then(int::<u8>()).many(1..=3));
 
         assert_eq!(test.parse(">123"), Err(Error::no_match(">123")));
         assert_eq!(test.parse("...>123")?, (vec![123], ""));

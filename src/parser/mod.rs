@@ -4,8 +4,6 @@
 //!
 //! # Examples
 //!
-//! Basic usage:
-//!
 //! ```
 //! use parsely::{Lex, Parse, uint};
 //!
@@ -19,6 +17,7 @@
 //! ```
 //!
 //! Custom types can be parsed using map and switch. Here's a snippet from the [json example]
+//!
 //! ```
 //! use parsely::{Lex, Parse, int, float};
 //!

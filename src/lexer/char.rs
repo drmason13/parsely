@@ -26,14 +26,14 @@ impl Lex for Char {
 
 /// This lexer matches the given [`char`](prim@char) once.
 ///
+/// See also [`token()`](crate::token) to match strings rather than single chars.
+///
 /// # Examples
 ///
-/// Basic usage:
-///
 /// ```
-/// use parsely::{char, Lex};
+/// use parsely::{ch, Lex};
 ///
-/// let matches_a = char('a');
+/// let matches_a = ch('a');
 ///
 /// let (output, remaining) = matches_a.lex("abc")?;
 /// assert_eq!(output, "a");
@@ -46,7 +46,7 @@ impl Lex for Char {
 /// the above example can be shortened to:
 ///
 /// ```
-/// use parsely::{char, Lex};
+/// use parsely::{Lex};
 /// // Note: the Lex trait must be in scope for this to work
 ///
 /// let (output, remaining) = 'a'.lex("abc")?;
@@ -56,13 +56,11 @@ impl Lex for Char {
 /// ```
 ///
 /// Using chars directly is preferred in the examples throughout this documentation.
-///
-/// See also [`token()`](crate::token) to match strings rather than single chars.
-pub fn char(char: char) -> Char {
-    Char(char)
+pub fn ch(ch: char) -> Char {
+    Char(ch)
 }
 
-/// This lexer is returned by [`char_if()`]. See it's documentation for more details.
+/// This lexer is returned by [`ch_if()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct CharIf<F> {
     condition: F,
@@ -89,19 +87,17 @@ where
 ///
 /// # Examples
 ///
-/// Basic usage:
-///
 /// ```
-/// use parsely::{char_if, Lex};
+/// use parsely::{ch_if, Lex};
 ///
-/// let uppercase = char_if(|c| c.is_ascii_uppercase());
+/// let uppercase = ch_if(|c| c.is_ascii_uppercase());
 ///
 /// let (output, remaining) = uppercase.lex("ABC")?;
 /// assert_eq!(output, "A");
 /// assert_eq!(remaining, "BC");
 /// # Ok::<(), parsely::Error>(())
 /// ```
-pub fn char_if<F>(condition: F) -> CharIf<F>
+pub fn ch_if<F>(condition: F) -> CharIf<F>
 where
     F: Fn(char) -> bool,
 {
@@ -137,39 +133,37 @@ pub fn ws() -> WhiteSpace {
 
 /// Matches a single alphabetic character.
 pub fn alpha() -> CharIf<fn(char) -> bool> {
-    char_if(char::is_alphabetic)
+    ch_if(char::is_alphabetic)
 }
 
 /// Matches a single alphanumeric character.
 pub fn alphanum() -> CharIf<fn(char) -> bool> {
-    char_if(char::is_alphanumeric)
+    ch_if(char::is_alphanumeric)
 }
 
 /// Matches a single ascii alphanumeric character.
 pub fn ascii_alpha() -> CharIf<fn(char) -> bool> {
-    char_if(|c| c.is_ascii_alphabetic())
+    ch_if(|c| c.is_ascii_alphabetic())
 }
 
 /// Matches a single ascii alphanumeric character.
 pub fn ascii_alphanum() -> CharIf<fn(char) -> bool> {
-    char_if(|c| c.is_ascii_alphanumeric())
+    ch_if(|c| c.is_ascii_alphanumeric())
 }
 
 /// Matches a single lowercase character.
 pub fn lowercase() -> CharIf<fn(char) -> bool> {
-    char_if(char::is_lowercase)
+    ch_if(char::is_lowercase)
 }
 
 /// Matches an uppercase character.
 pub fn uppercase() -> CharIf<fn(char) -> bool> {
-    char_if(char::is_uppercase)
+    ch_if(char::is_uppercase)
 }
 
 /// Matches a char that is one of the characters in the given string
 ///
 /// # Examples
-///
-/// Basic usage:
 ///
 /// ```
 /// use parsely::{one_of, Lex};
@@ -184,14 +178,12 @@ pub fn uppercase() -> CharIf<fn(char) -> bool> {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn one_of(chars: &str) -> impl Lex + '_ {
-    char_if(|c| chars.contains(c))
+    ch_if(|c| chars.contains(c))
 }
 
 /// Matches a char that is *none* of the characters in the given string.
 ///
 /// # Examples
-///
-/// Basic usage:
 ///
 /// ```
 /// use parsely::{none_of, Lex};
@@ -206,7 +198,7 @@ pub fn one_of(chars: &str) -> impl Lex + '_ {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn none_of(chars: &str) -> impl Lex + '_ {
-    char_if(|c| !chars.contains(c))
+    ch_if(|c| !chars.contains(c))
 }
 
 impl fmt::Debug for Char {
@@ -230,7 +222,7 @@ mod tests {
     fn parsing() {
         test_lexer_batch(
             "simple input",
-            char('a'),
+            ch('a'),
             &[
                 ("ab", Some("a"), "b"), //
                 ("abcd", Some("a"), "bcd"),
@@ -240,7 +232,7 @@ mod tests {
 
         test_lexer_batch(
             "short input",
-            char('a'),
+            ch('a'),
             &[
                 ("a", Some("a"), ""), //
                 ("", None, ""),
@@ -250,7 +242,7 @@ mod tests {
 
         test_lexer_batch(
             "unicode in lexer",
-            char('â'),
+            ch('â'),
             &[
                 ("âb", Some("â"), "b"), //
                 ("âbcd", Some("â"), "bcd"),
@@ -260,7 +252,7 @@ mod tests {
 
         test_lexer_batch(
             "unicode in input",
-            char('a'),
+            ch('a'),
             &[
                 ("aâb", Some("a"), "âb"), //
                 ("aâbcd", Some("a"), "âbcd"),
@@ -270,7 +262,7 @@ mod tests {
 
         test_lexer_batch(
             "unicode in lexer with short input",
-            char('â'),
+            ch('â'),
             &[
                 ("â", Some("â"), ""), //
                 ("", None, ""),

@@ -33,8 +33,6 @@ impl<'a> Lex for Until<'a> {
 ///
 /// # Examples
 ///
-/// Basic usage:
-///
 /// ```
 /// use parsely::{until, Lex};
 ///

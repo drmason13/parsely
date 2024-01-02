@@ -28,8 +28,8 @@
 //! Parsers can use many, and their outputs are collected into a `Vec`:
 //!
 //! ```
-//! # use parsely::{char, int, Lex, Parse};
-//! let numbers_parser = int::<u32>().then_skip(char(',').optional()).many(1..);
+//! # use parsely::{int, Lex, Parse};
+//! let numbers_parser = int::<u32>().then_skip(','.optional()).many(1..);
 //!
 //! let (output, _) = numbers_parser.parse("123,456,789")?;
 //! assert_eq!(output, vec![123, 456, 789]);

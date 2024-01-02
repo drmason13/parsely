@@ -79,7 +79,7 @@ pub fn pad<L: Lex, R: Lex, T>(left: L, right: R, item: T) -> Pad<L, R, T> {
 mod test {
     use super::*;
     use crate::test_utils::*;
-    use crate::{char, digit, int};
+    use crate::{digit, int};
 
     #[test]
     fn pad_works() -> Result<(), crate::ErrorOwned> {
@@ -107,7 +107,7 @@ mod test {
     fn parsing() {
         test_parser_batch(
             ">int()< padding required",
-            pad(char('>'), char('<'), int()),
+            int().pad_with('>', '<'),
             &[
                 ("", None, ""), //
                 (">123<", Some(123), ""),
@@ -122,7 +122,7 @@ mod test {
     fn lexing() {
         test_lexer_batch(
             ">digit()< padding required",
-            pad(char('>'), char('<'), digit()),
+            digit().pad_with('>', '<'),
             &[
                 ("", None, ""), //
                 (">1<", Some("1"), ""),

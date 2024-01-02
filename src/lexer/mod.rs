@@ -8,9 +8,8 @@
 //!
 //! # Examples:
 //!
-//! Basic usage:
-//!
 //! All lexers can be run using their [`lex()`](crate::Lex::lex()) method from the [`Lex`](crate::Lex) trait.
+//!
 //! ```
 //! use parsely::{token, Lex};
 //!
@@ -75,13 +74,13 @@ mod until;
 
 pub use self::any::{any, Any};
 pub use self::char::{
-    alpha, alphanum, ascii_alpha, ascii_alphanum, char, char_if, lowercase, none_of, one_of,
-    uppercase, ws, Char, WhiteSpace,
+    alpha, alphanum, ascii_alpha, ascii_alphanum, ch, ch_if, lowercase, none_of, one_of, uppercase,
+    ws, Char, WhiteSpace,
 };
 pub use self::end::{end, End};
 pub use self::number::{digit, hex, non_zero_digit, Digit};
 pub use self::take::{take, take_while, Take, TakeWhile};
-pub use self::token::{token, token_ci, Token};
+pub use self::token::{itoken, token, Token};
 pub use self::until::{until, Until};
 
 /// Used as a generic parameter to combinators that can either [`Parse`] or [`Lex`] and need disambiguating

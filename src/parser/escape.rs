@@ -82,8 +82,6 @@ impl<const N: usize> Lex for EscapeSequence<N, Lexing> {
 ///
 /// # Examples
 ///
-/// Basic usage:
-///
 /// ```
 /// use parsely::Parse;
 ///
@@ -124,8 +122,6 @@ pub fn escape<const N: usize>(
 /// See also [`escape()`] to parse escape sequences and output the escaped character
 ///
 /// # Examples
-///
-/// Basic usage:
 ///
 /// ```
 /// use parsely::Lex;

@@ -53,12 +53,10 @@ impl<T, C> Many<T, C> {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, int, Parse};
+    /// use parsely::{int, Parse};
     ///
-    /// let csv_parser = int::<u8>().all(1).delimiter(char(','));
+    /// let csv_parser = int::<u8>().all(1).delimiter(',');
     ///
     /// let (output, remaining) = csv_parser.parse("1,2,3").expect("ok okay geez");
     /// assert_eq!(output, vec![1, 2, 3]);
@@ -83,10 +81,9 @@ impl<T, C> Many<T, C> {
     ///
     /// # Examples
     ///
-    /// Basic usage:
     /// ```
     /// use std::collections::LinkedList;
-    /// use parsely::{char, digit, Lex, Parse};
+    /// use parsely::{digit, Lex, Parse};
     ///
     /// let integers = digit().try_map(str::parse::<u8>).many(1..).collect::<LinkedList<u8>>();
     /// #
@@ -102,16 +99,17 @@ impl<T, C> Many<T, C> {
     /// ```
     ///
     /// Collect into a HashMap:
+    ///
     /// ```
     /// use std::collections::HashMap;
-    /// use parsely::{any, char, int, Lex, Parse};
+    /// use parsely::{any, int, Lex, Parse};
     ///
     /// let integers = any()
     ///     .map(str::to_string)
-    ///     .then_skip(char(':'))
+    ///     .then_skip(':')
     ///     .then(int::<u8>())
     ///     .many(1..)
-    ///     .delimiter(char(','))
+    ///     .delimiter(',')
     ///     .collect::<HashMap<String, u8>>();
     ///
     /// let (output, remaining) = integers.parse("a:1,b:2,c:3")?;
@@ -310,8 +308,6 @@ impl<L: Lex, C> Lex for Many<L, C> {
 ///
 /// # Examples
 ///
-/// Basic usage:
-///
 /// ```
 /// use parsely::{digit, Lex};
 /// use parsely::combinator::many;
@@ -415,7 +411,6 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::char;
     use crate::test_utils::*;
 
     #[derive(PartialEq, Debug, Clone)]
@@ -434,7 +429,7 @@ mod tests {
 
     #[test]
     fn min_and_max_parse() {
-        let a_parser = || char('a').try_map(A::from_str);
+        let a_parser = || 'a'.try_map(A::from_str);
 
         test_parser_batch(
             "1..=3 matches 1, 2 or 3 times",
@@ -482,7 +477,7 @@ mod tests {
     fn min_and_max_lex() {
         test_lexer_batch(
             "1..=3 matches 1, 2 or 3 times",
-            many::<_, char>(1..=3, char('a')),
+            many::<_, char>(1..=3, 'a'),
             &[
                 ("", None, ""), //
                 ("abcd", Some("a"), "bcd"),
@@ -495,7 +490,7 @@ mod tests {
 
         test_lexer_batch(
             ".. matches any number of times",
-            many::<_, char>(.., char('a')),
+            many::<_, char>(.., 'a'),
             &[
                 ("", Some(""), ""), //
                 ("abcd", Some("a"), "bcd"),
@@ -508,7 +503,7 @@ mod tests {
 
         test_lexer_batch(
             "3..5 matches 3 or 4 times",
-            many::<_, char>(3..5, char('a')),
+            many::<_, char>(3..5, 'a'),
             &[
                 ("", None, ""), //
                 ("abcd", None, "abcd"),

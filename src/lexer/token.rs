@@ -1,10 +1,10 @@
-use std::{fmt, marker::PhantomData};
+use std::{borrow::Cow, fmt, marker::PhantomData};
 
 use crate::{Lex, LexResult};
 
 /// This lexer is returned by [`token()`]. See its documentation for more details.
 #[derive(Clone)]
-pub struct Token<'p, C: CaseSensitivity>(&'p str, PhantomData<C>);
+pub struct Token<'p, C: CaseSensitivity>(Cow<'p, str>, PhantomData<C>);
 
 pub trait CaseSensitivity {}
 
@@ -19,8 +19,6 @@ impl<'p> Token<'p, CaseSensitive> {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
     /// use parsely::{token, Lex};
     ///
@@ -33,13 +31,13 @@ impl<'p> Token<'p, CaseSensitive> {
     /// # Ok::<(), parsely::Error>(())
     /// ```
     pub fn any_case(self) -> Token<'p, CaseInsensitive> {
-        Token(self.0, PhantomData)
+        Token(Cow::Owned(self.0.to_uppercase()), PhantomData)
     }
 }
 
 impl<'p> Lex for Token<'p, CaseSensitive> {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
-        if input.starts_with(self.0) {
+        if input.starts_with(self.0.as_ref()) {
             Ok(input.split_at(self.0.len()))
         } else {
             Err(crate::Error::no_match(input))
@@ -50,7 +48,7 @@ impl<'p> Lex for Token<'p, CaseSensitive> {
 impl<'p> Lex for Token<'p, CaseInsensitive> {
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         // NOTE: unicode uppercase could wreak havoc here
-        if input.to_uppercase().starts_with(&self.0.to_uppercase()) {
+        if input.to_uppercase().starts_with(self.0.as_ref()) {
             Ok(input.split_at(self.0.len()))
         } else {
             Err(crate::Error::no_match(input))
@@ -68,16 +66,10 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 ///
 /// # Examples
 ///
-/// Basic usage:
-///
 /// ```
 /// use parsely::{token, Lex};
 ///
-/// let input = "FOO 123";
-///
-/// let foo_lexer = token("FOO");
-///
-/// let (output, remaining) = foo_lexer.lex(input)?;
+/// let (output, remaining) = token("FOO").lex("FOO 123")?;
 ///
 /// assert_eq!(output, "FOO");
 /// assert_eq!(remaining, " 123");
@@ -92,13 +84,11 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 /// ```
 /// // the Lex trait must be in scope for this to work
 /// use parsely::Lex;
-/// # use parsely::char;
 ///
-/// let (at, _) = char('@').lex("@ me")?;
-/// # let at_1 = at;
-/// let (at, _) = '@'.lex("@ me")?;
-/// # let at_2 = at;
-/// assert_eq!(at_1, at_2);
+/// let (output, remaining) = "FOO".lex("FOO 123")?;
+///
+/// assert_eq!(output, "FOO");
+/// assert_eq!(remaining, " 123");
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 ///
@@ -106,17 +96,15 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 ///
 /// Map the output of a lexer to create a parser:
 ///
+/// Consider also using [`switch()`](crate::switch) if you have lots of tokens to map to cheap clone/copy values
+///
 /// ```
-/// use parsely::{token, Lex, Parse};
+/// use parsely::{Lex, Parse};
 ///
 /// #[derive(Debug, PartialEq)]
 /// struct Foo;
 ///
-/// let input = "FOO 123";
-///
-/// let foo_parser = token("FOO").map(|_| Foo);
-///
-/// let (output, result) = foo_parser.parse(input)?;
+/// let (output, result) = "FOO".map(|_| Foo).parse("FOO 123")?;
 ///
 /// assert_eq!(output, Foo);
 /// assert_eq!(result, " 123");
@@ -124,18 +112,18 @@ impl<'p> Lex for Token<'p, CaseInsensitive> {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 pub fn token(token: &str) -> Token<CaseSensitive> {
-    Token(token, PhantomData)
+    Token(Cow::Borrowed(token), PhantomData)
 }
 
-/// Case Insensitive version of [`token`].
+/// case Insensitive version of [`token`].
 ///
-/// The token and the input are uppercased before checking if the token matches.
+/// The token is converted to uppercase when creating the lexer. The input is uppercased before checking if the token matches every time the lexer runs.
 /// This unsurprisingly incurs a performance penalty.
 ///
 /// Note: no additional action is taken to support all unicode characters,
 /// it is quite likely that this uppercase comparison will lead to unintuitive results for some unicode characters. Caution advised.
-pub fn token_ci(token: &str) -> Token<CaseInsensitive> {
-    Token(token, PhantomData)
+pub fn itoken(token: &str) -> Token<CaseInsensitive> {
+    Token(Cow::Owned(token.to_uppercase()), PhantomData)
 }
 
 impl fmt::Debug for Token<'_, CaseSensitive> {

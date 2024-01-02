@@ -19,7 +19,7 @@ pub struct Switch<L, T, const N: usize> {
 /// [^why]: this allows the parser itself to own the inputs and outputs and be reused to parse multiple different inputs.
 /// This shouldn't differ in performance to the manual `.or().map()` version since that version will create a new value every time instead of cloning.
 /// ```
-/// use parsely::{Lex, Parse, token};
+/// use parsely::{Lex, Parse};
 ///
 /// #[derive(Debug, PartialEq, Clone, Copy)]
 /// pub enum MyTokens {
@@ -40,7 +40,7 @@ pub struct Switch<L, T, const N: usize> {
 ///
 /// The above is simplified by using `switch()`
 /// ```
-/// use parsely::{Lex, Parse, switch};
+/// use parsely::{Parse, switch};
 ///
 /// #[derive(Debug, PartialEq, Clone, Copy)]
 /// pub enum MyTokens {

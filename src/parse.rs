@@ -29,9 +29,16 @@ pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error<'i>>;
 
 /// This trait is implemented by all Parsely parsers.
 ///
-/// Its principle method is [`parse`](Parse::parse) which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
+/// Its principle method is [`parse`] which takes an input `&str` and returns the matched part of the input, along with any remaining unmatched input.
 ///
-/// This is useful to break apart large complex input into smaller pieces which can be processed by parsers into other types.
+/// We'll refer to types that implement [`Parse`] as parsers. See the [`parser`] module for a list of Parsley's built in parsers.
+///
+/// Most parsers you write will be composed of lexers that have their match mapped to your custom type. This is done using the [`map()`] method on a lexer
+///
+/// [`parse`]: Parse::parse
+/// [`parser`]: crate::parser
+/// [`lexer`]: crate::lexer
+/// [`map()`]: crate::Lex::map
 pub trait Parse {
     /// The output type produced by a successful parse.
     type Output;
@@ -86,8 +93,6 @@ pub trait Parse {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
     /// use parsely::{int, token, Lex, Parse};
     ///
@@ -116,10 +121,8 @@ pub trait Parse {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, token, Lex, Parse};
+    /// use parsely::{token, Lex, Parse};
     ///
     /// # #[derive(Debug, PartialEq)]
     /// enum FooBar {
@@ -146,7 +149,7 @@ pub trait Parse {
     ///
     /// Chained and nested or:
     /// ```
-    /// use parsely::{char, token, Lex, Parse, ParseResult};
+    /// use parsely::{Lex, Parse, ParseResult};
     ///
     /// # #[derive(Debug, PartialEq)]
     /// # enum FooBar {
@@ -154,10 +157,10 @@ pub trait Parse {
     /// #     Bar,
     /// # }
     /// fn parse_foo_bar<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
-    ///     token("foo").map(|_| FooBar::Foo)
-    ///         .or(token("floobydoobyfooo").map(|_| FooBar::Foo))
-    ///         .or(token("babababarrr").map(|_| FooBar::Bar))
-    ///         .or(token("bar").map(|_| FooBar::Bar)).parse(input)
+    ///     "foo".map(|_| FooBar::Foo)
+    ///         .or("floobydoobyfooo".map(|_| FooBar::Foo))
+    ///         .or("babababarrr".map(|_| FooBar::Bar))
+    ///         .or("bar".map(|_| FooBar::Bar)).parse(input)
     /// }
     ///
     /// let (output, remaining) = parse_foo_bar("babababarrr is a Bar")?;
@@ -168,8 +171,8 @@ pub trait Parse {
     /// // or can be nested, so parse_foo_bar can be written as:
     ///
     /// fn parse_foo_bar_nested<'i>(input: &'i str) -> ParseResult<'i, FooBar> {
-    ///     token("foo").or(token("floobydoobyfooo")).map(|_| FooBar::Foo).or(
-    ///         token("bar").or(token("babababarrr")).map(|_| FooBar::Bar)
+    ///     "foo".or("floobydoobyfooo").map(|_| FooBar::Foo).or(
+    ///         "bar".or("babababarrr").map(|_| FooBar::Bar)
     ///     ).parse(input)
     /// }
     ///
@@ -201,10 +204,8 @@ pub trait Parse {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{int, token, Lex, Parse, ParseResult};
+    /// use parsely::{Lex, Parse};
     ///
     /// # #[derive(Debug, PartialEq)]
     /// enum Simpson {
@@ -217,11 +218,11 @@ pub trait Parse {
     ///
     /// use Simpson::*;
     ///
-    /// let homer = token("Homer").map(|_| Homer);
-    /// let marge = token("Marge").map(|_| Marge);
-    /// let bart = token("Bart").map(|_| Bart);
-    /// let lisa = token("Lisa").map(|_| Lisa);
-    /// let maggie = token("Maggie").map(|_| Maggie);
+    /// let homer = "Homer".map(|_| Homer);
+    /// let marge = "Marge".map(|_| Marge);
+    /// let bart = "Bart".map(|_| Bart);
+    /// let lisa = "Lisa".map(|_| Lisa);
+    /// let maggie = "Maggie".map(|_| Maggie);
     ///
     /// let parser = homer.then(marge).then(lisa).then(maggie).then(bart);
     ///
@@ -248,8 +249,6 @@ pub trait Parse {
     /// This is useful when there is filler input that isn't relevant to what is being parsed that you need to match but don't want to map.
     ///
     /// # Examples
-    ///
-    /// Basic usage:
     ///
     /// ```
     /// use parsely::{int, token, Parse, ParseResult};
@@ -304,10 +303,8 @@ pub trait Parse {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, token, int, switch, Lex, Parse};
+    /// use parsely::{int, switch, Parse};
     ///
     /// # use std::collections::HashMap;
     ///
@@ -320,7 +317,7 @@ pub trait Parse {
     /// let (output, remaining) = int_then_color.parse("1 red")?;
     /// assert_eq!(output, (1, Color::Red));
     ///
-    /// let (output, remaining) = int_then_color.swap().many(..).delimiter(char(',')).parse("1 red, 2 blue, 3 green")?;
+    /// let (output, remaining) = int_then_color.swap().many(..).delimiter(',').parse("1 red, 2 blue, 3 green")?;
     /// assert_eq!(&output[2], &(Color::Green, 3));
     ///
     /// // swap() made collecting into a HashMap convenient :)
@@ -354,8 +351,6 @@ pub trait Parse {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
     /// use parsely::{int, Parse};
     ///
@@ -383,12 +378,10 @@ pub trait Parse {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
-    /// use parsely::{char, int, Parse};
+    /// use parsely::{int, Parse};
     ///
-    /// let parser = int::<u8>().pad_with(char('['), char(']'));
+    /// let parser = int::<u8>().pad_with('[', ']');
     ///
     /// assert_eq!(parser.parse("[123]")?, (123, ""));
     /// # Ok::<(), parsely::Error>(())
@@ -438,7 +431,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use parsely::{char, digit, hex, Lex, Parse, ParseResult};
+/// use parsely::{hex, Lex, Parse, ParseResult};
 ///
 /// # #[derive(PartialEq, Eq, Debug)]
 /// # struct Rgb(u8, u8, u8);
@@ -455,7 +448,7 @@ where
 /// };
 ///
 /// // because hex_rgb implements Parse, we can use it to build a more complex parser chain
-/// let (output, remaining) = char('#').skip_then(hex_rgb).parse("#AABBCC")?;
+/// let (output, remaining) = '#'.skip_then(hex_rgb).parse("#AABBCC")?;
 /// assert_eq!(output, Rgb(170, 187, 204));
 ///
 /// # Ok::<(), parsely::Error>(())

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{char_if, Lex, LexResult};
+use crate::{ch_if, Lex, LexResult};
 
 /// This lexer is returned by [`digit()`]. See it's documentation for more details.
 #[derive(Clone)]
@@ -32,8 +32,6 @@ impl Digit {
     ///
     /// # Examples
     ///
-    /// Basic usage:
-    ///
     /// ```
     /// use parsely::digit;
     ///
@@ -48,7 +46,7 @@ impl Digit {
 
 /// This lexer matches a single non-zero base 10 digit i.e. one of "123456789".
 pub fn non_zero_digit() -> impl Lex + Clone {
-    char_if(|c| c.is_ascii_digit() && c != '0')
+    ch_if(|c| c.is_ascii_digit() && c != '0')
 }
 
 /// This lexer matches a single hexadecimal character, i.e. one of "0123456789abcdefABCDEF".
@@ -58,8 +56,6 @@ pub fn non_zero_digit() -> impl Lex + Clone {
 /// As this is a lexer, no type conversion is performed, see the examples for how you might want to do this.
 ///
 /// # Examples
-///
-/// Basic usage:
 ///
 /// ```
 /// use parsely::{hex, Lex};

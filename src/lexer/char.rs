@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{Lex, LexResult};
 
-/// This lexer is returned by [`char()`]. See it's documentation for more details.
+/// This lexer is returned by [`ch()`]. See it's documentation for more details.
 #[derive(Clone)]
 pub struct Char(pub char);
 

@@ -1,18 +1,10 @@
 use std::{borrow::Cow, fmt, marker::PhantomData};
 
-use crate::{Lex, LexResult};
+use crate::{CaseInsensitive, CaseSensitive, CaseSensitivity, Lex, LexResult};
 
 /// This lexer is returned by [`token()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Token<'p, C: CaseSensitivity>(Cow<'p, str>, PhantomData<C>);
-
-pub trait CaseSensitivity {}
-
-pub struct CaseSensitive;
-pub struct CaseInsensitive;
-
-impl CaseSensitivity for CaseSensitive {}
-impl CaseSensitivity for CaseInsensitive {}
 
 impl<'p> Token<'p, CaseSensitive> {
     /// Makes the token case insensitive, that is the case of input characters is ignored.

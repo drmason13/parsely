@@ -88,3 +88,17 @@ pub use self::until::{until, Until};
 /// [`Parse`]: crate::Parse
 /// [`Lex`]: crate::Lex
 pub struct Lexing;
+
+/// Case Sensitivity is a sealed trait for [`CaseSensitive`] and [`CaseInsensitive`] used by [`token()`] and [`ch()`]
+pub trait CaseSensitivity: crate::private::Sealed {}
+
+/// Case Sensitive lexers match only if the input matches case exactly
+pub struct CaseSensitive;
+
+/// Case Insensitive lexers match regardless of the input case
+pub struct CaseInsensitive;
+
+impl CaseSensitivity for CaseSensitive {}
+impl crate::private::Sealed for CaseSensitive {}
+impl CaseSensitivity for CaseInsensitive {}
+impl crate::private::Sealed for CaseInsensitive {}

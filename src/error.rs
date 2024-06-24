@@ -2,13 +2,23 @@
 //!
 //! Parsely's error handling strategy is currently unstable. Expect these types to change.
 
-use std::fmt;
+use std::{fmt, sync::Arc};
 
 /// The [`Error`] type returned by both [`parse`] and [`lex`] methods.
 ///
 /// Errors in parsely don't directly capture a Span like most parsing libraries.
 ///
-/// They simply store two slices of the original [`&str`](str) input: `remaining` and `input`
+/// They simply store two slices of the original [`&str`](str):
+/// * `input` - all of the input as seen at the point of failure
+/// * `remaining` - the part of the input that was not matched
+///
+/// By comparing these two slices, we can deduce a third part of the input:
+/// * `matched` - the part of the input that was matched before failing
+///
+/// # Example
+/// ```
+/// // TODO
+/// ```
 ///
 /// [`parse`]: crate::Parse::parse()
 /// [`lex`]: crate::Lex::lex()
@@ -17,11 +27,11 @@ pub struct Error<'i> {
     /// The reason for the error
     pub reason: ErrorReason,
 
-    /// The remaining unparsed input
-    pub remaining: &'i str,
-
     /// The input to the first parser to run, the *original* input
     pub input: &'i str,
+
+    /// The remaining unparsed input
+    pub remaining: &'i str,
 }
 
 impl<'i> Error<'i> {
@@ -44,6 +54,20 @@ impl<'i> Error<'i> {
             input,
             remaining: input,
             reason: ErrorReason::FailedConversion,
+        }
+    }
+
+    /// Create a new custom error from the given error type.
+    ///
+    /// See [`ErrorReason::FailedConversion`]
+    pub fn custom<E>(input: &'i str, error: E) -> Self
+    where
+        E: std::error::Error + Sync + Send + 'static,
+    {
+        Error {
+            input,
+            remaining: input,
+            reason: ErrorReason::Custom(Arc::new(error)),
         }
     }
 
@@ -87,10 +111,10 @@ impl<'i> Error<'i> {
         }
     }
 
-    /// This returns an ErrorOwned built from this Error
+    /// This returns an [`ErrorOwned`] built from this [`Error`]
     pub fn own_err(&self) -> ErrorOwned {
         ErrorOwned {
-            reason: self.reason,
+            reason: self.reason.clone(),
             remaining: self.remaining.to_string(),
             input: self.input.to_string(),
         }
@@ -101,7 +125,7 @@ impl<'i> Error<'i> {
 ///
 /// It is included as a field in [`Error`].
 #[non_exhaustive]
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(Clone, Debug)]
 pub enum ErrorReason {
     /// A lexer did not see the expected input and has failed to match
     ///
@@ -109,15 +133,120 @@ pub enum ErrorReason {
     NoMatch,
 
     /// A parser encountered an error when converting to the output type
+    ///
+    /// You can construct an [`Error`] with this reason using [`Error::failed_conversion()`]
     FailedConversion,
+
+    /// A custom error
+    ///
+    /// You can construct an [`Error`] with this reason using [`Error::custom()`]
+    Custom(Arc<dyn std::error::Error>),
+}
+
+// TODO: better unicode handling and/or performance - graphemes spring to mind
+// TODO: support specifying width and alignment to customize truncation of long inputs
+fn format_error(
+    input: &str,
+    remaining: &str,
+    error_reason: &ErrorReason,
+    f: &mut fmt::Formatter<'_>,
+) -> fmt::Result {
+    // calculate a reasonable middle ground if the input and/or remaining strings are huge.
+    let intersection = input.len() - remaining.len(); // this *should* be a char boundary
+
+    let start = intersection.saturating_sub(12);
+    let end = intersection.saturating_add(12);
+
+    let (start_exact, end_exact) = {
+        let mut start_exact = None;
+        let mut input_iter = input.char_indices();
+        let mut idx = 0;
+        let mut prev_char_len = 0;
+        loop {
+            let Some((index, ch)) = input_iter.next() else {
+                break (start_exact.unwrap_or(0), idx + prev_char_len);
+            };
+            prev_char_len = ch.len_utf8();
+            idx = index;
+
+            if idx >= start && start_exact.is_none() {
+                start_exact = Some(idx);
+            } else if idx >= end {
+                break (start_exact.unwrap_or(0), idx);
+            }
+        }
+    };
+
+    let start_skipped = start_exact > 0;
+    let end_skipped = end_exact < input.len();
+
+    // we now have a slice around where the intersection of a reasonable length...
+    let remaining = &input[intersection..end_exact];
+    let input = &input[start_exact..intersection];
+
+    /* check start_exact and end_exact to decide whether to render an indicator that the input has been truncated
+    No match: `aaaaaaaaaaaah-choo!!!!!!` (bytes xxx..yyy)
+                           ¯¯¯¯¯¯¯¯¯¯¯¯ unmatched input
+    */
+    let mut offset = match &error_reason {
+        ErrorReason::NoMatch => {
+            let prefix = "No match: ";
+            f.write_str(prefix)?;
+            prefix.chars().count()
+        }
+        ErrorReason::FailedConversion => {
+            let prefix = "Failed to convert matched input: ";
+            f.write_str(prefix)?;
+            prefix.chars().count()
+        }
+        ErrorReason::Custom(e) => {
+            // I think it is difficult to avoid this allocation
+            let prefix = format!("{e}");
+            f.write_str(&prefix)?;
+            prefix.chars().count()
+        }
+    };
+
+    let gap = input.chars().count();
+    let overlap = remaining.chars().count();
+
+    if start_skipped {
+        offset += 3;
+        write!(f, "...")?;
+    };
+
+    write!(f, "`{input}{remaining}`")?;
+
+    if end_skipped {
+        write!(f, "...")?;
+    };
+
+    if start_skipped || end_skipped {
+        write!(f, " (bytes {start_exact}..{end_exact})")?;
+    }
+
+    write!(
+        f,
+        "\n{offset}{gap}{overlap} unmatched input",
+        offset = str::repeat(" ", offset),
+        gap = str::repeat(" ", gap + 1), // 1 for the `
+        overlap = str::repeat("¯", overlap),
+    )
 }
 
 impl<'i> std::error::Error for Error<'i> {}
 impl<'i> fmt::Display for Error<'i> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.reason {
-            ErrorReason::NoMatch => write!(f, "No Match"),
-            ErrorReason::FailedConversion => write!(f, "Failed to convert matched input"),
+        format_error(self.input, self.remaining, &self.reason, f)
+    }
+}
+
+impl std::cmp::PartialEq for ErrorReason {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            // TODO: is there any better way to compare two arbitrary errors?
+            (Self::Custom(l), Self::Custom(r)) => format!("{l}") == format!("{r}"),
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
 }
@@ -244,13 +373,7 @@ impl<'i> From<Error<'i>> for ErrorOwned {
 impl std::error::Error for ErrorOwned {}
 impl fmt::Display for ErrorOwned {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let error = Error {
-            reason: self.reason,
-            remaining: &self.remaining,
-            input: &self.input,
-        };
-
-        error.fmt(f)
+        format_error(&self.input, &self.remaining, &self.reason, f)
     }
 }
 
@@ -287,6 +410,57 @@ mod tests {
         assert_remaining(&error, "bar");
         assert_input(&error, "bar");
         // TODO!: update Display impl
-        assert_display(&error, "No Match");
+        assert_display(&error, "No match: `bar`\n           ¯¯¯ unmatched input");
+    }
+
+    #[test]
+    fn test_formatting() {
+        let error = Error::no_match("▔DF").offset("#2F0▔DF");
+        assert_eq!(
+            format!("{error}"),
+            r#"No match: `#2F0▔DF`
+               ¯¯¯ unmatched input"#
+        );
+
+        let error = Error::no_match("XDF").offset("#2F0XDF");
+        assert_eq!(
+            format!("{error}"),
+            r#"No match: `#2F0XDF`
+               ¯¯¯ unmatched input"#
+        );
+
+        let error = Error::no_match("▔").offset("#2F0▔");
+        assert_eq!(
+            format!("{error}"),
+            r#"No match: `#2F0▔`
+               ¯ unmatched input"#
+        );
+    }
+
+    #[test]
+    fn test_truncated_formatting() {
+        let input = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaah-choo!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+        let error = Error::no_match("h-choo!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!").offset(input);
+        assert_eq!(
+            format!("{error}"),
+            r#"No match: ...`aaaaaaaaaaaah-choo!!!!!!`... (bytes 36..60)
+                          ¯¯¯¯¯¯¯¯¯¯¯¯ unmatched input"#
+        );
+
+        let input = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaah-choo!";
+        let error = Error::no_match("h-choo!").offset(input);
+        assert_eq!(
+            format!("{error}"),
+            r#"No match: ...`aaaaaaaaaaaah-choo!` (bytes 36..55)
+                          ¯¯¯¯¯¯¯ unmatched input"#
+        );
+
+        let input = "aaah-choo!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+        let error = Error::no_match("h-choo!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!").offset(input);
+        assert_eq!(
+            format!("{error}"),
+            r#"No match: `aaah-choo!!!!!!`... (bytes 0..15)
+              ¯¯¯¯¯¯¯¯¯¯¯¯ unmatched input"#
+        );
     }
 }

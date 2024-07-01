@@ -6,7 +6,9 @@ use crate::{
         sequence::{All, LexMany},
         then, then_skip, Many, Optional, Or, Pad, Then, ThenSkip,
     },
-    end, ws, End, Lex, WhiteSpace,
+    end,
+    lexer::{End, WhiteSpace},
+    ws, Lex,
 };
 
 /// The type returned by a parse. The order of the tuple is `(output, remaining)`

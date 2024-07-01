@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{result_ext::*, End, Lex, LexResult, Parse, ParseResult};
+use crate::{lexer::End, result_ext::*, Lex, LexResult, Parse, ParseResult};
 
 /// This combinator is returned by [`then()`]. See it's documentation for more details.
 #[derive(Clone)]

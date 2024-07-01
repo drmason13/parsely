@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Behavior, Error, Lex, Lexing, Parse, Parsing};
+use crate::{lexer::Lexing, parser::Parsing, Behavior, Error, Lex, Parse};
 
 /// This parser/lexer is returned by [`escape()`]/[`escape_lex()`], see their documentation for more details
 pub struct EscapeSequence<const N: usize, B: Behavior> {

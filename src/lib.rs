@@ -77,19 +77,19 @@
 //! [`FromStr`]: std::str::FromStr
 //! [`impl FromStr`]: std::str::FromStr
 
-/// Whether the combinator is being used to do [`Parsing`] or [`Lexing`].
+/// Whether the item is being used to do [`Parsing`](parser::Parsing) or [`Lexing`](lexer::Lexing).
 ///
-/// [`Behavior`] is a bound for generic parameters of flexible combinators that implement both [`Parse`] and [`Lex`].
-/// The generic Parameter is a ore ergonomic way of disambiguating the usage.
+/// [`Behavior`] is a bound for generic parameters of flexible items that implement both [`Parse`] and [`Lex`].
+/// The generic Parameter is a more ergonomic way of disambiguating the usage.
 ///
 /// Note: This trait is [sealed](https://predr.ag/blog/definitive-guide-to-sealed-traits-in-rust/#sealing-traits-with-a-supertrait).
 pub trait Behavior: private::Sealed {}
 
-impl Behavior for Parsing {}
-impl private::Sealed for Parsing {}
+impl Behavior for parser::Parsing {}
+impl private::Sealed for parser::Parsing {}
 
-impl Behavior for Lexing {}
-impl private::Sealed for Lexing {}
+impl Behavior for lexer::Lexing {}
+impl private::Sealed for lexer::Lexing {}
 
 /// The built in combinators provided by parsely
 pub mod combinator {
@@ -208,21 +208,31 @@ pub mod combinator {
     mod then;
 
     #[doc(inline)]
-    pub use self::crawl::{crawl, Crawl};
+    pub use self::crawl::crawl;
+    pub use self::crawl::Crawl;
     #[doc(inline)]
-    pub use self::map::{map, try_map, Map, TryMap};
+    pub use self::map::{map, try_map};
+    pub use self::map::{Map, TryMap};
     #[doc(inline)]
-    pub use self::optional::{optional, Optional};
+    pub use self::optional::optional;
+    pub use self::optional::Optional;
     #[doc(inline)]
-    pub use self::or::{or, Or};
+    pub use self::or::or;
+    pub use self::or::Or;
     #[doc(inline)]
-    pub use self::pad::{pad, Pad};
+    pub use self::pad::pad;
+    pub use self::pad::Pad;
     #[doc(inline)]
-    pub use self::sequence::{all, count, delimited, many, traits::Collect, All, Delimited, Many};
+    pub use self::sequence::traits::Collect;
     #[doc(inline)]
-    pub use self::skip::{skip_then, then_skip, SkipThen, ThenSkip};
+    pub use self::sequence::{all, count, delimited, many};
+    pub use self::sequence::{All, Delimited, Many};
     #[doc(inline)]
-    pub use self::then::{then, Then};
+    pub use self::skip::{skip_then, then_skip};
+    pub use self::skip::{SkipThen, ThenSkip};
+    #[doc(inline)]
+    pub use self::then::then;
+    pub use self::then::Then;
 }
 
 mod error;
@@ -324,7 +334,7 @@ pub mod lexer {
     pub use self::token::{itoken, token, Token};
     pub use self::until::{until, Until};
 
-    /// Used as a generic parameter to combinators that can either [`Parse`] or [`Lex`] and need disambiguating
+    /// Used as a generic parameter to items that can either [`Parse`] or [`Lex`] and need disambiguating
     ///
     /// [`Parse`]: crate::Parse
     /// [`Lex`]: crate::Lex
@@ -347,7 +357,10 @@ pub mod lexer {
     impl crate::private::Sealed for CaseInsensitive {}
 }
 #[doc(inline)]
-pub use lexer::*;
+pub use lexer::{
+    alpha, alphanum, any, ascii_alpha, ascii_alphanum, ch, ch_if, digit, end, hex, itoken,
+    lowercase, non_zero_digit, none_of, one_of, take, take_while, token, until, uppercase, ws,
+};
 
 mod parse;
 pub use parse::{Parse, ParseResult};
@@ -413,18 +426,18 @@ pub mod parser {
     mod number;
     mod switch;
 
-    pub use self::number::{float, int, number, uint};
-    pub use self::switch::switch;
     pub use escape::{escape, escape_lex, EscapeSequence};
+    pub use number::{float, int, number, uint};
+    pub use switch::switch;
 
-    /// Used as a generic parameter to combinators that can either [`Parse`] or [`Lex`] and need disambiguating
+    /// Used as a generic parameter to items that can either [`Parse`] or [`Lex`] and need disambiguating
     ///
     /// [`Parse`]: crate::Parse
     /// [`Lex`]: crate::Lex
     pub struct Parsing;
 }
 #[doc(inline)]
-pub use parser::*;
+pub use parser::{escape, escape_lex, float, int, number, switch, uint};
 
 mod private {
     /// Sealed trait pattern: https://predr.ag/blog/definitive-guide-to-sealed-traits-in-rust/#sealing-traits-with-a-supertrait

@@ -5,7 +5,8 @@ use crate::{
         all, count, many, map, optional, or, pad, sequence::LexMany, skip_then, then, then_skip,
         try_map, All, Many, Map, Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
     },
-    ws, Parse, WhiteSpace,
+    lexer::WhiteSpace,
+    ws, Parse,
 };
 
 /// The type returned by a lex: the order of the tuple is `(matched, remaining)`

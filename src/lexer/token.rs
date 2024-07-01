@@ -1,6 +1,7 @@
 use std::{borrow::Cow, fmt, marker::PhantomData};
 
-use crate::{CaseInsensitive, CaseSensitive, CaseSensitivity, Lex, LexResult};
+use crate::lexer::{CaseInsensitive, CaseSensitive, CaseSensitivity};
+use crate::{Lex, LexResult};
 
 /// This lexer is returned by [`token()`]. See its documentation for more details.
 #[derive(Clone)]

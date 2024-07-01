@@ -252,7 +252,7 @@ pub trait Lex {
 
     /// Creates a parser by mapping the matched part of this lexer to an output type.
     ///
-    /// Unlike [`map()`], this returns a `Result<T, parsely::Error>` in case of failed conversions.
+    /// Unlike [`Lex::map()`], this returns a `Result<T, parsely::Error>` in case of failed conversions.
     ///
     /// This is needed to map matches using [`std::str::FromStr`].
     ///
@@ -388,7 +388,7 @@ where
 impl Lex for char {
     /// [`Lex`] is implemented for [`char`]
     ///
-    /// It works the same way as the [`char()`](crate::char) lexer.
+    /// It works the same way as the [`ch()`](crate::ch) lexer.
     fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
         let mut chars = input.char_indices();
 

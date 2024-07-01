@@ -41,7 +41,7 @@ impl Lex for Char {
 /// # Ok::<(), parsely::Error>(())
 /// ```
 ///
-/// Note that using the [`char`](prim@char) primitive is equivalent to wrapping that char in [`char()`].
+/// Note that using the [`char`](prim@char) primitive is equivalent to wrapping that char in [`ch()`].
 ///
 /// the above example can be shortened to:
 ///

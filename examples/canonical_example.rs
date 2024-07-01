@@ -36,7 +36,7 @@ fn hex_color(input: &str) -> ParseResult<Color> {
     Ok((Color { red, green, blue }, remaining))
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     assert_eq!(
         "#2F14DF".parse::<Color>(),
         Ok(Color {
@@ -45,17 +45,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             blue: 223,
         })
     );
-
-    let mut buffer = String::new();
-    std::io::stdin().read_line(&mut buffer)?;
-    match buffer.trim().parse::<Color>() {
-        Ok(color) => {
-            println!("{color:?}");
-        }
-        Err(error) => {
-            println!("{error}");
-        }
-    }
-
-    Ok(())
 }

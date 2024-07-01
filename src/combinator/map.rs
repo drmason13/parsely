@@ -11,6 +11,8 @@ pub struct Map<L, F> {
 
 /// This combinator is used to build a custom parser from a lexer by mapping the matched &str to an output type.
 ///
+/// See [`try_map`] if the conversion may fail.
+///
 /// See [`Lex::map()`] for more details and examples.
 pub fn map<L, F, O>(lexer: L, f: F) -> Map<L, F>
 where
@@ -40,9 +42,7 @@ pub struct TryMap<L, F> {
     f: F,
 }
 
-/// This combinator is used to build a custom parser from a lexer by mapping the matched &str to an output type.
-///
-/// The mapping function is fallible.
+/// Like [`map`] except the mapping function is fallible, returning Result.
 ///
 /// See [`Lex::try_map()`] for more details and examples.
 pub fn try_map<L, F, O, E>(lexer: L, f: F) -> TryMap<L, F>

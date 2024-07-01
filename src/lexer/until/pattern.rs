@@ -1,4 +1,4 @@
-//! [`std::str::pattern`] is still an unstable API (as of rust 1.96.0)
+//! [`std::str::pattern`] is still an unstable API.
 //!
 //! This module serves to wrap this unstable API and expose it in a stable way
 //! similar to how [`str::find()`] is a stable function despite using the unstable Pattern API in its implementation.

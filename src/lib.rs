@@ -208,31 +208,23 @@ pub mod combinator {
     mod then;
 
     #[doc(inline)]
-    pub use self::crawl::crawl;
-    pub use self::crawl::Crawl;
+    pub use crawl::*;
     #[doc(inline)]
-    pub use self::map::{map, try_map};
-    pub use self::map::{Map, TryMap};
+    pub use map::*;
     #[doc(inline)]
-    pub use self::optional::optional;
-    pub use self::optional::Optional;
+    pub use optional::*;
     #[doc(inline)]
-    pub use self::or::or;
-    pub use self::or::Or;
+    pub use or::*;
     #[doc(inline)]
-    pub use self::pad::pad;
-    pub use self::pad::Pad;
+    pub use pad::*;
     #[doc(inline)]
-    pub use self::sequence::traits::Collect;
+    pub use sequence::traits::*;
     #[doc(inline)]
-    pub use self::sequence::{all, count, delimited, many};
-    pub use self::sequence::{All, Delimited, Many};
+    pub use sequence::*;
     #[doc(inline)]
-    pub use self::skip::{skip_then, then_skip};
-    pub use self::skip::{SkipThen, ThenSkip};
+    pub use skip::*;
     #[doc(inline)]
-    pub use self::then::then;
-    pub use self::then::Then;
+    pub use then::*;
 }
 
 mod error;

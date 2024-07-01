@@ -22,7 +22,7 @@ use std::{fmt, sync::Arc};
 ///
 /// [`parse`]: crate::Parse::parse()
 /// [`lex`]: crate::Lex::lex()
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq)]
 pub struct Error<'i> {
     /// The reason for the error
     pub reason: ErrorReason,
@@ -240,6 +240,12 @@ impl<'i> fmt::Display for Error<'i> {
         format_error(self.input, self.remaining, &self.reason, f)
     }
 }
+impl<'i> fmt::Debug for Error<'i> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f)?;
+        format_error(self.input, self.remaining, &self.reason, f)
+    }
+}
 
 impl std::cmp::PartialEq for ErrorReason {
     fn eq(&self, other: &Self) -> bool {
@@ -344,7 +350,7 @@ pub mod result_ext {
 /// ```
 ///
 /// [`FromStr`]: std::str::FromStr
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq)]
 pub struct ErrorOwned {
     /// The reason for the error
     pub reason: ErrorReason,
@@ -373,6 +379,12 @@ impl<'i> From<Error<'i>> for ErrorOwned {
 impl std::error::Error for ErrorOwned {}
 impl fmt::Display for ErrorOwned {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        format_error(&self.input, &self.remaining, &self.reason, f)
+    }
+}
+impl fmt::Debug for ErrorOwned {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f)?;
         format_error(&self.input, &self.remaining, &self.reason, f)
     }
 }

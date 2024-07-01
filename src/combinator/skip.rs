@@ -56,7 +56,7 @@
 
 use crate::{result_ext::*, Lex, Parse};
 
-/// This combinator is returned by [`then_skip()`]. See it's documentation for more details.
+/// This combinator is returned by [`then_skip()`]. See its documentation for more details.
 #[derive(Debug, Clone)]
 pub struct ThenSkip<L, T> {
     lexer: L,
@@ -93,7 +93,7 @@ impl<L: Lex, T: Parse> Parse for ThenSkip<L, T> {
     }
 }
 
-/// This combinator is returned by [`skip_then()`]. See it's documentation for more details.
+/// This combinator is returned by [`skip_then()`]. See its documentation for more details.
 #[derive(Debug, Clone)]
 pub struct SkipThen<L, T> {
     lexer: L,

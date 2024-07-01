@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{result_ext::*, Lex, LexResult, Parse, ParseResult};
 
-/// This combinator is returned by [`or()`]. See it's documentation for more details.
+/// This combinator is returned by [`or()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Or<L, R> {
     left: L,

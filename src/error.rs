@@ -17,7 +17,14 @@ use std::{fmt, sync::Arc};
 ///
 /// # Example
 /// ```
-/// // TODO
+/// use parsely::{Lex, digit};
+///
+/// let error = "#".then(digit().count(4)).lex("#123").unwrap_err();
+///
+/// assert_eq!(error.input, "#123");
+/// assert_eq!(error.remaining, "");
+/// // note: matched is computed and is thus a method
+/// assert_eq!(error.matched(), "#123");
 /// ```
 ///
 /// [`parse`]: crate::Parse::parse()
@@ -35,6 +42,19 @@ pub struct Error<'i> {
 }
 
 impl<'i> Error<'i> {
+    /// This method is used to inject a custom error into an existing [`parsely::Error`](Error).
+    ///
+    /// Updates the reason for the error to a custom one containing your error.
+    pub fn map_err<E>(self, error: E) -> Self
+    where
+        E: std::error::Error + 'static,
+    {
+        Error {
+            reason: ErrorReason::Custom(Arc::new(error)),
+            ..self
+        }
+    }
+
     /// Create a new error at the point that a lexer failed to match the input
     ///
     /// See [`ErrorReason::NoMatch`]
@@ -140,6 +160,8 @@ pub enum ErrorReason {
     /// A custom error
     ///
     /// You can construct an [`Error`] with this reason using [`Error::custom()`]
+    ///
+    /// See also [`map_err()`](crate::Parse::map_err()).
     Custom(Arc<dyn std::error::Error>),
 }
 
@@ -199,10 +221,9 @@ fn format_error(
             f.write_str(prefix)?;
             prefix.chars().count()
         }
-        ErrorReason::Custom(e) => {
-            // I think it is difficult to avoid this allocation
-            let prefix = format!("{e}");
-            f.write_str(&prefix)?;
+        ErrorReason::Custom(_) => {
+            let prefix = "Error while parsing input: ";
+            f.write_str(prefix)?;
             prefix.chars().count()
         }
     };
@@ -231,7 +252,13 @@ fn format_error(
         offset = str::repeat(" ", offset),
         gap = str::repeat(" ", gap + 1), // 1 for the `
         overlap = str::repeat("¯", overlap),
-    )
+    )?;
+
+    if let ErrorReason::Custom(e) = error_reason {
+        write!(f, "\n{e}")?;
+    }
+
+    Ok(())
 }
 
 impl<'i> std::error::Error for Error<'i> {}
@@ -421,7 +448,6 @@ mod tests {
         assert_matched(&error, "");
         assert_remaining(&error, "bar");
         assert_input(&error, "bar");
-        // TODO!: update Display impl
         assert_display(&error, "No match: `bar`\n           ¯¯¯ unmatched input");
     }
 

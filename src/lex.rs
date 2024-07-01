@@ -2,11 +2,13 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        all, count, many, map, optional, or, pad, sequence::LexMany, skip_then, then, then_skip,
-        try_map, All, Many, Map, Optional, Or, Pad, SkipThen, Then, ThenSkip, TryMap,
+        all, count, many, map, map_err, optional, or, pad, sequence::LexMany, skip_then, then,
+        then_skip, try_map, All, Many, Map, MapError, Optional, Or, Pad, SkipThen, Then, ThenSkip,
+        TryMap,
     },
-    lexer::WhiteSpace,
-    ws, Parse,
+    end,
+    lexer::{End, WhiteSpace},
+    ws, Error, Parse,
 };
 
 /// The type returned by a lex: the order of the tuple is `(matched, remaining)`
@@ -195,6 +197,18 @@ pub trait Lex {
         then_skip(lexer, self)
     }
 
+    /// This "finalizes" the lexer, which means it expects there to be no remaining input.
+    ///
+    /// If any input remains after lexing, then the whole lex fails.
+    ///
+    /// This is a convenience method alternative to using `.then_skip(end())` which saves importing [`end()`]
+    fn then_end(self) -> ThenSkip<End, Self>
+    where
+        Self: Sized,
+    {
+        self.then_skip(end())
+    }
+
     /// Creates a parser that runs parses the remaining input after running this lexer.
     ///
     /// The output of this lexer is ignored, or "skipped".
@@ -251,6 +265,52 @@ pub trait Lex {
         map(self, f)
     }
 
+    /// Map the error of this lexer to a custom error type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parsely::{digit, Lex, LexResult, ErrorReason};
+    ///
+    /// # const _: &str = stringify! {
+    /// #[derive(Error, Debug)]
+    /// #[error("The input must be three digits long")]
+    /// # };
+    /// #[derive(Debug)]
+    /// struct InputWrongLength;
+    ///
+    /// fn lexer(input: &str) -> LexResult<'_> {
+    ///     digit()
+    ///         .count(3)
+    ///         .then_end()
+    ///         .map_err(|e| match e.reason {
+    ///             // TODO: error variants for when map fails due to not meeting count requirements
+    ///             ErrorReason::NoMatch => Some(InputWrongLength),
+    ///             _ => None,
+    ///         }).lex(input)
+    /// }
+    /// # impl std::error::Error for InputWrongLength {}
+    /// # impl std::fmt::Display for InputWrongLength {
+    /// #     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    /// #         write!(f, "The input must be three digits long")
+    /// #     }
+    /// # }
+    ///
+    /// let error = lexer.lex("1234").expect_err("1234 > 3 digits long");
+    /// assert!(format!("{error}").contains("The input must be three digits long"));
+    /// assert_eq!(error.remaining, "4");
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn map_err<F, E>(self, f: F) -> MapError<Self, E>
+    where
+        F: Fn(&Error) -> Option<E> + 'static,
+        E: std::error::Error,
+        Self: Sized,
+    {
+        map_err(self, f)
+    }
+
     /// Creates a parser by mapping the matched part of this lexer to an output type.
     ///
     /// Unlike [`Lex::map()`], this returns a `Result<T, parsely::Error>` in case of failed conversions.
@@ -285,7 +345,7 @@ pub trait Lex {
     ///
     /// This is an opionated default usage of the pad combinator for convenience.
     ///
-    /// The pad combinator will accept arbitrary lexers for the left and right side. See it's documentation for more details.
+    /// The pad combinator will accept arbitrary lexers for the left and right side. See its documentation for more details.
     ///
     /// # Examples
     ///

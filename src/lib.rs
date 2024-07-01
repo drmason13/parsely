@@ -95,7 +95,6 @@ impl private::Sealed for lexer::Lexing {}
 pub mod combinator {
     mod crawl;
     mod map;
-    // pub mod map_error;
     mod optional;
     mod or;
     mod pad;

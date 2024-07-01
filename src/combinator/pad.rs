@@ -1,6 +1,6 @@
 use crate::{result_ext::*, Lex, Parse};
 
-/// This combinator is returned by [`pad()`]. See it's documentation for more details.
+/// This combinator is returned by [`pad()`]. See its documentation for more details.
 #[derive(Clone, Debug)]
 pub struct Pad<L, R, T> {
     left: L,

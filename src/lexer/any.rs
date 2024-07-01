@@ -1,6 +1,6 @@
 use crate::Lex;
 
-/// This lexer is returned by [`any()`]. See it's documentation for more details.
+/// This lexer is returned by [`any()`]. See its documentation for more details.
 #[derive(Debug, Clone)]
 pub struct Any;
 

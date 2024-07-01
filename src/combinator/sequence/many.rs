@@ -9,7 +9,7 @@ use super::{min_max_from_bounds, or_until, traits::*, Delimited, OrUntil, MAX_LI
 /// This type alias is used where [`Many`] requires a generic type to collect into that we can ignore because we're lexing.
 pub(crate) type LexMany<T> = Many<T, Vec<()>>;
 
-/// This combinator is returned by [`many()`]. See it's documentation for more details.
+/// This combinator is returned by [`many()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Many<T, C> {
     /// The lexer/parser to be repeated.

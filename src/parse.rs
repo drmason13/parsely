@@ -2,13 +2,13 @@ use std::ops::RangeBounds;
 
 use crate::{
     combinator::{
-        all, count, many, optional, or, pad,
+        all, count, many, map_err, optional, or, pad,
         sequence::{All, LexMany},
-        then, then_skip, Many, Optional, Or, Pad, Then, ThenSkip,
+        then, then_skip, Many, MapError, Optional, Or, Pad, Then, ThenSkip,
     },
     end,
     lexer::{End, WhiteSpace},
-    ws, Lex,
+    ws, Error, Lex,
 };
 
 /// The type returned by a parse. The order of the tuple is `(output, remaining)`
@@ -27,7 +27,7 @@ use crate::{
 ///     # Ok((Foo, ""))
 /// }
 /// ```
-pub type ParseResult<'i, O> = Result<(O, &'i str), crate::Error<'i>>;
+pub type ParseResult<'i, O> = Result<(O, &'i str), Error<'i>>;
 
 /// This trait is implemented by all Parsely parsers.
 ///
@@ -255,9 +255,6 @@ pub trait Parse {
     /// ```
     /// use parsely::{int, token, Parse, ParseResult};
     ///
-    /// #[derive(Debug, PartialEq)]
-    /// struct Foo;
-    ///
     /// fn parser(input: &str) -> ParseResult<'_, u8> {
     ///     int::<u8>().then_skip(token("<<<")).parse(input)
     /// }
@@ -288,12 +285,73 @@ pub trait Parse {
     }
 
     /// Map the output of this parser to some other type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parsely::{int, token, Parse, ParseResult};
+    ///
+    /// fn parser(input: &str) -> ParseResult<'_, u8> {
+    ///     int::<u8>().then_skip(token("<<<")).parse(input)
+    /// }
+    ///
+    /// let (output, remaining) = parser.map(|n| n * 2).parse("123<<<")?;
+    /// // the parser output is doubled!
+    /// assert_eq!(output, 246);
+    /// assert_eq!(remaining, "");
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
     fn map<F, O>(self, f: F) -> Mapped<Self, F>
     where
         F: Fn(<Self as Parse>::Output) -> O,
         Self: Sized,
     {
         Mapped { f, parser: self }
+    }
+
+    /// Map the error of this parser to a custom error type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use parsely::{uint, token, Parse, ParseResult, ErrorReason};
+    ///
+    /// # const _: &str = stringify! {
+    /// #[derive(Error, Debug)]
+    /// #[error("The value must be between 0 and 255")]
+    /// # };
+    /// #[derive(Debug)]
+    /// struct ValueTooLarge;
+    ///
+    /// fn parser(input: &str) -> ParseResult<'_, u8> {
+    ///     uint::<u8>()
+    ///         .map_err(|e| match e.reason {
+    ///             ErrorReason::FailedConversion => Some(ValueTooLarge),
+    ///             _ => None,
+    ///         })
+    ///         .then_skip(token("<<<")).parse(input)
+    /// }
+    /// # impl std::error::Error for ValueTooLarge {}
+    /// # impl std::fmt::Display for ValueTooLarge {
+    /// #     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    /// #         write!(f, "The value must be between 0 and 255")
+    /// #     }
+    /// # }
+    ///
+    /// let error = parser.parse("1234").expect_err("1234 > u8::MAX");
+    /// assert!(format!("{error}").contains("The value must be between 0 and 255"));
+    /// assert_eq!(error.remaining, "1234");
+    ///
+    /// # Ok::<(), parsely::Error>(())
+    /// ```
+    fn map_err<F, E>(self, f: F) -> MapError<Self, E>
+    where
+        F: Fn(&Error) -> Option<E> + 'static,
+        E: std::error::Error,
+        Self: Sized,
+    {
+        map_err(self, f)
     }
 
     /// Swaps around the tuple output by the [`then()`] parser.
@@ -460,7 +518,7 @@ where
 /// It's the lifetime `'i` of the input string:  `&'i str`
 impl<F, O> Parse for F
 where
-    F: Fn(&str) -> Result<(O, &str), crate::Error>,
+    F: Fn(&str) -> Result<(O, &str), Error>,
 {
     type Output = O;
 

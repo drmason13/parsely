@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{ch_if, Lex, LexResult};
 
-/// This lexer is returned by [`digit()`]. See it's documentation for more details.
+/// This lexer is returned by [`digit()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Digit {
     radix: u32,

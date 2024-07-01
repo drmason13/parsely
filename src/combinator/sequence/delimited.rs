@@ -9,7 +9,7 @@ use crate::{Lex, LexResult, Parse, ParseResult};
 
 use super::{many, traits::*, Many};
 
-/// This combinator is returned by [`Many::delimiter()`](super::many::Many::delimiter()). See it's documentation for more details.
+/// This combinator is returned by [`Many::delimiter()`](super::many::Many::delimiter()). See its documentation for more details.
 #[derive(Debug, Clone)]
 pub struct Delimited<L, S, C> {
     delimiter: L,

@@ -4,7 +4,7 @@ use self::pattern::PatternLite;
 
 mod pattern;
 
-/// This lexer is returned by [`until()`]. See it's documentation for more details.
+/// This lexer is returned by [`until()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Until<'a> {
     pattern: PatternLite<'a>,

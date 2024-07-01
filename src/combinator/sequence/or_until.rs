@@ -5,7 +5,7 @@ use crate::{Error, Lex, LexResult, Parse, ParseResult};
 
 use super::{min_max_from_bounds, traits::*, Delimited, Many};
 
-/// This combinator is returned by [`or_until()`]. See it's documentation for more details.
+/// This combinator is returned by [`or_until()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct OrUntil<L, T, C> {
     until: L,

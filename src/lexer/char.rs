@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{Lex, LexResult};
 
-/// This lexer is returned by [`ch()`]. See it's documentation for more details.
+/// This lexer is returned by [`ch()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Char(pub char);
 
@@ -60,7 +60,7 @@ pub fn ch(ch: char) -> Char {
     Char(ch)
 }
 
-/// This lexer is returned by [`ch_if()`]. See it's documentation for more details.
+/// This lexer is returned by [`ch_if()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct CharIf<F> {
     condition: F,
@@ -104,7 +104,7 @@ where
     CharIf { condition }
 }
 
-/// This lexer is returned by [`ws()`]. See it's documentation for more details.
+/// This lexer is returned by [`ws()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct WhiteSpace;
 

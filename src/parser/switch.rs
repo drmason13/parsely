@@ -42,13 +42,13 @@ pub struct Switch<L, T, const N: usize> {
 /// ```
 /// use parsely::{Parse, switch};
 ///
-/// #[derive(Debug, PartialEq, Clone, Copy)]
-/// pub enum MyTokens {
-///     Foo,
-///     Bar,
-///     Baz,
-///     Quux,
-/// }
+/// # #[derive(Debug, PartialEq, Clone, Copy)]
+/// # pub enum MyTokens {
+/// #     Foo,
+/// #     Bar,
+/// #     Baz,
+/// #     Quux,
+/// # }
 ///
 /// let my_token_parser = switch([
 ///     ("foo", MyTokens::Foo),

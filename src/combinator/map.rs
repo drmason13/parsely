@@ -1,8 +1,8 @@
 use std::{any::type_name, fmt};
 
-use crate::{error::result_ext::*, Lex, Parse};
+use crate::{error::result_ext::*, Error, Lex, LexResult, Parse};
 
-/// This combinator is returned by [`map()`]. See it's documentation for more details.
+/// This combinator is returned by [`map()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct Map<L, F> {
     lexer: L,
@@ -35,7 +35,7 @@ where
     }
 }
 
-/// This combinator is returned by [`try_map()`]. See it's documentation for more details.
+/// This combinator is returned by [`try_map()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct TryMap<L, F> {
     lexer: L,
@@ -88,5 +88,60 @@ where
             self.lexer,
             type_name::<Result<O, E>>()
         )
+    }
+}
+
+/// This combinator is returned by [`map_err()`]. See its documentation for more details.
+pub struct MapError<T, E: std::error::Error> {
+    inner: T,
+    f: Box<dyn Fn(&Error) -> Option<E>>,
+}
+
+/// Map [`parsely::Error`](crate::Error)s into a [`Custom`](crate::ErrorReason::Custom) error variant.
+/// Used to inject user defined errors during parsing.
+///
+/// See [`Lex::map_err()`] for more details and examples.
+pub fn map_err<T, E, F>(inner: T, f: F) -> MapError<T, E>
+where
+    E: std::error::Error,
+    F: Fn(&Error) -> Option<E> + 'static,
+{
+    MapError {
+        inner,
+        f: Box::new(f),
+    }
+}
+
+impl<T, E> Lex for MapError<T, E>
+where
+    T: Lex,
+    E: std::error::Error + 'static,
+{
+    fn lex<'i>(&self, input: &'i str) -> LexResult<'i> {
+        self.inner.lex(input).map_err(|e| {
+            if let Some(error) = (self.f)(&e) {
+                e.map_err(error)
+            } else {
+                e
+            }
+        })
+    }
+}
+
+impl<T, O, E> Parse for MapError<T, E>
+where
+    T: Parse<Output = O>,
+    E: std::error::Error + 'static,
+{
+    type Output = O;
+
+    fn parse<'i>(&self, input: &'i str) -> crate::ParseResult<'i, Self::Output> {
+        self.inner.parse(input).map_err(|e| {
+            if let Some(error) = (self.f)(&e) {
+                e.map_err(error)
+            } else {
+                e
+            }
+        })
     }
 }

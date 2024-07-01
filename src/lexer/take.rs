@@ -44,13 +44,13 @@ where
     TakeWhile { condition }
 }
 
-/// This lexer is returned by [`take()`]. See it's documentation for more details.
+/// This lexer is returned by [`take()`]. See its documentation for more details.
 #[derive(Clone, Debug)]
 pub struct Take {
     count: usize,
 }
 
-/// This lexer is returned by [`take_while()`]. See it's documentation for more details.
+/// This lexer is returned by [`take_while()`]. See its documentation for more details.
 #[derive(Clone, Debug)]
 pub struct TakeWhile<F> {
     condition: F,

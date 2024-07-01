@@ -5,7 +5,7 @@ use crate::{end, Error, Lex, LexResult, Parse, ParseResult};
 
 use super::{many, traits::*, Delimited, Many};
 
-/// This combinator is returned by [`all()`]. See it's documentation for more details.
+/// This combinator is returned by [`all()`]. See its documentation for more details.
 #[derive(Clone)]
 pub struct All<T, C> {
     many: Many<T, C>,

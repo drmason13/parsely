@@ -111,7 +111,7 @@ fn test_nested() {
 
 #[test]
 fn test_node_matches_leading_content() {
-    let (matched, remaining) =
+    let (matched, _remaining) =
         node("pre foo>{@ foo @}these{@ foo @}are{@ foo @}nested{@ end foo @}{@ end foo @}")
             .unwrap();
 

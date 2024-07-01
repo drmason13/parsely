@@ -10,3 +10,11 @@ test = true
 [[example]]
 name = "json"
 test = true
+
+[[example]]
+name = "sequence"
+test = true
+
+[[example]]
+name = "block_parser"
+test = true

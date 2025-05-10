@@ -1,7 +1,7 @@
 use crate::{result_ext::*, Lex, Parse};
 
-pub struct Switch<L, T, const N: usize> {
-    items: [(L, T); N],
+pub struct Switch<'a, T, const N: usize> {
+    items: [(&'a dyn Lex, T); N],
 }
 
 /// Creates a Switch parser that parses input by trying each provided lexer in turn and mapping them to the corresponding output.
@@ -51,22 +51,21 @@ pub struct Switch<L, T, const N: usize> {
 /// # }
 ///
 /// let my_token_parser = switch([
-///     ("foo", MyTokens::Foo),
-///     ("bar", MyTokens::Bar),
-///     ("baz", MyTokens::Baz),
-///     ("quux", MyTokens::Quux),
+///     (&"foo", MyTokens::Foo),
+///     (&"bar", MyTokens::Bar),
+///     (&"baz", MyTokens::Baz),
+///     (&"quux", MyTokens::Quux),
 /// ]);
 ///
 /// assert_eq!(my_token_parser.parse("foo 123")?, (MyTokens::Foo, " 123"));
 /// # Ok::<(), parsely::Error>(())
 /// ```
-pub fn switch<L, T, const N: usize>(items: [(L, T); N]) -> Switch<L, T, N> {
+pub fn switch<'a, T, const N: usize>(items: [(&'a dyn Lex, T); N]) -> Switch<'a, T, N> {
     Switch { items }
 }
 
-impl<L, T, const N: usize> Parse for Switch<L, T, N>
+impl<'a, T, const N: usize> Parse for Switch<'a, T, N>
 where
-    L: Lex,
     T: Clone,
 {
     type Output = T;
